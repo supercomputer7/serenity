@@ -102,15 +102,25 @@ void enumerate_bus(int type, u8 bus, Function<void(Address, ID)>& callback)
 }
 
 u8 get_interrupt_line(Address address) { return read_field<u8>(address, PCI_INTERRUPT_LINE); }
+void set_interrupt_line(Address address, u8 value) { return write_field<u8>(address, PCI_INTERRUPT_LINE, value); }
+u16 get_vendor_id(Address address) { return read_field<u16>(address, PCI_VENDOR_ID); }
+u16 get_device_id(Address address) { return read_field<u16>(address, PCI_DEVICE_ID); }
 u32 get_BAR0(Address address) { return read_field<u32>(address, PCI_BAR0); }
 u32 get_BAR1(Address address) { return read_field<u32>(address, PCI_BAR1); }
 u32 get_BAR2(Address address) { return read_field<u32>(address, PCI_BAR2); }
 u32 get_BAR3(Address address) { return read_field<u32>(address, PCI_BAR3); }
 u32 get_BAR4(Address address) { return read_field<u32>(address, PCI_BAR4); }
 u32 get_BAR5(Address address) { return read_field<u32>(address, PCI_BAR5); }
+void set_BAR0(Address address, u32 value) { write_field<u32>(address, PCI_BAR0, value); }
+void set_BAR1(Address address, u32 value) { write_field<u32>(address, PCI_BAR1, value); }
+void set_BAR2(Address address, u32 value) { write_field<u32>(address, PCI_BAR2, value); }
+void set_BAR3(Address address, u32 value) { write_field<u32>(address, PCI_BAR3, value); }
+void set_BAR4(Address address, u32 value) { write_field<u32>(address, PCI_BAR4, value); }
+void set_BAR5(Address address, u32 value) { write_field<u32>(address, PCI_BAR5, value); }
 u8 get_revision_id(Address address) { return read_field<u8>(address, PCI_REVISION_ID); }
 u8 get_subclass(Address address) { return read_field<u8>(address, PCI_SUBCLASS); }
 u8 get_class(Address address) { return read_field<u8>(address, PCI_CLASS); }
+u8 get_progif(Address address) { return read_field<u8>(address, PCI_PROG_IF); }
 u16 get_subsystem_id(Address address) { return read_field<u16>(address, PCI_SUBSYSTEM_ID); }
 u16 get_subsystem_vendor_id(Address address) { return read_field<u16>(address, PCI_SUBSYSTEM_VENDOR_ID); }
 
@@ -118,6 +128,14 @@ void enable_bus_mastering(Address address)
 {
     auto value = read_field<u16>(address, PCI_COMMAND);
     value |= (1 << 2);
+    value |= (1 << 0);
+    write_field<u16>(address, PCI_COMMAND, value);
+}
+
+void disable_bus_mastering(Address address)
+{
+    auto value = read_field<u16>(address, PCI_COMMAND);
+    value &= (~(1 << 2));
     value |= (1 << 0);
     write_field<u16>(address, PCI_COMMAND, value);
 }
