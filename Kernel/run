@@ -21,6 +21,18 @@ $SERENITY_EXTRA_QEMU_ARGS
 -soundhw sb16
 "
 
+[ -z "$SERENITY_Q35_QEMU_ARGS" ] && SERENITY_Q35_QEMU_ARGS="
+$SERENITY_EXTRA_QEMU_ARGS
+-s -m $SERENITY_RAM_SIZE
+-machine q35
+-d cpu_reset,guest_errors 
+-device VGA,vgamem_mb=64
+-hda _disk_image
+-debugcon stdio
+-soundhw pcspk
+-soundhw sb16
+"
+
 export SDL_VIDEO_X11_DGAMOUSE=0
 
 if [ "$1" = "b" ]; then
@@ -30,6 +42,13 @@ elif [ "$1" = "qn" ]; then
     # ./run qn: qemu without network
     $SERENITY_QEMU_BIN \
         $SERENITY_COMMON_QEMU_ARGS \
+        -device e1000 \
+        -kernel kernel \
+        -append "${SERENITY_KERNEL_CMDLINE}"
+elif [ "$1" = "q35" ]; then
+    # ./run qn: qemu on Q35 machine
+    $SERENITY_QEMU_BIN \
+        $SERENITY_Q35_QEMU_ARGS \
         -device e1000 \
         -kernel kernel \
         -append "${SERENITY_KERNEL_CMDLINE}"
