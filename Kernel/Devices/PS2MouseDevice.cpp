@@ -28,7 +28,7 @@
 static PS2MouseDevice* s_the;
 
 PS2MouseDevice::PS2MouseDevice()
-    : IRQHandler(12)
+    : DeviceIRQHandler(12)
     , CharacterDevice(10, 1)
 {
     s_the = this;

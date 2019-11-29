@@ -109,7 +109,7 @@ OwnPtr<E1000NetworkAdapter> E1000NetworkAdapter::autodetect()
 }
 
 E1000NetworkAdapter::E1000NetworkAdapter(PCI::Address pci_address, u8 irq)
-    : IRQHandler(irq)
+    : DeviceIRQHandler(irq)
     , m_pci_address(pci_address)
 {
     set_interface_name("e1k");

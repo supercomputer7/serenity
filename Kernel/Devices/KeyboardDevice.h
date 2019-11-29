@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IRQHandler.h"
+#include "DeviceIRQHandler.h"
 #include "KeyCode.h"
 #include <AK/CircularQueue.h>
 #include <AK/DoublyLinkedList.h>
@@ -9,7 +9,7 @@
 
 class KeyboardClient;
 
-class KeyboardDevice final : public IRQHandler
+class KeyboardDevice final : public DeviceIRQHandler
     , public CharacterDevice {
     AK_MAKE_ETERNAL
 public:

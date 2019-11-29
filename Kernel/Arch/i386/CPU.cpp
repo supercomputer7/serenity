@@ -1,8 +1,12 @@
 #include "APIC.h"
 #include "Assertions.h"
-#include "IRQHandler.h"
 #include "PIC.h"
 #include "Process.h"
+<<<<<<< HEAD
+=======
+#include "Scheduler.h"
+#include "SharedIRQHandler.h"
+>>>>>>> Kernel: Adding Initial Support in IRQ sharing
 #include <AK/Types.h>
 #include <Kernel/Arch/i386/CPU.h>
 #include <Kernel/KSyms.h>
@@ -22,7 +26,7 @@ static DescriptorTablePointer s_gdtr;
 static Descriptor s_idt[256];
 static Descriptor s_gdt[256];
 
-static IRQHandler* s_irq_handler[16];
+static SharedIRQHandler* s_irq_handler[100];
 
 static Vector<u16>* s_gdt_freelist;
 
@@ -406,17 +410,53 @@ static void unimp_trap()
     hang();
 }
 
-void register_irq_handler(u8 irq, IRQHandler& handler)
+void register_shared_irq_handler(u8 irq)
 {
     ASSERT(!s_irq_handler[irq]);
+<<<<<<< HEAD
     s_irq_handler[irq] = &handler;
+=======
+    s_irq_handler[irq] = new SharedIRQHandler(irq);
+    register_interrupt_handler(IRQ_VECTOR_BASE + irq, asm_irq_entry);
+>>>>>>> Kernel: Adding Initial Support in IRQ sharing
 }
 
-void unregister_irq_handler(u8 irq, IRQHandler& handler)
+void unregister_shared_irq_handler(u8 irq)
 {
-    ASSERT(s_irq_handler[irq] == &handler);
+    //ASSERT(s_irq_handler[irq] == &handler);
+    if (s_irq_handler[irq] != nullptr) {
+        s_irq_handler[irq]->~SharedIRQHandler(); // Destroy it
+    }
     s_irq_handler[irq] = nullptr;
 }
+
+void register_device_irq_handler(u8 number, DeviceIRQHandler& handler)
+{
+    if (s_irq_handler[number] != nullptr) {
+        s_irq_handler[number]->register_device_irq_handler(handler);
+    }
+}
+void unregister_device_irq_handler(u8 number, DeviceIRQHandler& handler)
+{
+    if (s_irq_handler[number] != nullptr) {
+        s_irq_handler[number]->unregister_device_irq_handler(handler);
+    }
+}
+
+/*
+    void register_irq_handler(u8 irq, IRQHandler& handler)
+    {
+        //ASSERT(!s_irq_handler[irq]);
+        //s_irq_handler[irq] = &handler;
+        //register_interrupt_handler(IRQ_VECTOR_BASE + irq, asm_irq_entry);
+    }
+
+    void unregister_irq_handler(u8 irq, IRQHandler& handler)
+    {
+        //ASSERT(s_irq_handler[irq] == &handler);
+        //s_irq_handler[irq] = nullptr;
+    }
+*/
 
 void register_interrupt_handler(u8 index, void (*f)())
 {
@@ -502,6 +542,12 @@ void idt_init()
     }
 
     flush_idt();
+}
+
+void prepare_for_poweroff()
+{
+    for (u8 i = 0; i < 100; ++i)
+        unregister_shared_irq_handler(i);
 }
 
 void load_task_register(u16 selector)

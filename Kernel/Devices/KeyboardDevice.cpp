@@ -363,7 +363,7 @@ KeyboardDevice& KeyboardDevice::the()
 }
 
 KeyboardDevice::KeyboardDevice()
-    : IRQHandler(IRQ_KEYBOARD)
+    : DeviceIRQHandler(IRQ_KEYBOARD)
     , CharacterDevice(85, 1)
 {
     s_the = this;
