@@ -46,17 +46,27 @@ private:
 
 void enumerate_all(Function<void(Address, ID)>);
 u8 get_interrupt_line(Address);
+void set_interrupt_line(Address, u8);
+u16 get_vendor_id(Address);
+u16 get_device_id(Address);
 u32 get_BAR0(Address);
 u32 get_BAR1(Address);
 u32 get_BAR2(Address);
 u32 get_BAR3(Address);
 u32 get_BAR4(Address);
 u32 get_BAR5(Address);
+void set_BAR0(Address address, u32 value);
+void set_BAR1(Address address, u32 value);
+void set_BAR2(Address address, u32 value);
+void set_BAR3(Address address, u32 value);
+void set_BAR4(Address address, u32 value);
+void set_BAR5(Address address, u32 value);
 u8 get_revision_id(Address);
 u8 get_subclass(Address);
 u8 get_class(Address);
+u8 get_progif(Address);
 u16 get_subsystem_id(Address);
 u16 get_subsystem_vendor_id(Address);
 void enable_bus_mastering(Address);
-
+void disable_bus_mastering(Address);
 }
