@@ -1,11 +1,11 @@
 #pragma once
 
 #include <AK/CircularQueue.h>
+#include <Kernel/DeviceIRQHandler.h>
 #include <Kernel/Devices/CharacterDevice.h>
-#include <Kernel/IRQHandler.h>
 #include <Kernel/MousePacket.h>
 
-class PS2MouseDevice final : public IRQHandler
+class PS2MouseDevice final : public DeviceIRQHandler
     , public CharacterDevice {
 public:
     PS2MouseDevice();

@@ -1,14 +1,14 @@
 #pragma once
 
 #include <AK/CircularQueue.h>
+#include <Kernel/DeviceIRQHandler.h>
 #include <Kernel/Devices/CharacterDevice.h>
-#include <Kernel/IRQHandler.h>
 #include <Kernel/VM/PhysicalAddress.h>
 #include <Kernel/VM/PhysicalPage.h>
 
 class SB16;
 
-class SB16 final : public IRQHandler
+class SB16 final : public DeviceIRQHandler
     , public CharacterDevice {
 public:
     SB16();

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <AK/OwnPtr.h>
-#include <Kernel/IRQHandler.h>
+#include <Kernel/DeviceIRQHandler.h>
 #include <Kernel/Net/NetworkAdapter.h>
 #include <Kernel/PCI.h>
 
 class E1000NetworkAdapter final : public NetworkAdapter
-    , public IRQHandler {
+    , public DeviceIRQHandler {
 public:
     static OwnPtr<E1000NetworkAdapter> autodetect();
 

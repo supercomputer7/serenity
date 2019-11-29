@@ -31,8 +31,6 @@ CXX_OBJS = \
     Devices/MBRPartitionTable.o \
     Devices/MBVGADevice.o \
     Devices/NullDevice.o \
-    Devices/PATAChannel.o \
-    Devices/PATADiskDevice.o \
     Devices/PCSpeaker.o \
     Devices/PS2MouseDevice.o \
     Devices/RandomDevice.o \
@@ -57,7 +55,8 @@ CXX_OBJS = \
     FileSystem/VirtualFileSystem.o \
     Heap/SlabAllocator.o \
     Heap/kmalloc.o \
-    IRQHandler.o \
+    SharedIRQHandler.o \
+    DeviceIRQHandler.o \
     KBufferBuilder.o \
     KParams.o \
     KSyms.o \

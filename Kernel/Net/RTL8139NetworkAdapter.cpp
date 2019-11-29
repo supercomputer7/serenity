@@ -115,7 +115,7 @@ OwnPtr<RTL8139NetworkAdapter> RTL8139NetworkAdapter::autodetect()
 }
 
 RTL8139NetworkAdapter::RTL8139NetworkAdapter(PCI::Address pci_address, u8 irq)
-    : IRQHandler(irq)
+    : DeviceIRQHandler(irq)
     , m_pci_address(pci_address)
 {
     set_interface_name("rtl8139");

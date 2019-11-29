@@ -47,7 +47,7 @@ void SB16::set_sample_rate(uint16_t hz)
 static SB16* s_the;
 
 SB16::SB16()
-    : IRQHandler(5)
+    : DeviceIRQHandler(5)
     , CharacterDevice(42, 42) // ### ?
 {
     s_the = this;

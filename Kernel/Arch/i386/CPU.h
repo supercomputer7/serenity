@@ -192,7 +192,8 @@ private:
 static_assert(sizeof(PageDirectoryEntry) == 4);
 static_assert(sizeof(PageTableEntry) == 4);
 
-class IRQHandler;
+class SharedIRQHandler;
+class DeviceIRQHandler;
 struct RegisterDump;
 
 void gdt_init();
@@ -200,10 +201,13 @@ void idt_init();
 void sse_init();
 void register_interrupt_handler(u8 number, void (*f)());
 void register_user_callable_interrupt_handler(u8 number, void (*f)());
-void register_irq_handler(u8 number, IRQHandler&);
-void unregister_irq_handler(u8 number, IRQHandler&);
+void register_shared_irq_handler(u8 number);
+void unregister_shared_irq_handler(u8 number);
+void register_device_irq_handler(u8 number, DeviceIRQHandler&);
+void unregister_device_irq_handler(u8 number, DeviceIRQHandler&);
 void flush_idt();
 void flush_gdt();
+void prepare_for_poweroff();
 void load_task_register(u16 selector);
 u16 gdt_alloc_entry();
 void gdt_free_entry(u16);

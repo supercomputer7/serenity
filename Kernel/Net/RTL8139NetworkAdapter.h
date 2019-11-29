@@ -1,14 +1,14 @@
 #pragma once
 
 #include <AK/OwnPtr.h>
-#include <Kernel/IRQHandler.h>
+#include <Kernel/DeviceIRQHandler.h>
 #include <Kernel/Net/NetworkAdapter.h>
 #include <Kernel/PCI.h>
 
 #define RTL8139_TX_BUFFER_COUNT 4
 
 class RTL8139NetworkAdapter final : public NetworkAdapter
-    , public IRQHandler {
+    , public DeviceIRQHandler {
 public:
     static OwnPtr<RTL8139NetworkAdapter> autodetect();
 
