@@ -112,8 +112,8 @@ PATAChannel::~PATAChannel()
 
 void PATAChannel::initialize(bool force_pio)
 {
-    PCI::enumerate_all([this](const PCI::Address& address, PCI::ID id) {
-        if (PCI::get_class(address) == PCI_Mass_Storage_Class && PCI::get_subclass(address) == PCI_IDE_Controller_Subclass) {
+    PCI::Access::the().enumerate_all([this](const PCI::Address& address, PCI::ID id) {
+        if (PCI::Access::the().get_class(address) == PCI_Mass_Storage_Class && PCI::Access::the().get_subclass(address) == PCI_IDE_Controller_Subclass) {
             m_pci_address = address;
             kprintf("PATAChannel: PATA Controller found! id=%w:%w\n", id.vendor_id, id.device_id);
         }

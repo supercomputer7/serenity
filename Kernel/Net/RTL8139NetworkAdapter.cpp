@@ -1,6 +1,5 @@
 #include <Kernel/IO.h>
 #include <Kernel/Net/RTL8139NetworkAdapter.h>
-#include <Kernel/PCI.h>
 
 //#define RTL8139_DEBUG
 
@@ -102,7 +101,7 @@ OwnPtr<RTL8139NetworkAdapter> RTL8139NetworkAdapter::autodetect()
 {
     static const PCI::ID rtl8139_id = { 0x10EC, 0x8139 };
     PCI::Address found_address;
-    PCI::enumerate_all([&](const PCI::Address& address, PCI::ID id) {
+    PCI::Access::the().enumerate_all([&](const PCI::Address& address, PCI::ID id) {
         if (id == rtl8139_id) {
             found_address = address;
             return;
