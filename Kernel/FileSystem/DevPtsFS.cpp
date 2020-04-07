@@ -26,6 +26,7 @@
 
 #include <AK/StringBuilder.h>
 #include <AK/StringView.h>
+#include <Kernel/Devices/DeviceRegistrar.h>
 #include <Kernel/FileSystem/DevPtsFS.h>
 #include <Kernel/FileSystem/VirtualFileSystem.h>
 #include <Kernel/TTY/SlavePTY.h>
@@ -96,8 +97,8 @@ RefPtr<Inode> DevPtsFS::get_inode(InodeIdentifier inode_id) const
         return m_root_inode;
 
     unsigned pty_index = inode_index_to_pty_index(inode_id.index());
-    auto* device = Device::get_device(201, pty_index);
-    ASSERT(device);
+    auto device = DeviceRegistrar::the().get_device(201, pty_index);
+    ASSERT(!device.is_null());
 
     auto inode = adopt(*new DevPtsFSInode(const_cast<DevPtsFS&>(*this), inode_id.index()));
     inode->m_metadata.inode = inode_id;

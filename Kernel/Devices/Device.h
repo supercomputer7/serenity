@@ -51,21 +51,19 @@ public:
     virtual String absolute_path(const FileDescription&) const override;
     virtual String absolute_path() const;
 
+    String raw_name() const;
+    virtual String name() const = 0;
+
     uid_t uid() const { return m_uid; }
     uid_t gid() const { return m_gid; }
 
     virtual bool is_device() const override { return true; }
     virtual bool is_disk_device() const { return false; }
 
-    static void for_each(Function<void(Device&)>);
-    static Device* get_device(unsigned major, unsigned minor);
-
 protected:
     Device(unsigned major, unsigned minor);
     void set_uid(uid_t uid) { m_uid = uid; }
     void set_gid(gid_t gid) { m_gid = gid; }
-
-    static HashMap<u32, Device*>& all_devices();
 
 private:
     unsigned m_major { 0 };

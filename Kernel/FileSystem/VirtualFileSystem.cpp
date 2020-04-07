@@ -27,6 +27,7 @@
 #include <AK/FileSystemPath.h>
 #include <AK/StringBuilder.h>
 #include <Kernel/Devices/BlockDevice.h>
+#include <Kernel/Devices/DeviceRegistrar.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/FileSystem/FileBackedFileSystem.h>
 #include <Kernel/FileSystem/FileDescription.h>
@@ -254,8 +255,8 @@ KResultOr<NonnullRefPtr<FileDescription>> VFS::open(StringView path, int options
     if (metadata.is_device()) {
         if (custody.mount_flags() & MS_NODEV)
             return KResult(-EACCES);
-        auto device = Device::get_device(metadata.major_device, metadata.minor_device);
-        if (device == nullptr) {
+        auto device = DeviceRegistrar::the().get_device(metadata.major_device, metadata.minor_device);
+        if (device.is_null()) {
             return KResult(-ENODEV);
         }
         auto descriptor_or_error = device->open(options);

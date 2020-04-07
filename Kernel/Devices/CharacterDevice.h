@@ -34,6 +34,8 @@ class CharacterDevice : public Device {
 public:
     virtual ~CharacterDevice() override;
 
+    virtual String name() const override { return raw_name(); }
+
 protected:
     CharacterDevice(unsigned major, unsigned minor)
         : Device(major, minor)

@@ -34,6 +34,7 @@
 #include <AK/JsonValue.h>
 #include <Kernel/Arch/i386/CPU.h>
 #include <Kernel/Devices/BlockDevice.h>
+#include <Kernel/Devices/DeviceRegistrar.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/FileSystem/FileBackedFileSystem.h>
 #include <Kernel/FileSystem/FileDescription.h>
@@ -377,7 +378,7 @@ Optional<KBuffer> procfs$devices(InodeIdentifier)
 {
     KBufferBuilder builder;
     JsonArraySerializer array { builder };
-    Device::for_each([&array](auto& device) {
+    DeviceRegistrar::the().for_each([&array](auto& device) {
         auto obj = array.add_object();
         obj.add("major", device.major());
         obj.add("minor", device.minor());

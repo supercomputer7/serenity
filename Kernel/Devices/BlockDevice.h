@@ -37,6 +37,8 @@ public:
     size_t block_size() const { return m_block_size; }
     virtual bool is_seekable() const override { return true; }
 
+    virtual String name() const override { return raw_name(); }
+
     bool read_block(unsigned index, u8*) const;
     bool write_block(unsigned index, const u8*);
     bool read_raw(u32 offset, unsigned length, u8*) const;
