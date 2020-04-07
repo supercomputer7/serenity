@@ -53,6 +53,7 @@ OBJS = \
     Devices/SerialDevice.o \
     Devices/ZeroDevice.o \
     Devices/VMWareBackdoor.o \
+    Devices/DeviceRegistrar.o \
     DoubleBuffer.o \
     FileSystem/Custody.o \
     FileSystem/DevPtsFS.o \
