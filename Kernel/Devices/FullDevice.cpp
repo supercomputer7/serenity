@@ -27,6 +27,7 @@
 #include "FullDevice.h"
 #include <AK/Memory.h>
 #include <AK/StdLibExtras.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 #include <LibC/errno_numbers.h>
 
 namespace Kernel {
@@ -34,10 +35,12 @@ namespace Kernel {
 FullDevice::FullDevice()
     : CharacterDevice(1, 7)
 {
+    DevTmpFS::the().register_persistent_device(*this);
 }
 
 FullDevice::~FullDevice()
 {
+    DevTmpFS::the().unregister_persistent_device(*this);
 }
 
 bool FullDevice::can_read(const FileDescription&) const

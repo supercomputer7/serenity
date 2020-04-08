@@ -27,16 +27,19 @@
 #include "ZeroDevice.h"
 #include <AK/Memory.h>
 #include <AK/StdLibExtras.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 
 namespace Kernel {
 
 ZeroDevice::ZeroDevice()
     : CharacterDevice(1, 5)
 {
+    DevTmpFS::the().register_persistent_device(*this);
 }
 
 ZeroDevice::~ZeroDevice()
 {
+    DevTmpFS::the().unregister_persistent_device(*this);
 }
 
 bool ZeroDevice::can_read(const FileDescription&) const

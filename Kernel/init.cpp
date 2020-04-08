@@ -53,6 +53,7 @@
 #include <Kernel/Devices/SerialDevice.h>
 #include <Kernel/Devices/VMWareBackdoor.h>
 #include <Kernel/Devices/ZeroDevice.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 #include <Kernel/FileSystem/Ext2FileSystem.h>
 #include <Kernel/FileSystem/VirtualFileSystem.h>
 #include <Kernel/Heap/SlabAllocator.h>

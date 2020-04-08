@@ -25,6 +25,7 @@
  */
 
 #include <Kernel/Devices/DebugLogDevice.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 #include <LibBareMetal/IO.h>
 
 namespace Kernel {
@@ -41,10 +42,12 @@ DebugLogDevice::DebugLogDevice()
     : CharacterDevice(1, 18)
 {
     s_the = this;
+    DevTmpFS::the().register_persistent_device(*this);
 }
 
 DebugLogDevice::~DebugLogDevice()
 {
+    DevTmpFS::the().unregister_persistent_device(*this);
 }
 
 ssize_t DebugLogDevice::write(FileDescription&, const u8* data, ssize_t data_size)

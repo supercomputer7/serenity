@@ -25,6 +25,7 @@
  */
 
 #include <Kernel/Devices/RandomDevice.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 #include <Kernel/Random.h>
 
 namespace Kernel {
@@ -32,10 +33,12 @@ namespace Kernel {
 RandomDevice::RandomDevice()
     : CharacterDevice(1, 8)
 {
+    DevTmpFS::the().register_persistent_device(*this);
 }
 
 RandomDevice::~RandomDevice()
 {
+    DevTmpFS::the().unregister_persistent_device(*this);
 }
 
 bool RandomDevice::can_read(const FileDescription&) const

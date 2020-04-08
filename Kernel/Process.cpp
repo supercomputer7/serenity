@@ -40,6 +40,7 @@
 #include <Kernel/Devices/RandomDevice.h>
 #include <Kernel/FileSystem/Custody.h>
 #include <Kernel/FileSystem/DevPtsFS.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 #include <Kernel/FileSystem/Ext2FileSystem.h>
 #include <Kernel/FileSystem/FIFO.h>
 #include <Kernel/FileSystem/FileDescription.h>
@@ -4058,6 +4059,8 @@ int Process::sys$mount(const Syscall::SC_mount_params* user_params)
         fs = DevPtsFS::create();
     } else if (fs_type == "tmp" || fs_type == "TmpFS") {
         fs = TmpFS::create();
+    } else if (fs_type == "dev" || fs_type == "DevTmpFS") {
+        fs = DevTmpFS::create();
     } else {
         return -ENODEV;
     }

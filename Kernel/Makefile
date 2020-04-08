@@ -68,6 +68,7 @@ OBJS = \
     FileSystem/InodeWatcher.o \
     FileSystem/ProcFS.o \
     FileSystem/TmpFS.o \
+    FileSystem/DevTmpFS.o \
     FileSystem/VirtualFileSystem.o \
     Heap/SlabAllocator.o \
     Heap/kmalloc.o \

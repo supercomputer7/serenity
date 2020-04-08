@@ -26,6 +26,7 @@
 
 #include "NullDevice.h"
 #include <AK/StdLibExtras.h>
+#include <Kernel/FileSystem/DevTmpFS.h>
 
 namespace Kernel {
 
@@ -41,10 +42,12 @@ NullDevice::NullDevice()
     : CharacterDevice(1, 3)
 {
     s_the = this;
+    DevTmpFS::the().register_persistent_device(*this);
 }
 
 NullDevice::~NullDevice()
 {
+    DevTmpFS::the().unregister_persistent_device(*this);
 }
 
 bool NullDevice::can_read(const FileDescription&) const
