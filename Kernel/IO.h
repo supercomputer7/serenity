@@ -159,7 +159,7 @@ public:
         ASSERT_NOT_REACHED();
     }
 
-    bool is_null() const { return m_address == 0; }
+    bool is_valid() const { return m_address != 0; }
 
     bool operator==(const IOAddress& other) const { return m_address == other.m_address; }
     bool operator!=(const IOAddress& other) const { return m_address != other.m_address; }
