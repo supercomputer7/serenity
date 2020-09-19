@@ -57,14 +57,14 @@ const char* PATADiskDevice::class_name() const
 
 bool PATADiskDevice::read_blocks(unsigned index, u16 count, UserOrKernelBuffer& out)
 {
-    if (!m_channel.m_bus_master_base.is_null() && m_channel.m_dma_enabled.resource())
+    if (m_channel.m_bus_master_base.is_valid() && m_channel.m_dma_enabled.resource())
         return read_sectors_with_dma(index, count, out);
     return read_sectors(index, count, out);
 }
 
 bool PATADiskDevice::write_blocks(unsigned index, u16 count, const UserOrKernelBuffer& data)
 {
-    if (!m_channel.m_bus_master_base.is_null() && m_channel.m_dma_enabled.resource())
+    if (m_channel.m_bus_master_base.is_valid() && m_channel.m_dma_enabled.resource())
         return write_sectors_with_dma(index, count, data);
     for (unsigned i = 0; i < count; ++i) {
         if (!write_sectors(index + i, 1, data.offset(i * 512)))
