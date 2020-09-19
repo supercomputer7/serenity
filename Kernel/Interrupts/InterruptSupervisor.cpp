@@ -24,22 +24,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <AK/Types.h>
+#include <Kernel/Arch/i386/CPU.h>
+#include <Kernel/Assertions.h>
 #include <Kernel/Interrupts/InterruptSupervisor.h>
-#include <Kernel/PCI/Definitions.h>
+#include <Kernel/Interrupts/InterruptManagement.h>
+#include <Kernel/Interrupts/PIC.h>
 
 namespace Kernel {
-class PCI::Device : public InterruptSupervisor {
-public:
-    Address pci_address() const { return m_pci_address; };
 
-protected:
-    explicit Device(Address pci_address);
-    ~Device();
+InterruptSupervisor::InterruptSupervisor()
+{
+    register_itself();
+}
 
-private:
-    Address m_pci_address;
-};
+InterruptSupervisor::InterruptSupervisor(size_t expected_handlers_count)
+{
+    m_handlers.ensure_capacity(expected_handlers_count);
+    register_itself();
+}
+
+InterruptSupervisor::~InterruptSupervisor()
+{
+}
+void InterruptSupervisor::register_itself() const
+{
+    InterruptManagement::the().register_interrupt_supervisor(*this);
+}
+
+void InterruptSupervisor::register_handler(const GenericInterruptHandler& handler)
+{
+    // FIXME: When SMP is enabled, using InterruptDisabler is not enough.
+    InterruptDisabler disabler;
+    ASSERT(!m_handlers.find_first_index(const_cast<GenericInterruptHandler*>(&handler)).has_value());
+    m_handlers.append(const_cast<GenericInterruptHandler*>(&handler));
+}
+void InterruptSupervisor::unregister_handler(const GenericInterruptHandler& handler)
+{
+    // FIXME: When SMP is enabled, using InterruptDisabler is not enough.
+    InterruptDisabler disabler;
+    auto remove_index = m_handlers.find_first_index(const_cast<GenericInterruptHandler*>(&handler));
+    ASSERT(remove_index.has_value());
+    m_handlers.remove(remove_index.value());
+}
+
 }

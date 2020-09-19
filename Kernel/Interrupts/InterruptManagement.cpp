@@ -233,4 +233,9 @@ void InterruptManagement::locate_apic_data()
     }
 }
 
+void InterruptManagement::register_interrupt_supervisor(const InterruptSupervisor& supervisor)
+{
+    m_interrupt_supervisors.append(make<InterruptSupervisor>(supervisor));
+}
+
 }

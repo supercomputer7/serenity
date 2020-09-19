@@ -154,7 +154,8 @@ void E1000NetworkAdapter::detect()
 }
 
 E1000NetworkAdapter::E1000NetworkAdapter(PCI::Address address, u8 irq)
-    : PCI::Device(address, irq)
+    : PCI::Device(address)
+    , IRQHandler(irq)
     , m_io_base(PCI::get_BAR1(pci_address()) & ~1)
     , m_rx_descriptors_region(MM.allocate_contiguous_kernel_region(PAGE_ROUND_UP(sizeof(e1000_rx_desc) * number_of_rx_descriptors + 16), "E1000 RX", Region::Access::Read | Region::Access::Write))
     , m_tx_descriptors_region(MM.allocate_contiguous_kernel_region(PAGE_ROUND_UP(sizeof(e1000_tx_desc) * number_of_tx_descriptors + 16), "E1000 TX", Region::Access::Read | Region::Access::Write))

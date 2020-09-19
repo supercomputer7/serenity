@@ -38,7 +38,8 @@
 namespace Kernel {
 
 class E1000NetworkAdapter final : public NetworkAdapter
-    , public PCI::Device {
+    , public PCI::Device
+    , public IRQHandler {
 public:
     static void detect();
 

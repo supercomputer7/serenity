@@ -26,20 +26,29 @@
 
 #pragma once
 
+#include <AK/HashTable.h>
+#include <AK/RefCounted.h>
+#include <AK/String.h>
 #include <AK/Types.h>
-#include <Kernel/Interrupts/InterruptSupervisor.h>
-#include <Kernel/PCI/Definitions.h>
+#include <Kernel/Arch/i386/CPU.h>
+#include <Kernel/Interrupts/GenericInterruptHandler.h>
 
 namespace Kernel {
-class PCI::Device : public InterruptSupervisor {
+
+class InterruptSupervisor {
 public:
-    Address pci_address() const { return m_pci_address; };
+    virtual ~InterruptSupervisor();
+
+    size_t handlers_count() const { return m_handlers.size(); }
 
 protected:
-    explicit Device(Address pci_address);
-    ~Device();
+    void register_handler(const GenericInterruptHandler&);
+    void unregister_handler(const GenericInterruptHandler&);
 
+    InterruptSupervisor();
+    explicit InterruptSupervisor(size_t expected_handlers_count);
+    Vector<GenericInterruptHandler*> m_handlers;
 private:
-    Address m_pci_address;
+    void register_itself() const;
 };
 }

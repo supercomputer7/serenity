@@ -139,7 +139,8 @@ void RTL8139NetworkAdapter::detect()
 }
 
 RTL8139NetworkAdapter::RTL8139NetworkAdapter(PCI::Address address, u8 irq)
-    : PCI::Device(address, irq)
+    : PCI::Device(address)
+    , IRQHandler(irq)
     , m_io_base(PCI::get_BAR0(pci_address()) & ~1)
     , m_rx_buffer(MM.allocate_contiguous_kernel_region(PAGE_ROUND_UP(RX_BUFFER_SIZE + PACKET_SIZE_MAX), "RTL8139 RX", Region::Access::Read | Region::Access::Write))
     , m_packet_buffer(MM.allocate_contiguous_kernel_region(PAGE_ROUND_UP(PACKET_SIZE_MAX), "RTL8139 Packet buffer", Region::Access::Read | Region::Access::Write))

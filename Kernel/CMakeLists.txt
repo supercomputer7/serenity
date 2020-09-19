@@ -62,6 +62,7 @@ set(KERNEL_SOURCES
     Interrupts/SharedIRQHandler.cpp
     Interrupts/SpuriousInterruptHandler.cpp
     Interrupts/UnhandledInterruptHandler.cpp
+    Interrupts/InterruptSupervisor.cpp
     KBufferBuilder.cpp
     KSyms.cpp
     Lock.cpp

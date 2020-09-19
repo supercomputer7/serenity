@@ -28,6 +28,7 @@
 
 #include <AK/Function.h>
 #include <AK/NonnullOwnPtr.h>
+#include <AK/NonnullOwnPtrVector.h>
 #include <AK/OwnPtr.h>
 #include <AK/RefCounted.h>
 #include <AK/RefPtr.h>
@@ -36,6 +37,7 @@
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
 #include <Kernel/Interrupts/IOAPIC.h>
 #include <Kernel/Interrupts/IRQController.h>
+#include <Kernel/Interrupts/InterruptSupervisor.h>
 
 namespace Kernel {
 
@@ -61,6 +63,7 @@ private:
     const u16 m_flags;
 };
 
+class InterruptSupervisor;
 class InterruptManagement {
 public:
     static InterruptManagement& the();
@@ -83,6 +86,8 @@ public:
     void enumerate_interrupt_handlers(Function<void(GenericInterruptHandler&)>);
     IRQController& get_interrupt_controller(int index);
 
+    void register_interrupt_supervisor(const InterruptSupervisor&);
+
 private:
     InterruptManagement();
     PhysicalAddress search_for_madt();
@@ -91,6 +96,7 @@ private:
     Vector<RefPtr<IRQController>> m_interrupt_controllers;
     Vector<ISAInterruptOverrideMetadata> m_isa_interrupt_overrides;
     Vector<PCIInterruptOverrideMetadata> m_pci_interrupt_overrides;
+    NonnullOwnPtrVector<InterruptSupervisor> m_interrupt_supervisors;
     PhysicalAddress m_madt;
 };
 

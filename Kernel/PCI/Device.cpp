@@ -30,14 +30,7 @@ namespace Kernel {
 namespace PCI {
 
 Device::Device(Address address)
-    : IRQHandler(get_interrupt_line(address))
-    , m_pci_address(address)
-{
-    // FIXME: Register PCI device somewhere...
-}
-
-Device::Device(Address address, u8 interrupt_vector)
-    : IRQHandler(interrupt_vector)
+    : InterruptSupervisor()
     , m_pci_address(address)
 {
     // FIXME: Register PCI device somewhere...
