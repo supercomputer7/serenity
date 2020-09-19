@@ -63,11 +63,12 @@ void UHCIController::detect()
 
 UHCIController::UHCIController(PCI::Address address, PCI::ID id)
     : PCI::Device(address)
+    , IRQHandler(PCI::get_interrupt_line(pci_address()))
     , m_io_base(PCI::get_BAR4(pci_address()) & ~1)
 {
     klog() << "UHCI: Controller found " << id << " @ " << address;
     klog() << "UHCI: I/O base " << m_io_base;
-    klog() << "UHCI: Interrupt line: " << PCI::get_interrupt_line(pci_address());
+    klog() << "UHCI: Interrupt line: " << interrupt_number();
 
     reset();
     start();

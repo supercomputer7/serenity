@@ -40,6 +40,7 @@
 #include <AK/OwnPtr.h>
 #include <AK/RefPtr.h>
 #include <Kernel/IO.h>
+#include <Kernel/Interrupts/IRQHandler.h>
 #include <Kernel/Lock.h>
 #include <Kernel/PCI/Access.h>
 #include <Kernel/PCI/Device.h>
@@ -57,7 +58,8 @@ struct PhysicalRegionDescriptor {
 };
 
 class PATADiskDevice;
-class PATAChannel final : public PCI::Device {
+class PATAChannel final : public PCI::Device
+    , public IRQHandler {
     friend class PATADiskDevice;
     AK_MAKE_ETERNAL
 public:

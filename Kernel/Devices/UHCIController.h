@@ -27,11 +27,13 @@
 #pragma once
 
 #include <Kernel/IO.h>
+#include <Kernel/Interrupts/IRQHandler.h>
 #include <Kernel/PCI/Device.h>
 
 namespace Kernel {
 
-class UHCIController final : public PCI::Device {
+class UHCIController final : public PCI::Device
+    , public IRQHandler {
 public:
     static void detect();
     virtual ~UHCIController() override;

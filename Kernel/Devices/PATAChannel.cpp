@@ -128,7 +128,8 @@ OwnPtr<PATAChannel> PATAChannel::create(ChannelType type, bool force_pio)
 }
 
 PATAChannel::PATAChannel(PCI::Address address, ChannelType type, bool force_pio)
-    : PCI::Device(address, (type == ChannelType::Primary ? PATA_PRIMARY_IRQ : PATA_SECONDARY_IRQ))
+    : PCI::Device(address)
+    , IRQHandler((type == ChannelType::Primary ? PATA_PRIMARY_IRQ : PATA_SECONDARY_IRQ))
     , m_channel_number((type == ChannelType::Primary ? 0 : 1))
     , m_io_base((type == ChannelType::Primary ? 0x1F0 : 0x170))
     , m_control_base((type == ChannelType::Primary ? 0x3f6 : 0x376))
