@@ -101,8 +101,10 @@ void Parser::init_fadt()
 #ifdef ACPI_DEBUG
     dbg() << "ACPI: FADT @ V " << sdt << ", P " << (void*)m_fadt.as_ptr();
 #endif
+    m_dsdt = PhysicalAddress(sdt->dsdt_ptr);
     klog() << "ACPI: Fixed ACPI data, Revision " << sdt->h.revision << ", Length " << sdt->h.length << " bytes";
-    klog() << "ACPI: DSDT " << PhysicalAddress(sdt->dsdt_ptr);
+    klog() << "ACPI: DSDT " << m_dsdt;
+
     m_x86_specific_flags.cmos_rtc_not_present = (sdt->ia_pc_boot_arch_flags & (u8)FADTFlags::IA_PC_Flags::CMOS_RTC_Not_Present);
     m_x86_specific_flags.keyboard_8042 = (sdt->h.revision <= 1) || (sdt->ia_pc_boot_arch_flags & (u8)FADTFlags::IA_PC_Flags::PS2_8042);
     m_x86_specific_flags.legacy_devices = (sdt->ia_pc_boot_arch_flags & (u8)FADTFlags::IA_PC_Flags::Legacy_Devices);

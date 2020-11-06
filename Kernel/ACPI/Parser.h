@@ -67,8 +67,12 @@ public:
     virtual void enable_aml_interpretation(u8*, u32);
     virtual void disable_aml_interpretation();
 
+    PhysicalAddress dsdt() const { return m_dsdt; }
+
 protected:
     explicit Parser(PhysicalAddress rsdp);
+    size_t get_table_size(PhysicalAddress);
+    u8 get_table_revision(PhysicalAddress);
 
 private:
     static void set_the(Parser&);
@@ -76,8 +80,7 @@ private:
     void locate_static_data();
     void locate_main_system_description_table();
     void initialize_main_system_description_table();
-    size_t get_table_size(PhysicalAddress);
-    u8 get_table_revision(PhysicalAddress);
+
     void init_fadt();
     void init_facs();
 
@@ -90,6 +93,7 @@ private:
     Vector<PhysicalAddress> m_sdt_pointers;
     PhysicalAddress m_fadt;
     PhysicalAddress m_facs;
+    PhysicalAddress m_dsdt;
 
     bool m_xsdt_supported { false };
     FADTFlags::HardwareFeatures m_hardware_flags;
