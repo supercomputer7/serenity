@@ -48,6 +48,7 @@ public:
     }
 
     virtual PhysicalAddress find_table(const StringView& signature);
+    virtual void find_tables(const StringView& signature, Function<void(PhysicalAddress, size_t, u8)> callback);
 
     virtual void try_acpi_reboot();
     virtual bool can_reboot();

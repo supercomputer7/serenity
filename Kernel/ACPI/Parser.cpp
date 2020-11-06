@@ -83,6 +83,25 @@ PhysicalAddress Parser::find_table(const StringView& signature)
     return {};
 }
 
+void Parser::find_tables(const StringView& signature, Function<void(PhysicalAddress, size_t, u8)> callback)
+{
+#ifdef ACPI_DEBUG
+    dbg() << "ACPI: Calling Find Tables method!";
+#endif
+    for (auto p_sdt : m_sdt_pointers) {
+        auto sdt = map_typed<Structures::SDTHeader>(p_sdt);
+#ifdef ACPI_DEBUG
+        dbg() << "ACPI: Examining Table @ P " << p_sdt;
+#endif
+        if (!strncmp(sdt->sig, signature.characters_without_null_termination(), 4)) {
+#ifdef ACPI_DEBUG
+            dbg() << "ACPI: Found Table @ P " << p_sdt;
+#endif
+            callback(p_sdt, sdt->length, sdt->revision);
+        }
+    }
+}
+
 void Parser::init_facs()
 {
     m_facs = find_table("FACS");
