@@ -75,6 +75,8 @@ protected:
     size_t get_table_size(PhysicalAddress);
     u8 get_table_revision(PhysicalAddress);
 
+    bool is_hardware_reduced_platform() const;
+
 private:
     static void set_the(Parser&);
 

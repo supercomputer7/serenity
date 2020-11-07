@@ -102,6 +102,11 @@ void Parser::find_tables(const StringView& signature, Function<void(PhysicalAddr
     }
 }
 
+bool Parser::is_hardware_reduced_platform() const
+{
+    return m_hardware_flags.hardware_reduced_acpi;
+}
+
 void Parser::init_facs()
 {
     m_facs = find_table("FACS");
