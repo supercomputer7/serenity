@@ -1902,17 +1902,17 @@ bool Processor::smp_process_pending_messages()
                 msg->callback_with_data.handler(msg->callback_with_data.data);
                 break;
             case ProcessorMessage::FlushTlb:
-				if (is_user_address(VirtualAddress(msg->flush_tlb.ptr))) {
-					// We assume that we don't cross into kernel land!
-					ASSERT(is_user_range(VirtualAddress(msg->flush_tlb.ptr), msg->flush_tlb.page_count * PAGE_SIZE));
-					if (read_cr3() != msg->flush_tlb.page_directory->cr3()) {
-						//This processor isn't using this page directory right now, we can ignore this request
+                if (is_user_address(VirtualAddress(msg->flush_tlb.ptr))) {
+                    // We assume that we don't cross into kernel land!
+                    ASSERT(is_user_range(VirtualAddress(msg->flush_tlb.ptr), msg->flush_tlb.page_count * PAGE_SIZE));
+                    if (read_cr3() != msg->flush_tlb.page_directory->cr3()) {
+                        //This processor isn't using this page directory right now, we can ignore this request
 #ifdef SMP_DEBUG
-						dbg() << "SMP[" << id() << "]: No need to flush " << msg->flush_tlb.page_count << " pages at " << VirtualAddress(msg->flush_tlb.ptr);
+                        dbg() << "SMP[" << id() << "]: No need to flush " << msg->flush_tlb.page_count << " pages at " << VirtualAddress(msg->flush_tlb.ptr);
 #endif
-						break;
-					}
-				}
+                        break;
+                    }
+                }
                 flush_tlb_local(VirtualAddress(msg->flush_tlb.ptr), msg->flush_tlb.page_count);
                 break;
             }
