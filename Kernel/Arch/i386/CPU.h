@@ -275,10 +275,6 @@ const DescriptorTablePointer& get_gdtr();
 const DescriptorTablePointer& get_idtr();
 void register_interrupt_handler(u8 number, void (*f)());
 void register_user_callable_interrupt_handler(u8 number, void (*f)());
-GenericInterruptHandler& get_interrupt_handler(u8 interrupt_number);
-void register_generic_interrupt_handler(u8 number, GenericInterruptHandler&);
-void replace_single_handler_with_shared(GenericInterruptHandler&);
-void replace_shared_handler_with_single(GenericInterruptHandler&);
 void unregister_generic_interrupt_handler(u8 number, GenericInterruptHandler&);
 void flush_idt();
 void load_task_register(u16 selector);
@@ -731,6 +727,7 @@ class Processor {
     bool m_invoke_scheduler_async;
     bool m_scheduler_initialized;
     Atomic<bool> m_halt_requested;
+    Atomic<u32> m_in_critical_interrupt_handler_modification;
 
     DeferredCallEntry* m_pending_deferred_calls; // in reverse order
     DeferredCallEntry* m_free_deferred_call_pool_entry;

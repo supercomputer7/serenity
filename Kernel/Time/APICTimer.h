@@ -54,6 +54,8 @@ public:
     void enable_local_timer();
     void disable_local_timer();
 
+    virtual bool is_global_to_all_cpus() const { return true; }
+
 private:
     explicit APICTimer(u8, Function<void(const RegisterState&)>);
 

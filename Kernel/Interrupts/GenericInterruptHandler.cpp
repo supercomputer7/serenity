@@ -24,43 +24,38 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <Kernel/Arch/i386/CPU.h>
 #include <Kernel/Assertions.h>
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
 #include <Kernel/Interrupts/InterruptManagement.h>
 #include <Kernel/Interrupts/PIC.h>
 
 namespace Kernel {
-GenericInterruptHandler& GenericInterruptHandler::from(u8 interrupt_number)
-{
-    return get_interrupt_handler(interrupt_number);
-}
 
 GenericInterruptHandler::GenericInterruptHandler(u8 interrupt_number, bool disable_remap)
     : m_interrupt_number(interrupt_number)
     , m_disable_remap(disable_remap)
 {
     if (m_disable_remap)
-        register_generic_interrupt_handler(m_interrupt_number, *this);
+        InterruptManagement::the().register_interrupt_handler(m_interrupt_number, *this);
     else
-        register_generic_interrupt_handler(InterruptManagement::acquire_mapped_interrupt_number(m_interrupt_number), *this);
+        InterruptManagement::the().register_interrupt_handler(InterruptManagement::the().get_mapped_interrupt_vector(m_interrupt_number), *this);
 }
 
 GenericInterruptHandler::~GenericInterruptHandler()
 {
     if (m_disable_remap)
-        unregister_generic_interrupt_handler(m_interrupt_number, *this);
+        InterruptManagement::the().unregister_interrupt_handler(m_interrupt_number, *this);
     else
-        unregister_generic_interrupt_handler(InterruptManagement::acquire_mapped_interrupt_number(m_interrupt_number), *this);
+        InterruptManagement::the().unregister_interrupt_handler(InterruptManagement::the().get_mapped_interrupt_vector(m_interrupt_number), *this);
 }
 
 void GenericInterruptHandler::change_interrupt_number(u8 number)
 {
     ASSERT_INTERRUPTS_DISABLED();
     ASSERT(!m_disable_remap);
-    unregister_generic_interrupt_handler(InterruptManagement::acquire_mapped_interrupt_number(interrupt_number()), *this);
+    InterruptManagement::the().unregister_interrupt_handler(InterruptManagement::the().get_mapped_interrupt_vector(interrupt_number()), *this);
     m_interrupt_number = number;
-    register_generic_interrupt_handler(InterruptManagement::acquire_mapped_interrupt_number(interrupt_number()), *this);
+    InterruptManagement::the().register_interrupt_handler(InterruptManagement::the().get_mapped_interrupt_vector(interrupt_number()), *this);
 }
 
 }

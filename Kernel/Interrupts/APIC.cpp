@@ -103,6 +103,7 @@ public:
     virtual bool is_shared_handler() const override { return false; }
     virtual bool is_sharing_with_others() const override { return false; }
 
+    virtual bool is_global_to_all_cpus() const { return true; }
 private:
 };
 
@@ -133,6 +134,7 @@ public:
     virtual bool is_shared_handler() const override { return false; }
     virtual bool is_sharing_with_others() const override { return false; }
 
+    virtual bool is_global_to_all_cpus() const { return true; }
 private:
 };
 

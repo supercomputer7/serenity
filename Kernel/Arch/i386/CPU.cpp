@@ -36,8 +36,6 @@
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
 #include <Kernel/Interrupts/IRQHandler.h>
 #include <Kernel/Interrupts/InterruptManagement.h>
-#include <Kernel/Interrupts/SharedIRQHandler.h>
-#include <Kernel/Interrupts/SpuriousInterruptHandler.h>
 #include <Kernel/Interrupts/UnhandledInterruptHandler.h>
 #include <Kernel/KSyms.h>
 #include <Kernel/Process.h>
@@ -56,8 +54,6 @@ namespace Kernel {
 
 static DescriptorTablePointer s_idtr;
 static Descriptor s_idt[256];
-
-static GenericInterruptHandler* s_interrupt_handler[GENERIC_INTERRUPT_HANDLERS_COUNT];
 
 // The compiler can't see the calls to these functions inside assembly.
 // Declare them, to avoid dead code warnings.
@@ -557,72 +553,6 @@ static void unimp_trap()
     Processor::Processor::halt();
 }
 
-GenericInterruptHandler& get_interrupt_handler(u8 interrupt_number)
-{
-    ASSERT(s_interrupt_handler[interrupt_number] != nullptr);
-    return *s_interrupt_handler[interrupt_number];
-}
-
-static void revert_to_unused_handler(u8 interrupt_number)
-{
-    new UnhandledInterruptHandler(interrupt_number);
-}
-
-void register_generic_interrupt_handler(u8 interrupt_number, GenericInterruptHandler& handler)
-{
-    ASSERT(interrupt_number < GENERIC_INTERRUPT_HANDLERS_COUNT);
-    if (s_interrupt_handler[interrupt_number] != nullptr) {
-        if (s_interrupt_handler[interrupt_number]->type() == HandlerType::UnhandledInterruptHandler) {
-            s_interrupt_handler[interrupt_number] = &handler;
-            return;
-        }
-        if (s_interrupt_handler[interrupt_number]->is_shared_handler() && !s_interrupt_handler[interrupt_number]->is_sharing_with_others()) {
-            ASSERT(s_interrupt_handler[interrupt_number]->type() == HandlerType::SharedIRQHandler);
-            static_cast<SharedIRQHandler*>(s_interrupt_handler[interrupt_number])->register_handler(handler);
-            return;
-        }
-        if (!s_interrupt_handler[interrupt_number]->is_shared_handler()) {
-            if (s_interrupt_handler[interrupt_number]->type() == HandlerType::SpuriousInterruptHandler) {
-                static_cast<SpuriousInterruptHandler*>(s_interrupt_handler[interrupt_number])->register_handler(handler);
-                return;
-            }
-            ASSERT(s_interrupt_handler[interrupt_number]->type() == HandlerType::IRQHandler);
-            auto& previous_handler = *s_interrupt_handler[interrupt_number];
-            s_interrupt_handler[interrupt_number] = nullptr;
-            SharedIRQHandler::initialize(interrupt_number);
-            static_cast<SharedIRQHandler*>(s_interrupt_handler[interrupt_number])->register_handler(previous_handler);
-            static_cast<SharedIRQHandler*>(s_interrupt_handler[interrupt_number])->register_handler(handler);
-            return;
-        }
-        ASSERT_NOT_REACHED();
-    } else {
-        s_interrupt_handler[interrupt_number] = &handler;
-    }
-}
-
-void unregister_generic_interrupt_handler(u8 interrupt_number, GenericInterruptHandler& handler)
-{
-    ASSERT(s_interrupt_handler[interrupt_number] != nullptr);
-    if (s_interrupt_handler[interrupt_number]->type() == HandlerType::UnhandledInterruptHandler) {
-        dbg() << "Trying to unregister unused handler (?)";
-        return;
-    }
-    if (s_interrupt_handler[interrupt_number]->is_shared_handler() && !s_interrupt_handler[interrupt_number]->is_sharing_with_others()) {
-        ASSERT(s_interrupt_handler[interrupt_number]->type() == HandlerType::SharedIRQHandler);
-        static_cast<SharedIRQHandler*>(s_interrupt_handler[interrupt_number])->unregister_handler(handler);
-        if (!static_cast<SharedIRQHandler*>(s_interrupt_handler[interrupt_number])->sharing_devices_count()) {
-            revert_to_unused_handler(interrupt_number);
-        }
-        return;
-    }
-    if (!s_interrupt_handler[interrupt_number]->is_shared_handler()) {
-        ASSERT(s_interrupt_handler[interrupt_number]->type() == HandlerType::IRQHandler);
-        revert_to_unused_handler(interrupt_number);
-        return;
-    }
-    ASSERT_NOT_REACHED();
-}
-
 void register_interrupt_handler(u8 index, void (*f)())
 {
     s_idt[index].low = 0x00080000 | LSW((f));
@@ -843,12 +773,6 @@ static void idt_init()
     register_interrupt_handler(0xfe, interrupt_254_asm_entry);
     register_interrupt_handler(0xff, interrupt_255_asm_entry);
 
-    dbg() << "Installing Unhandled Handlers";
-
-    for (u8 i = 0; i < GENERIC_INTERRUPT_HANDLERS_COUNT; ++i) {
-        new UnhandledInterruptHandler(i);
-    }
-
     flush_idt();
 }
 
@@ -863,11 +787,7 @@ void handle_interrupt(TrapFrame* trap)
     auto& regs = *trap->regs;
     ASSERT(regs.isr_number >= IRQ_VECTOR_BASE && regs.isr_number <= (IRQ_VECTOR_BASE + GENERIC_INTERRUPT_HANDLERS_COUNT));
     u8 irq = (u8)(regs.isr_number - 0x50);
-    auto* handler = s_interrupt_handler[irq];
-    ASSERT(handler);
-    handler->increment_invoking_counter();
-    handler->handle_interrupt(regs);
-    handler->eoi();
+    InterruptManagement::the().handle_interrupt(irq, regs);
 }
 
 void enter_trap_no_irq(TrapFrame* trap)

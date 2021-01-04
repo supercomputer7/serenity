@@ -36,6 +36,7 @@
 #include <Kernel/Interrupts/GenericInterruptHandler.h>
 #include <Kernel/Interrupts/IOAPIC.h>
 #include <Kernel/Interrupts/IRQController.h>
+#include <Kernel/SpinLock.h>
 
 namespace Kernel {
 
@@ -66,11 +67,13 @@ public:
     static InterruptManagement& the();
     static void initialize();
     static bool initialized();
-    static u8 acquire_mapped_interrupt_number(u8 original_irq);
-    static u8 acquire_irq_number(u8 mapped_interrupt_vector);
 
     virtual void switch_to_pic_mode();
     virtual void switch_to_ioapic_mode();
+
+    void handle_interrupt(u8 interrupt_vector, const RegisterState& regs);
+    void register_interrupt_handler(u8 interrupt_number, GenericInterruptHandler&);
+    void unregister_interrupt_handler(u8 interrupt_number, GenericInterruptHandler&);
 
     bool smp_enabled() const { return m_smp_enabled; }
     RefPtr<IRQController> get_responsible_irq_controller(u8 interrupt_vector);
@@ -78,13 +81,15 @@ public:
     const Vector<ISAInterruptOverrideMetadata>& isa_overrides() const { return m_isa_interrupt_overrides; }
 
     u8 get_mapped_interrupt_vector(u8 original_irq);
-    u8 get_irq_vector(u8 mapped_interrupt_vector);
 
     void enumerate_interrupt_handlers(Function<void(GenericInterruptHandler&)>);
     IRQController& get_interrupt_controller(int index);
 
-private:
+    bool initializing_interrupt_handlers() const { return m_initializing_interrupt_handlers; }
+    void set_end_of_initializing_interrupt_handlers() { m_initializing_interrupt_handlers = false; }
+
     InterruptManagement();
+private:
     PhysicalAddress search_for_madt();
     void locate_apic_data();
     bool m_smp_enabled { false };
@@ -92,6 +97,11 @@ private:
     Vector<ISAInterruptOverrideMetadata> m_isa_interrupt_overrides;
     Vector<PCIInterruptOverrideMetadata> m_pci_interrupt_overrides;
     PhysicalAddress m_madt;
+
+    bool m_initializing_interrupt_handlers { true };
+
+    Array<RecursiveSpinLock, GENERIC_INTERRUPT_HANDLERS_COUNT> m_locks;
+    Array<GenericInterruptHandler*, GENERIC_INTERRUPT_HANDLERS_COUNT> m_interrupt_handlers;
 };
 
 }

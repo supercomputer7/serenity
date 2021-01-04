@@ -24,16 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <AK/Singleton.h>
 #include <AK/StringView.h>
 #include <Kernel/ACPI/MultiProcessorParser.h>
 #include <Kernel/API/Syscall.h>
-#include <Kernel/Arch/i386/CPU.h>
 #include <Kernel/CommandLine.h>
 #include <Kernel/IO.h>
 #include <Kernel/Interrupts/APIC.h>
 #include <Kernel/Interrupts/IOAPIC.h>
 #include <Kernel/Interrupts/InterruptManagement.h>
 #include <Kernel/Interrupts/PIC.h>
+#include <Kernel/Interrupts/SharedIRQHandler.h>
 #include <Kernel/Interrupts/SpuriousInterruptHandler.h>
 #include <Kernel/Interrupts/UnhandledInterruptHandler.h>
 #include <Kernel/VM/MemoryManager.h>
@@ -43,36 +44,176 @@
 
 namespace Kernel {
 
-static InterruptManagement* s_interrupt_management;
+template<typename LockType, typename GenericInterruptHandler>
+class NO_DISCARD ScopedInterruptSpinLock {
+    AK_MAKE_NONCOPYABLE(ScopedInterruptSpinLock);
+
+public:
+    ScopedInterruptSpinLock() = delete;
+    ScopedInterruptSpinLock& operator=(ScopedInterruptSpinLock&&) = delete;
+
+    ScopedInterruptSpinLock(LockType& lock, GenericInterruptHandler* handler)
+        : m_lock(&lock)
+    {
+        ASSERT(m_lock);
+        ASSERT(handler);
+        m_prev_flags = m_lock->lock();
+        m_have_lock = true;
+        if (handler->is_global_to_all_cpus()) {
+            unlock();
+        }
+    }
+
+    ~ScopedInterruptSpinLock()
+    {
+        if (m_lock && m_have_lock) {
+            m_lock->unlock(m_prev_flags);
+        }
+    }
+
+    ALWAYS_INLINE void lock()
+    {
+        ASSERT(m_lock);
+        ASSERT(!m_have_lock);
+        m_prev_flags = m_lock->lock();
+        m_have_lock = true;
+    }
+
+    ALWAYS_INLINE void unlock()
+    {
+        ASSERT(m_lock);
+        ASSERT(m_have_lock);
+        m_lock->unlock(m_prev_flags);
+        m_prev_flags = 0;
+        m_have_lock = false;
+    }
+
+    [[nodiscard]] ALWAYS_INLINE bool have_lock() const
+    {
+        return m_have_lock;
+    }
+
+private:
+    LockType* m_lock { nullptr };
+    u32 m_prev_flags { 0 };
+    bool m_have_lock { false };
+};
+
+static AK::Singleton<InterruptManagement> s_interrupt_management;
 
 bool InterruptManagement::initialized()
 {
-    return (s_interrupt_management != nullptr);
+    return (s_interrupt_management.is_initialized());
 }
 
 InterruptManagement& InterruptManagement::the()
 {
-    ASSERT(InterruptManagement::initialized());
     return *s_interrupt_management;
+}
+
+static void revert_to_unused_handler(u8 interrupt_number)
+{
+    new UnhandledInterruptHandler(interrupt_number);
+}
+
+void InterruptManagement::register_interrupt_handler(u8 interrupt_number, GenericInterruptHandler& handler)
+{
+    ScopedSpinLock lock(m_locks[interrupt_number]);
+    ASSERT(interrupt_number < GENERIC_INTERRUPT_HANDLERS_COUNT);
+
+    if (m_initializing_interrupt_handlers) {
+        m_interrupt_handlers[interrupt_number] = &handler;
+        return;
+    }
+
+    if (m_interrupt_handlers[interrupt_number]) {
+        if (m_interrupt_handlers[interrupt_number]->type() == HandlerType::UnhandledInterruptHandler) {
+            m_interrupt_handlers[interrupt_number] = &handler;
+            return;
+        }
+        if (m_interrupt_handlers[interrupt_number]->is_shared_handler() && !m_interrupt_handlers[interrupt_number]->is_sharing_with_others()) {
+            ASSERT(m_interrupt_handlers[interrupt_number]->type() == HandlerType::SharedIRQHandler);
+            static_cast<SharedIRQHandler*>(m_interrupt_handlers[interrupt_number])->register_handler(handler);
+            return;
+        }
+        if (!m_interrupt_handlers[interrupt_number]->is_shared_handler()) {
+            if (m_interrupt_handlers[interrupt_number]->type() == HandlerType::SpuriousInterruptHandler) {
+                static_cast<SpuriousInterruptHandler*>(m_interrupt_handlers[interrupt_number])->register_handler(handler);
+                return;
+            }
+            ASSERT(m_interrupt_handlers[interrupt_number]->type() == HandlerType::IRQHandler);
+            auto& previous_handler = *m_interrupt_handlers[interrupt_number];
+            m_interrupt_handlers[interrupt_number] = nullptr;
+            SharedIRQHandler::initialize(interrupt_number);
+            static_cast<SharedIRQHandler*>(m_interrupt_handlers[interrupt_number])->register_handler(previous_handler);
+            static_cast<SharedIRQHandler*>(m_interrupt_handlers[interrupt_number])->register_handler(handler);
+            return;
+        }
+        ASSERT_NOT_REACHED();
+    } else {
+        m_interrupt_handlers[interrupt_number] = &handler;
+    }
+}
+
+void InterruptManagement::unregister_interrupt_handler(u8 interrupt_number, GenericInterruptHandler& handler)
+{
+    ScopedSpinLock lock(m_locks[interrupt_number]);
+    ASSERT(m_interrupt_handlers[interrupt_number] != nullptr);
+    if (m_interrupt_handlers[interrupt_number]->type() == HandlerType::UnhandledInterruptHandler) {
+        dbg() << "Trying to unregister unused handler (?)";
+        return;
+    }
+    if (m_interrupt_handlers[interrupt_number]->is_shared_handler() && !m_interrupt_handlers[interrupt_number]->is_sharing_with_others()) {
+        ASSERT(m_interrupt_handlers[interrupt_number]->type() == HandlerType::SharedIRQHandler);
+        static_cast<SharedIRQHandler*>(m_interrupt_handlers[interrupt_number])->unregister_handler(handler);
+        if (!static_cast<SharedIRQHandler*>(m_interrupt_handlers[interrupt_number])->sharing_devices_count()) {
+            revert_to_unused_handler(interrupt_number);
+        }
+        return;
+    }
+    if (!m_interrupt_handlers[interrupt_number]->is_shared_handler()) {
+        ASSERT(m_interrupt_handlers[interrupt_number]->type() == HandlerType::IRQHandler);
+        revert_to_unused_handler(interrupt_number);
+        return;
+    }
+    ASSERT_NOT_REACHED();
+}
+
+
+
+void InterruptManagement::handle_interrupt(u8 interrupt_vector, const RegisterState& regs)
+{
+    if (interrupt_vector != 172)
+    ScopedInterruptSpinLock lock = ScopedInterruptSpinLock(m_locks[interrupt_vector], m_interrupt_handlers[interrupt_vector]);
+    auto* handler = m_interrupt_handlers[interrupt_vector];
+    handler->increment_invoking_counter();
+    handler->handle_interrupt(regs);
+    handler->eoi();
 }
 
 void InterruptManagement::initialize()
 {
-    ASSERT(!InterruptManagement::initialized());
-    s_interrupt_management = new InterruptManagement();
+    InterruptManagement::the();
+    ASSERT(InterruptManagement::the().initializing_interrupt_handlers());
+    for (size_t index = 0; index < GENERIC_INTERRUPT_HANDLERS_COUNT; index++)
+        new UnhandledInterruptHandler(index);
+    InterruptManagement::the().set_end_of_initializing_interrupt_handlers();
+    APIC::initialize();
 
     if (kernel_command_line().lookup("smp").value_or("off") == "on")
         InterruptManagement::the().switch_to_ioapic_mode();
     else
         InterruptManagement::the().switch_to_pic_mode();
+    Syscall::initialize();
 }
 
 void InterruptManagement::enumerate_interrupt_handlers(Function<void(GenericInterruptHandler&)> callback)
 {
     for (int i = 0; i < GENERIC_INTERRUPT_HANDLERS_COUNT; i++) {
-        auto& handler = get_interrupt_handler(i);
-        if (handler.type() != HandlerType::UnhandledInterruptHandler)
-            callback(handler);
+        auto* handler = m_interrupt_handlers[i];
+        ASSERT(handler != nullptr);
+        if (handler->type() != HandlerType::UnhandledInterruptHandler)
+            callback(*handler);
     }
 }
 
@@ -83,33 +224,14 @@ IRQController& InterruptManagement::get_interrupt_controller(int index)
     return *m_interrupt_controllers[index];
 }
 
-u8 InterruptManagement::acquire_mapped_interrupt_number(u8 original_irq)
-{
-    if (!InterruptManagement::initialized()) {
-        // This is necessary, because we install UnhandledInterruptHandlers before we actually initialize the Interrupt Management object...
-        return original_irq;
-    }
-    return InterruptManagement::the().get_mapped_interrupt_vector(original_irq);
-}
-
-u8 InterruptManagement::acquire_irq_number(u8 mapped_interrupt_vector)
-{
-    ASSERT(InterruptManagement::initialized());
-    return InterruptManagement::the().get_irq_vector(mapped_interrupt_vector);
-}
-
 u8 InterruptManagement::get_mapped_interrupt_vector(u8 original_irq)
 {
     // FIXME: For SMP configuration (with IOAPICs) use a better routing scheme to make redirections more efficient.
     // FIXME: Find a better way to handle conflict with Syscall interrupt gate.
+    if (InterruptManagement::the().initializing_interrupt_handlers())
+        return original_irq;
     ASSERT((original_irq + IRQ_VECTOR_BASE) != syscall_vector);
     return original_irq;
-}
-
-u8 InterruptManagement::get_irq_vector(u8 mapped_interrupt_vector)
-{
-    // FIXME: For SMP configuration (with IOAPICs) use a better routing scheme to make redirections more efficient.
-    return mapped_interrupt_vector;
 }
 
 RefPtr<IRQController> InterruptManagement::get_responsible_irq_controller(u8 interrupt_vector)

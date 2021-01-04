@@ -130,7 +130,6 @@ extern "C" [[noreturn]] void init()
     for (ctor_func_t* ctor = &start_ctors; ctor < &end_ctors; ctor++)
         (*ctor)();
 
-    APIC::initialize();
     InterruptManagement::initialize();
     ACPI::initialize();
 
@@ -252,8 +251,6 @@ void init_stage2(void*)
     RTL8139NetworkAdapter::detect();
 
     LoopbackAdapter::the();
-
-    Syscall::initialize();
 
     new ZeroDevice;
     new FullDevice;

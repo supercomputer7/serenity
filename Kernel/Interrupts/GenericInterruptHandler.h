@@ -42,7 +42,6 @@ enum class HandlerType : u8 {
 
 class GenericInterruptHandler {
 public:
-    static GenericInterruptHandler& from(u8 interrupt_number);
     virtual ~GenericInterruptHandler();
     virtual void handle_interrupt(const RegisterState& regs) = 0;
 
@@ -57,6 +56,8 @@ public:
     virtual HandlerType type() const = 0;
     virtual const char* purpose() const = 0;
     virtual const char* controller() const = 0;
+
+    virtual bool is_global_to_all_cpus() const { return false; }
 
     virtual bool eoi() = 0;
     ALWAYS_INLINE void increment_invoking_counter()

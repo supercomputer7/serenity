@@ -102,7 +102,7 @@ void IOAPIC::map_interrupt_redirection(u8 interrupt_vector)
             trigger_level_mode = true;
             break;
         }
-        configure_redirection_entry(redirection_override.gsi() - gsi_base(), InterruptManagement::acquire_mapped_interrupt_number(redirection_override.source()) + IRQ_VECTOR_BASE, DeliveryMode::Normal, false, active_low, trigger_level_mode, true, 0);
+        configure_redirection_entry(redirection_override.gsi() - gsi_base(), InterruptManagement::the().get_mapped_interrupt_vector(redirection_override.source()) + IRQ_VECTOR_BASE, DeliveryMode::Normal, false, active_low, trigger_level_mode, true, 0);
         return;
     }
     isa_identity_map(interrupt_vector);
@@ -111,7 +111,7 @@ void IOAPIC::map_interrupt_redirection(u8 interrupt_vector)
 void IOAPIC::isa_identity_map(int index)
 {
     InterruptDisabler disabler;
-    configure_redirection_entry(index, InterruptManagement::acquire_mapped_interrupt_number(index) + IRQ_VECTOR_BASE, DeliveryMode::Normal, false, false, false, true, 0);
+    configure_redirection_entry(index, InterruptManagement::the().get_mapped_interrupt_vector(index) + IRQ_VECTOR_BASE, DeliveryMode::Normal, false, false, false, true, 0);
 }
 
 void IOAPIC::map_pci_interrupts()
@@ -170,7 +170,7 @@ void IOAPIC::map_isa_interrupts()
             trigger_level_mode = true;
             break;
         }
-        configure_redirection_entry(redirection_override.gsi() - gsi_base(), InterruptManagement::acquire_mapped_interrupt_number(redirection_override.source()) + IRQ_VECTOR_BASE, 0, false, active_low, trigger_level_mode, true, 0);
+        configure_redirection_entry(redirection_override.gsi() - gsi_base(), InterruptManagement::the().get_mapped_interrupt_vector(redirection_override.source()) + IRQ_VECTOR_BASE, 0, false, active_low, trigger_level_mode, true, 0);
     }
 }
 
@@ -257,7 +257,7 @@ Optional<int> IOAPIC::find_redirection_entry_by_vector(u8 vector) const
 {
     InterruptDisabler disabler;
     for (size_t index = 0; index < m_redirection_entries_count; index++) {
-        if (read_redirection_entry_vector(index) == (InterruptManagement::acquire_mapped_interrupt_number(vector) + IRQ_VECTOR_BASE))
+        if (read_redirection_entry_vector(index) == (InterruptManagement::the().get_mapped_interrupt_vector(vector) + IRQ_VECTOR_BASE))
             return index;
     }
     return {};
