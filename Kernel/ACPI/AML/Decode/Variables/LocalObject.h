@@ -26,43 +26,39 @@
 
 #pragma once
 
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#include <AK/RefCounted.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
+#include <Kernel/ACPI/AML/Decode/Scope.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
+enum class ObjectType {
+    Integer,
+    String,
+    Package,
+    
+};
 
+class LocalObject : public RefCounted<LocalObject> {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    static NonnullRefPtr<LocalObject> define(const Scope& scope)
+    {
+        return adopt(*new LocalObject());
+    }
+
+    bool set_value();
+    NonnullRefPtr<Scope> parent_scope() const;
+    ObjectType typeof() const;
 
 protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    explicit LocalObject(const Scope&);
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
-
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    NonnullRefPtr<Scope> m_parent_scope;
 };
+
 }
 }

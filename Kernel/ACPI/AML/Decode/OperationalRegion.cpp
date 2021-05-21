@@ -24,45 +24,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#include <Kernel/ACPI/AML/Decode/OperationalRegion.h>
 
 namespace Kernel {
+
 namespace ACPI {
+size_t OperationalRegion::size() const
+{
+    // FIXME: This is not the right value
+    return 1 + raw_name_length();
+}
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
+OperationalRegion::OperationalRegion(const ByteStream& aml_stream)
+    : NamedObject(const_cast<ByteStream&>(aml_stream).take_offseted_all_bytes((1)))
+    , m_region_space((RegionSpace) const_cast<ByteStream&>(aml_stream).take_offseted_byte(1 + raw_name_length()))
+{
+    const_cast<ByteStream&>(aml_stream).forward(size());
+}
 
-public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
-
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
-
-private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
-
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
-};
 }
 }

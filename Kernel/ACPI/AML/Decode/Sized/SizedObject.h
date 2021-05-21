@@ -26,43 +26,30 @@
 
 #pragma once
 
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
+#include <AK/RefCounted.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
 #include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
-
+class SizedObject {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    virtual size_t size() const { return m_size; }
 
 protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    explicit SizedObject(size_t size)
+        : m_size(size)
+    {
+    }
+    SizedObject() { }
+    void set_size(size_t size) { m_size = size; }
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
-
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    size_t m_size;
 };
+
 }
 }

@@ -27,42 +27,36 @@
 #pragma once
 
 #include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
+#include <AK/RefCounted.h>
+#include <AK/String.h>
+#include <AK/StringView.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
 #include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
 
 namespace Kernel {
+
 namespace ACPI {
-
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
-
+class NamedObject;
+class NameStringView {
+    friend class NamedObject;
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    
+    String name() const { return m_name; };
+    bool is_null_terminated() const { return m_null_terminated; }
+    size_t length() const { return m_name.length(); }
+    size_t raw_length() const { return m_name.length() + (is_null_terminated() ? 1 : 0); }
 
 protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    explicit NameStringView(ByteBuffer);
+    explicit NameStringView(String);
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
+    String parse_namestring(ByteBuffer);
 
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    bool m_null_terminated { false };
+    String m_name;
 };
+
 }
 }

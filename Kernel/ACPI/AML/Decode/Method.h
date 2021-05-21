@@ -26,43 +26,48 @@
 
 #pragma once
 
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
+#include <AK/RefCounted.h>
+#include <AK/String.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
+#include <Kernel/ACPI/AML/Decode/ByteStream.h>
+#include <Kernel/ACPI/AML/Decode/NameStringView.h>
+#include <Kernel/ACPI/AML/Decode/NamedObject.h>
+#include <Kernel/ACPI/AML/Decode/Sized/Package.h>
 #include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
-
+class Method : public RefCounted<Method>
+    , public Package
+    , public NamedObject {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    static NonnullRefPtr<Method> define_by_stream(const ByteStream& aml_stream)
+    {
+        return adopt(*new Method(aml_stream));
+    }
+    u8 flags() const { return m_flags; }
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
-
+    NonnullRefPtr<ByteStream> derived_stream() const
+    {
+        return m_derived_byte_stream;
+    }
+    virtual ~Method() { }
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
+    explicit Method(const ByteStream& aml_stream)
+        : Package(const_cast<ByteStream&>(aml_stream).forward_and_take_bytes(1, 5))
+        , NamedObject(const_cast<ByteStream&>(aml_stream).take_offseted_all_bytes(encoded_length_size()))
+        , m_flags(aml_stream.take_offseted_byte(encoded_length_size() + raw_name_length()))
+        , m_derived_byte_stream(ByteStream::initiate_stream(const_cast<ByteStream&>(aml_stream).take_offseted_bytes(encoded_length_size() + raw_name_length() + sizeof(u8), inner_size() - raw_name_length() - sizeof(u8))))
+    {
+        const_cast<ByteStream&>(aml_stream).forward(size());
+    }
 
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    u8 m_flags;
+    NonnullRefPtr<ByteStream> m_derived_byte_stream;
 };
+
 }
 }

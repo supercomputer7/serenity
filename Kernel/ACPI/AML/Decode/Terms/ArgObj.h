@@ -27,42 +27,52 @@
 #pragma once
 
 #include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#include <AK/RefCounted.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
+#include <Kernel/ACPI/AML/Decode/Terms/TermArg.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
+enum class AMLEvaluationType {
+    Integer,
+    DataRefObject,
+    ComputationalData,
+    Buffer,
+    String,
+    ObjectReference,
+    Package,
+    ByteData,
+    ThermalZone,
+    Processor,
+    Device,
+};
 
+class AMLResult : public RefCounted<AMLResult> {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    AMLEvaluationType evaluation_type() const { return m_evaluation_type; }
+    virtual u64 as_integer() { ASSERT_NOT_REACHED(); }
+    virtual ByteBuffer as_buffer() { ASSERT_NOT_REACHED(); }
+    virtual String as_string() { ASSERT_NOT_REACHED(); }
+    virtual u8 as_byte_data() { ASSERT_NOT_REACHED(); }
+    virtual RefPtr<NamedObject> as_thermal_zone() { ASSERT_NOT_REACHED(); }
+    virtual RefPtr<NamedObject> as_processor() { ASSERT_NOT_REACHED(); }
+    virtual RefPtr<NamedObject> as_device() { ASSERT_NOT_REACHED(); }
+private:
+    AMLEvaluationType m_evaluation_type;
+};
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+class ArgObj : public  {
+public:
+    explicit TermArg(ByteStream);
+    size_t size() const { return m_size; }
+    virtual NonnullRefPtr<AMLResult> result();
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
-
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    size_t m_size;
 };
+
 }
 }

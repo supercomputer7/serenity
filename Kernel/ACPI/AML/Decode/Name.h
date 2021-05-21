@@ -26,43 +26,45 @@
 
 #pragma once
 
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#include <AK/RefCounted.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
+#include <Kernel/ACPI/AML/Decode/ByteStream.h>
+#include <Kernel/ACPI/AML/Decode/NameStringView.h>
+#include <Kernel/ACPI/AML/Decode/NamedObject.h>
+#include <Kernel/ACPI/AML/Decode/Scope.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
-
+class Name : public RefCounted<Name>
+    , public SizedObject
+    , public NamedObject {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    static NonnullRefPtr<Name> define_by_stream(const Scope& parent_scope, const ByteStream& aml_stream)
+    {
+        return adopt(*new Name(parent_scope, aml_stream));
+    }
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    NonnullRefPtr<ByteStream> derived_stream() const
+    {
+        return m_derived_byte_stream;
+    }
+
+    RefPtr<Scope> parent_scope() const
+    {
+        return m_parent_scope;
+    }
+
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
+    Scope(const Scope& parent_scope, const ByteStream& aml_stream);
 
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    NonnullRefPtr<ByteStream> m_derived_byte_stream;
+    RefPtr<Scope> m_parent_scope;
+    size_t m_offset_in_parent_scope;
 };
+
 }
 }

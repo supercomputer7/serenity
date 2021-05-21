@@ -26,6 +26,8 @@
 
 #include <Kernel/ACPI/DynamicParser.h>
 #include <Kernel/ACPI/Parser.h>
+#include <Kernel/VM/TypedMapping.h>
+#include <Kernel/ACPI/AML/Decode/NamespaceEnumerator.h>
 
 namespace Kernel {
 namespace ACPI {
@@ -34,7 +36,12 @@ DynamicParser::DynamicParser(PhysicalAddress rsdp)
     : IRQHandler(9)
     , Parser(rsdp)
 {
-    klog() << "ACPI: Dynamic Parsing Enabled, Can parse AML";
+    klog() << "ACPI: Dynamic Parsing Enabled";
+    if (dsdt().is_null()) {
+        klog() << "ACPI: FADT is not pointing DSDT to a valid address (?)";
+        return;
+    }
+    build_namespace();
 }
 
 void DynamicParser::handle_irq(const RegisterState&)
@@ -60,19 +67,44 @@ void DynamicParser::enable_aml_interpretation(u8*, u32)
 }
 void DynamicParser::disable_aml_interpretation()
 {
-    // FIXME: Implement AML Interpretation
+
+
     ASSERT_NOT_REACHED();
 }
 void DynamicParser::try_acpi_shutdown()
 {
-    // FIXME: Implement AML Interpretation to perform ACPI shutdown
+    // This code was written in accordance to the ACPI 6.3 specification, page 821.
+    // Call _PTS control method with argument 5 - to indicate the platform we're going to shutdown
+
+    // For compatibility reasons, if ACPI version is less then 5.0A, call _GTS method with argument 5
+
+    // If not Hardware-Reduced ACPI, write SLP_TYPa | SLP_ENa to PM1a_CNT register
+
+    // write SLP_TYPb | SLP_ENb to PM1a_CNT register
     ASSERT_NOT_REACHED();
+}
+
+ByteBuffer DynamicParser::extract_aml_from_table(PhysicalAddress aml_table, size_t table_length)
+{
+    auto sdt = map_typed<Structures::AMLTable>(aml_table, PAGE_SIZE + table_length);
+    return ByteBuffer::copy(sdt->aml_code ,table_length - sizeof(sdt->h));
+}
+
+void DynamicParser::build_namespaced_data_from_buffer(ByteBuffer aml_stream)
+{
+    new NamespaceEnumerator(aml_stream);
 }
 
 void DynamicParser::build_namespace()
 {
-    // FIXME: Implement AML Interpretation to build the ACPI namespace
-    ASSERT_NOT_REACHED();
+    klog() << "ACPI: Loading data from DSDT";
+    size_t dsdt_length = map_typed<Structures::SDTHeader>(dsdt())->length;
+    build_namespaced_data_from_buffer(extract_aml_from_table(dsdt(), dsdt_length));
+    
+    find_tables("SSDT", [&](PhysicalAddress ssdt, size_t table_length, u8 revision) {
+        klog() << "Load SSDT " << ssdt << ", Length " << table_length << " Revision " << revision;
+        build_namespaced_data_from_buffer(extract_aml_from_table(dsdt(), dsdt_length));
+    });
 }
 
 }

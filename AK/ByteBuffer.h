@@ -216,6 +216,16 @@ public:
         return copy(offset_pointer(offset), size);
     }
 
+    ByteBuffer frame_slice(size_t offset, size_t size, size_t padding) const
+    {
+        return slice(offset + padding, size - padding);
+    }
+
+    ByteBuffer forward_frame(size_t offset) const
+    {
+        return slice(offset, size() - offset);
+    }
+
     void grow(size_t size)
     {
         if (!m_impl)

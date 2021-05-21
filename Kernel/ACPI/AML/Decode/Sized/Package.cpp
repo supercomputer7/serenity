@@ -24,45 +24,57 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <Kernel/ACPI/AML/Decode/Sized/Package.h>
 
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#define FIRST_6_BITS 0x3F
+#define FIRST_4_BITS 0x0F
 
 namespace Kernel {
+
 namespace ACPI {
+Package::Package(const ByteStream& aml_stream, ByteBuffer stream)
+    : m_size(calculate_length(stream))
+    , m_lead_byte(stream[0])
+{
+    const_cast<ByteStream&>(aml_stream).forward(encoded_length_size());
+}
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
+Package::Package(ByteBuffer stream)
+    : m_size(calculate_length(stream))
+    , m_lead_byte(stream[0])
+{
+}
 
-public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+Package::Package(size_t size)
+    : m_size(size)
+    , m_lead_byte(0)
+    , m_real_package(false)
+{
+}
+size_t Package::calculate_length(ByteBuffer packed_length) const
+{
+    if (!(packed_length[0] & (1 << 7) || packed_length[0] & (1 << 6))) {
+        return packed_length[0] & FIRST_6_BITS;
+    }
+    size_t size = packed_length[0] & FIRST_4_BITS;
+    for (int index = 1; index < (packed_length[0] >> 6) + 1; index++) {
+        size += packed_length[index] << (((index - 1) * 8) + 4);
+    }
+    return size;
+}
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
-
-private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
-
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+size_t Package::inner_size() const
+{
+    if (!m_real_package)
+        return size();
+    return size() - encoded_length_size();
 };
+
+size_t Package::encoded_length_size() const
+{
+    if (!m_real_package)
+        return 0;
+    return (m_lead_byte >> 6) + 1;
+}
 }
 }

@@ -8,6 +8,14 @@ set(KERNEL_SOURCES
     ACPI/Initialize.cpp
     ACPI/MultiProcessorParser.cpp
     ACPI/Parser.cpp
+    ACPI/AML/Decode/Sized/Package.cpp
+    ACPI/AML/Decode/NamespaceEnumerator.cpp
+    ACPI/AML/Decode/NameStringView.cpp
+    ACPI/AML/Decode/ByteStream.cpp
+    ACPI/AML/Decode/Terms/TermArg.cpp
+    ACPI/AML/Decode/OperationalRegion.cpp
+    ACPI/AML/Decode/Scope.cpp
+    ACPI/AML/Decode/Package/PackageObject.cpp
     Arch/i386/CPU.cpp
     Arch/i386/ProcessorInfo.cpp
     Arch/PC/BIOS.cpp

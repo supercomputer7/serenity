@@ -27,42 +27,45 @@
 #pragma once
 
 #include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
+#include <AK/RefCounted.h>
+#include <AK/String.h>
+#include <AK/StringView.h>
+#include <AK/Types.h>
+#include <AK/Vector.h>
 #include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
 
 namespace Kernel {
+
 namespace ACPI {
-
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
-
+class ByteStream : public RefCounted<ByteStream> {
 public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    static NonnullRefPtr<ByteStream> initiate_stream(ByteBuffer);
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    u8 take_byte() const;
+    u8 take_offseted_byte(size_t offset) const;
+    u8 take_byte_and_forward();
+    u8 forward_and_take_byte();
+
+    ByteBuffer take_bytes(size_t byte_count) const;
+    ByteBuffer take_all_bytes();
+    ByteBuffer take_offseted_all_bytes(size_t offset);
+    ByteBuffer take_offseted_bytes(size_t offset, size_t byte_count);
+    ByteBuffer take_bytes_and_forward(size_t byte_count);
+
+    ByteBuffer forward_and_take_bytes_and_forward(size_t forward_count, size_t byte_count);
+    ByteBuffer forward_and_take_bytes(size_t offset, size_t byte_count);
+
+    void forward(size_t byte_count);
+    size_t size() const { return m_stream.size(); }
+    bool is_pointing_to_end() const { return m_pointer == m_stream.size(); }
+    size_t pointer() const { return m_pointer; }
 
 private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
+    explicit ByteStream(ByteBuffer);
 
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
-
-    OwnPtr<Region> m_acpi_namespace;
+    size_t m_pointer { 0 };
+    ByteBuffer m_stream;
 };
+
 }
 }

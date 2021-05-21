@@ -24,45 +24,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <AK/ByteBuffer.h>
-#include <AK/RefPtr.h>
-#include <Kernel/ACPI/Parser.h>
-#include <Kernel/Interrupts/IRQHandler.h>
-#include <Kernel/Lock.h>
-#include <Kernel/PhysicalAddress.h>
-#include <Kernel/VM/PhysicalPage.h>
+#include <Kernel/ACPI/AML/Decode/NameStringView.h>
+#include <Kernel/ACPI/AML/Decode/Value.h>
 
 namespace Kernel {
+
 namespace ACPI {
 
-class DynamicParser final
-    : public IRQHandler
-    , public Parser {
-    friend class Parser;
+String NameStringView::parse_namestring(ByteBuffer name_string)
+{
+    if (name_string[0] == (u8)EncodedValue::DualNamePrefix) {
+        return StringView(name_string.slice_view(1, 8));
+    }
 
-public:
-    virtual void enable_aml_interpretation() override;
-    virtual void enable_aml_interpretation(File& dsdt_file) override;
-    virtual void enable_aml_interpretation(u8* physical_dsdt, u32 dsdt_payload_legnth) override;
-    virtual void disable_aml_interpretation() override;
-    virtual void try_acpi_shutdown() override;
-    virtual bool can_shutdown() override { return true; }
-    virtual const char* purpose() const override { return "ACPI Parser"; }
+    if (name_string[0] == (u8)EncodedValue::MultiNamePrefix) {
+        return StringView(name_string.slice_view(2, name_string[1] * 4));
+    }
 
-protected:
-    explicit DynamicParser(PhysicalAddress rsdp);
+    if (name_string[0] == '\\') {
+        return parse_namestring(name_string.slice_view(1, name_string.size() - 1));
+    }
 
-private:
-    ByteBuffer extract_aml_from_table(PhysicalAddress aml_table, size_t table_length);
-    void build_namespaced_data_from_buffer(ByteBuffer);
+    auto sliced_name_string = StringView(name_string.slice_view(0, 4));
+    auto name_trimmed_with_null = sliced_name_string.find_first_of((char)0x0);
+    if (name_trimmed_with_null.has_value()) {
+        m_null_terminated = true;
+        if (name_trimmed_with_null.value() == 0)
+            return "\\";
+        return sliced_name_string.substring_view(0, name_trimmed_with_null.value());
+    }
+    return sliced_name_string.substring_view(0, 4);
+}
 
-    void build_namespace();
-    // ^IRQHandler
-    virtual void handle_irq(const RegisterState&) override;
+NameStringView::NameStringView(ByteBuffer name_string)
+    : m_name(parse_namestring(name_string))
+{
+}
 
-    OwnPtr<Region> m_acpi_namespace;
-};
+NameStringView::NameStringView(String name)
+    : m_name(name)
+{
+}
+
 }
 }
