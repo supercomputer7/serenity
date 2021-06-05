@@ -29,7 +29,7 @@ public:
     virtual const char* purpose() const override { return class_name(); }
 
 private:
-    virtual void handle_irq(const RegisterState&) override;
+    virtual bool handle_irq(const RegisterState&) override;
     virtual const char* class_name() const override { return "NE2000NetworkAdapter"; }
 
     int ram_test();

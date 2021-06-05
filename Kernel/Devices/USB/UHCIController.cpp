@@ -426,16 +426,17 @@ void UHCIController::spawn_port_proc()
     });
 }
 
-void UHCIController::handle_irq(const RegisterState&)
+bool UHCIController::handle_irq(const RegisterState&)
 {
     // Shared IRQ. Not ours!
     if (!read_usbsts())
-        return;
+        return false;
 
     if constexpr (UHCI_DEBUG) {
         dbgln("UHCI: Interrupt happened!");
         dbgln("Value of USBSTS: {:#04x}", read_usbsts());
     }
+    return true;
 }
 
 }
