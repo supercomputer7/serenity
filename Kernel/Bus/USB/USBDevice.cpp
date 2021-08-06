@@ -16,13 +16,13 @@ static u32 s_next_usb_address = 1; // Next address we hand out to a device once 
 
 namespace Kernel::USB {
 
-KResultOr<NonnullRefPtr<Device>> Device::try_create(PortNumber port, DeviceSpeed speed)
+KResultOr<NonnullRefPtr<Device>> Device::try_create(const HostController& controller, const Hub& hub, DeviceSpeed speed)
 {
-    auto pipe_or_error = Pipe::try_create_pipe(Pipe::Type::Control, Pipe::Direction::Bidirectional, 0, 8, 0);
+    auto pipe_or_error = Pipe::try_create_pipe(controller, Pipe::Type::Control, Pipe::Direction::Bidirectional, 0, 8, 0);
     if (pipe_or_error.is_error())
         return pipe_or_error.error();
 
-    auto device = AK::try_create<Device>(port, speed, pipe_or_error.release_value());
+    auto device = adopt_ref_if_nonnull(new (nothrow) Device(controller, hub, speed, pipe_or_error.release_value()));
     if (!device)
         return ENOMEM;
 
@@ -33,13 +33,20 @@ KResultOr<NonnullRefPtr<Device>> Device::try_create(PortNumber port, DeviceSpeed
     return device.release_nonnull();
 }
 
-Device::Device(PortNumber port, DeviceSpeed speed, NonnullOwnPtr<Pipe> default_pipe)
-    : m_device_port(port)
-    , m_device_speed(speed)
-    , m_address(0)
+Device::Device(const HostController& controller, const Hub& parent_hub, DeviceSpeed speed, NonnullOwnPtr<Pipe> default_pipe)
+    : m_device_speed(speed)
     , m_default_pipe(move(default_pipe))
+    , m_parent_hub(parent_hub)
+    , m_parent_controller(controller)
 {
 }
+
+Device::Device(const HostController& controller, DeviceSpeed speed)
+    : m_device_speed(speed)
+    , m_parent_controller(controller)
+{
+}
+
 
 KResult Device::enumerate()
 {
@@ -92,7 +99,7 @@ KResult Device::enumerate()
     transfer_length = transfer_length_or_error.release_value();
 
     VERIFY(transfer_length > 0);
-    m_address = s_next_usb_address++;
+    //m_address = s_next_usb_address++;
 
     memcpy(&m_device_descriptor, &dev_descriptor, sizeof(USBDeviceDescriptor));
     return KSuccess;

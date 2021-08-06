@@ -9,6 +9,9 @@
 #include <AK/OwnPtr.h>
 #include <AK/Types.h>
 #include <Kernel/Bus/USB/USBPipe.h>
+//#include <Kernel/Bus/USB/USBHub.h>
+#include <Kernel/Bus/USB/Definitions.h>
+#include <Kernel/KResult.h>
 
 namespace Kernel::USB {
 
@@ -17,43 +20,45 @@ namespace Kernel::USB {
 // glues together:
 //
 // https://www.ftdichip.com/Support/Documents/TechnicalNotes/TN_113_Simplified%20Description%20of%20USB%20Device%20Enumeration.pdf
+class Hub;
 class Device : public RefCounted<Device> {
 public:
-    enum class PortNumber : u8 {
-        Port1 = 0,
-        Port2
-    };
 
     enum class DeviceSpeed : u8 {
         FullSpeed = 0,
-        LowSpeed
+        LowSpeed,
+        HighSpeed,
     };
 
 public:
-    static KResultOr<NonnullRefPtr<Device>> try_create(PortNumber, DeviceSpeed);
+    static KResultOr<NonnullRefPtr<Device>> try_create(const HostController&, const Hub&, DeviceSpeed);
 
-    Device(PortNumber, DeviceSpeed, NonnullOwnPtr<Pipe> default_pipe);
     ~Device();
 
     KResult enumerate();
 
-    PortNumber port() const { return m_device_port; }
     DeviceSpeed speed() const { return m_device_speed; }
-
-    u8 address() const { return m_address; }
+    Address address() const { return m_address; }
 
     const USBDeviceDescriptor& device_descriptor() const { return m_device_descriptor; }
 
+protected:
+    // This constructor is used by a Root hub device
+    Device(const HostController&, DeviceSpeed);
+
 private:
-    PortNumber m_device_port;   // What port is this device attached to
+    Device(const HostController&, const Hub&, DeviceSpeed, NonnullOwnPtr<Pipe> default_pipe);
+
     DeviceSpeed m_device_speed; // What speed is this device running at
-    u8 m_address { 0 };         // USB address assigned to this device
+    Address m_address;         // USB address assigned to this device
+    ID m_id;
 
     // Device description
-    u16 m_vendor_id { 0 };                   // This device's vendor ID assigned by the USB group
-    u16 m_product_id { 0 };                  // This device's product ID assigned by the USB group
-    USBDeviceDescriptor m_device_descriptor; // Device Descriptor obtained from USB Device
 
-    NonnullOwnPtr<Pipe> m_default_pipe; // Default communication pipe (endpoint0) used during enumeration
+    USBDeviceDescriptor m_device_descriptor; // Device Descriptor obtained from USB Device
+    OwnPtr<Pipe> m_default_pipe; // Default communication pipe (endpoint0) used during enumeration
+    
+    RefPtr<USB::Hub> m_parent_hub;
+    NonnullRefPtr<HostController> m_parent_controller;
 };
 }

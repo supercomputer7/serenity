@@ -27,8 +27,6 @@ static constexpr u8 RETRY_COUNTER_RELOAD = 3;
 
 namespace Kernel::USB {
 
-static UHCIController* s_the;
-
 static constexpr u16 UHCI_USBCMD_RUN = 0x0001;
 static constexpr u16 UHCI_USBCMD_HOST_CONTROLLER_RESET = 0x0002;
 static constexpr u16 UHCI_USBCMD_GLOBAL_RESET = 0x0004;
@@ -53,18 +51,6 @@ static constexpr u8 UHCI_USBINTR_SHORT_PACKET_INTR_ENABLE = 0x08;
 static constexpr u16 UHCI_FRAMELIST_FRAME_COUNT = 1024; // Each entry is 4 bytes in our allocated page
 static constexpr u16 UHCI_FRAMELIST_FRAME_INVALID = 0x0001;
 
-// Port stuff
-static constexpr u8 UHCI_ROOT_PORT_COUNT = 2;
-static constexpr u16 UHCI_PORTSC_CURRRENT_CONNECT_STATUS = 0x0001;
-static constexpr u16 UHCI_PORTSC_CONNECT_STATUS_CHANGED = 0x0002;
-static constexpr u16 UHCI_PORTSC_PORT_ENABLED = 0x0004;
-static constexpr u16 UHCI_PORTSC_PORT_ENABLE_CHANGED = 0x0008;
-static constexpr u16 UHCI_PORTSC_LINE_STATUS = 0x0030;
-static constexpr u16 UHCI_PORTSC_RESUME_DETECT = 0x40;
-static constexpr u16 UHCI_PORTSC_LOW_SPEED_DEVICE = 0x0100;
-static constexpr u16 UHCI_PORTSC_PORT_RESET = 0x0200;
-static constexpr u16 UHCI_PORTSC_SUSPEND = 0x1000;
-
 // *BSD and a few other drivers seem to use this number
 static constexpr u8 UHCI_NUMBER_OF_ISOCHRONOUS_TDS = 128;
 static constexpr u16 UHCI_NUMBER_OF_FRAMES = 1024;
@@ -84,7 +70,7 @@ public:
 
 protected:
     explicit SysFSUSBDeviceInformation(USB::Device& device)
-        : SysFSComponent(String::number(device.address()))
+        : SysFSComponent(String::formatted("{:d}.{:d}", device.address().bus(), device.address().device()))
         , m_device(device)
     {
     }
@@ -211,35 +197,24 @@ NonnullRefPtr<SysFSUSBDeviceInformation> SysFSUSBDeviceInformation::create(USB::
     return adopt_ref(*new SysFSUSBDeviceInformation(device));
 }
 
-UHCIController& UHCIController::the()
+UNMAP_AFTER_INIT RefPtr<UHCIController> UHCIController::try_to_initialize(PCI::Address address)
 {
-    return *s_the;
-}
+    VERIFY(PCI::get_class(address) == 0xc);
+    VERIFY(PCI::get_subclass(address) == 0x03);
 
-UNMAP_AFTER_INIT void UHCIController::detect()
-{
-    if (kernel_command_line().disable_uhci_controller())
-        return;
-
-    // FIXME: We create the /proc/bus/usb representation here, but it should really be handled
-    // in a more broad singleton than this once we refactor things in USB subsystem.
-    SysFSUSBBusDirectory::initialize();
-
-    PCI::enumerate([&](const PCI::Address& address, PCI::ID id) {
-        if (address.is_null())
-            return;
-
-        if (PCI::get_class(address) == 0xc && PCI::get_subclass(address) == 0x03 && PCI::get_programming_interface(address) == 0) {
-            if (!s_the) {
-                s_the = new UHCIController(address, id);
-                s_the->spawn_port_proc();
-            }
-        }
-    });
+    if (PCI::get_programming_interface(address) != 0) 
+        return {};
+    auto id = PCI::get_id(address);
+    auto host_controller = adopt_ref_if_nonnull(new UHCIController(address, id));
+    if (!host_controller)
+        return {};
+    if (!host_controller->initialize())
+        return {};
+    return host_controller;
 }
 
 UNMAP_AFTER_INIT UHCIController::UHCIController(PCI::Address address, PCI::ID id)
-    : PCI::Device(address)
+    : HostController(address)
     , m_io_base(PCI::get_BAR4(pci_address()) & ~1)
 {
     dmesgln("UHCI: Controller found {} @ {}", id, address);
@@ -254,24 +229,38 @@ UNMAP_AFTER_INIT UHCIController::~UHCIController()
 {
 }
 
-RefPtr<USB::Device> const UHCIController::get_device_at_port(USB::Device::PortNumber port)
+u16 UHCIController::read_port_status(size_t index) const
 {
-    if (!m_devices.at(to_underlying(port)))
-        return nullptr;
-
-    return m_devices.at(to_underlying(port));
+    switch (index) {
+        case 0:
+            return m_io_base.offset(0x10).in<u16>();
+        case 1:
+            return m_io_base.offset(0x12).in<u16>();
+        default:
+            VERIFY_NOT_REACHED();
+    }
+    VERIFY_NOT_REACHED();
 }
 
-RefPtr<USB::Device> const UHCIController::get_device_from_address(u8 device_address)
+void UHCIController::write_port_status(size_t index, u16 value)
 {
-    for (auto const& device : m_devices) {
-        if (!device)
-            continue;
-
-        if (device->address() == device_address)
-            return device;
+    switch (index) {
+        case 0:
+            m_io_base.offset(0x10).out<u16>(value);
+            return;
+        case 1:
+            m_io_base.offset(0x12).out<u16>(value);
+            return;
+        default:
+            VERIFY_NOT_REACHED();
     }
+    VERIFY_NOT_REACHED();
+}
 
+RefPtr<USB::Device> const UHCIController::get_device_from_address(Address device_address)
+{
+    if (auto result = m_root_hub->try_to_find(device_address); !result.is_error())
+        return result.release_value();
     return nullptr;
 }
 
@@ -303,7 +292,7 @@ void UHCIController::reset()
 
     // FIXME: Work out why interrupts lock up the entire system....
     // Disable UHCI Controller from raising an IRQ
-    write_usbintr(0);
+    write_usbintr(2);
     dbgln("UHCI: Reset completed");
 }
 
@@ -681,99 +670,7 @@ size_t UHCIController::poll_transfer_queue(QueueHead& transfer_queue)
     return transfer_size;
 }
 
-void UHCIController::spawn_port_proc()
-{
-    RefPtr<Thread> usb_hotplug_thread;
-
-    Process::create_kernel_process(usb_hotplug_thread, "UHCIHotplug", [&] {
-        for (;;) {
-            for (int port = 0; port < UHCI_ROOT_PORT_COUNT; port++) {
-                u16 port_data = 0;
-
-                if (port == 1) {
-                    // Let's see what's happening on port 1
-                    // Current status
-                    port_data = read_portsc1();
-                    if (port_data & UHCI_PORTSC_CONNECT_STATUS_CHANGED) {
-                        if (port_data & UHCI_PORTSC_CURRRENT_CONNECT_STATUS) {
-                            dmesgln("UHCI: Device attach detected on Root Port 1!");
-
-                            // Reset the port
-                            port_data = read_portsc1();
-                            write_portsc1(port_data | UHCI_PORTSC_PORT_RESET);
-                            IO::delay(500);
-
-                            write_portsc1(port_data & ~UHCI_PORTSC_PORT_RESET);
-                            IO::delay(500);
-
-                            write_portsc1(port_data & (~UHCI_PORTSC_PORT_ENABLE_CHANGED | ~UHCI_PORTSC_CONNECT_STATUS_CHANGED));
-
-                            port_data = read_portsc1();
-                            write_portsc1(port_data | UHCI_PORTSC_PORT_ENABLED);
-                            dbgln("port should be enabled now: {:#04x}\n", read_portsc1());
-
-                            USB::Device::DeviceSpeed speed = (port_data & UHCI_PORTSC_LOW_SPEED_DEVICE) ? USB::Device::DeviceSpeed::LowSpeed : USB::Device::DeviceSpeed::FullSpeed;
-                            auto device = USB::Device::try_create(USB::Device::PortNumber::Port1, speed);
-
-                            if (device.is_error())
-                                dmesgln("UHCI: Device creation failed on port 1 ({})", device.error());
-
-                            m_devices.at(0) = device.value();
-                            VERIFY(s_procfs_usb_bus_directory);
-                            s_procfs_usb_bus_directory->plug(device.value());
-                        } else {
-                            // FIXME: Clean up (and properly) the RefPtr to the device in m_devices
-                            VERIFY(s_procfs_usb_bus_directory);
-                            VERIFY(m_devices.at(0));
-                            dmesgln("UHCI: Device detach detected on Root Port 1");
-                            s_procfs_usb_bus_directory->unplug(*m_devices.at(0));
-                        }
-                    }
-                } else {
-                    port_data = UHCIController::the().read_portsc2();
-                    if (port_data & UHCI_PORTSC_CONNECT_STATUS_CHANGED) {
-                        if (port_data & UHCI_PORTSC_CURRRENT_CONNECT_STATUS) {
-                            dmesgln("UHCI: Device attach detected on Root Port 2");
-
-                            // Reset the port
-                            port_data = read_portsc2();
-                            write_portsc2(port_data | UHCI_PORTSC_PORT_RESET);
-                            for (size_t i = 0; i < 50000; ++i)
-                                IO::in8(0x80);
-
-                            write_portsc2(port_data & ~UHCI_PORTSC_PORT_RESET);
-                            for (size_t i = 0; i < 100000; ++i)
-                                IO::in8(0x80);
-
-                            write_portsc2(port_data & (~UHCI_PORTSC_PORT_ENABLE_CHANGED | ~UHCI_PORTSC_CONNECT_STATUS_CHANGED));
-
-                            port_data = read_portsc2();
-                            write_portsc1(port_data | UHCI_PORTSC_PORT_ENABLED);
-                            dbgln("port should be enabled now: {:#04x}\n", read_portsc1());
-                            USB::Device::DeviceSpeed speed = (port_data & UHCI_PORTSC_LOW_SPEED_DEVICE) ? USB::Device::DeviceSpeed::LowSpeed : USB::Device::DeviceSpeed::FullSpeed;
-                            auto device = USB::Device::try_create(USB::Device::PortNumber::Port2, speed);
-
-                            if (device.is_error())
-                                dmesgln("UHCI: Device creation failed on port 2 ({})", device.error());
-
-                            m_devices.at(1) = device.value();
-                            VERIFY(s_procfs_usb_bus_directory);
-                            s_procfs_usb_bus_directory->plug(device.value());
-                        } else {
-                            // FIXME: Clean up (and properly) the RefPtr to the device in m_devices
-                            VERIFY(s_procfs_usb_bus_directory);
-                            VERIFY(m_devices.at(1));
-                            dmesgln("UHCI: Device detach detected on Root Port 2");
-                            s_procfs_usb_bus_directory->unplug(*m_devices.at(1));
-                        }
-                    }
-                }
-            }
-            (void)Thread::current()->sleep(Time::from_seconds(1));
-        }
-    });
-}
-
+/*
 bool UHCIController::handle_irq(const RegisterState&)
 {
     u32 status = read_usbsts();
@@ -781,6 +678,7 @@ bool UHCIController::handle_irq(const RegisterState&)
     // Shared IRQ. Not ours!
     if (!status)
         return false;
+    dbgln("UHCI: Interrupt happened!");
 
     if constexpr (UHCI_DEBUG) {
         dbgln("UHCI: Interrupt happened!");
@@ -791,5 +689,6 @@ bool UHCIController::handle_irq(const RegisterState&)
     write_usbsts(status);
     return true;
 }
+*/
 
 }
