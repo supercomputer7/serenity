@@ -22,6 +22,16 @@ UNMAP_AFTER_INIT void DeviceManagement::initialize()
     s_the.ensure_instance();
 }
 
+UNMAP_AFTER_INIT void DeviceManagement::attach_sb16_device(SB16 const& device)
+{
+    m_sb16_device = device;
+}
+
+UNMAP_AFTER_INIT void DeviceManagement::attach_console_device(ConsoleDevice const& device)
+{
+    m_console_device = device;
+}
+
 UNMAP_AFTER_INIT void DeviceManagement::attach_null_device(Device const& device)
 {
     VERIFY(device.major() == 1);
@@ -86,6 +96,15 @@ Device& DeviceManagement::null_device()
 Device const& DeviceManagement::null_device() const
 {
     return *m_null_device;
+}
+
+ConsoleDevice const& DeviceManagement::console_device() const
+{
+    return *m_console_device;
+}
+ConsoleDevice& DeviceManagement::console_device()
+{
+    return *m_console_device;
 }
 
 }
