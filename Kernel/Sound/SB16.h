@@ -6,34 +6,29 @@
 
 #pragma once
 
-#include <Kernel/Devices/CharacterDevice.h>
 #include <Kernel/Interrupts/IRQHandler.h>
 #include <Kernel/Memory/PhysicalPage.h>
 #include <Kernel/PhysicalAddress.h>
+#include <Kernel/Sound/SoundDevice.h>
 #include <Kernel/WaitQueue.h>
 
 namespace Kernel {
 
-class SB16;
-
-class SB16 final : public IRQHandler
-    , public CharacterDevice {
-    friend class DeviceManagement;
-
+class SoundManagement;
+class SB16 final
+    : public SoundDevice
+    , public IRQHandler {
 public:
     virtual ~SB16() override;
 
-    static RefPtr<SB16> try_detect();
+    static RefPtr<SB16> try_detect(Badge<SoundManagement>);
 
-    // ^CharacterDevice
-    virtual bool can_read(const OpenFileDescription&, size_t) const override;
-    virtual KResultOr<size_t> read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t) override;
-    virtual KResultOr<size_t> write(OpenFileDescription&, u64, const UserOrKernelBuffer&, size_t) override;
-    virtual bool can_write(const OpenFileDescription&, size_t) const override { return true; }
+    // ^SoundDevice
+    virtual bool can_read() const override;
+    virtual KResultOr<size_t> read(UserOrKernelBuffer&, size_t) override;
+    virtual KResultOr<size_t> write(const UserOrKernelBuffer&, size_t) override;
 
     virtual StringView purpose() const override { return class_name(); }
-
-    virtual KResult ioctl(OpenFileDescription&, unsigned, Userspace<void*>) override;
 
 private:
     SB16();
@@ -41,7 +36,7 @@ private:
     // ^IRQHandler
     virtual bool handle_irq(const RegisterState&) override;
 
-    // ^CharacterDevice
+    // ^SoundDevice
     virtual StringView class_name() const override { return "SB16"; }
 
     void initialize();
@@ -56,7 +51,6 @@ private:
 
     OwnPtr<Memory::Region> m_dma_region;
     int m_major_version { 0 };
-    u16 m_sample_rate { 44100 };
 
     WaitQueue m_irq_queue;
 };

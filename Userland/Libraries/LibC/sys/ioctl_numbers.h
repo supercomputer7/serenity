@@ -42,6 +42,11 @@ struct FBFlushRects {
     struct FBRect const* rects;
 };
 
+struct AudioDeviceSampleRate {
+    int index;
+    int rate;
+};
+
 __END_DECLS
 
 enum IOCtlNumber {

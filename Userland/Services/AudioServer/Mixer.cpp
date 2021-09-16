@@ -167,7 +167,11 @@ void Mixer::set_muted(bool muted)
 
 int Mixer::audiodevice_set_sample_rate(u16 sample_rate)
 {
-    int code = ioctl(m_device->fd(), SOUNDCARD_IOCTL_SET_SAMPLE_RATE, sample_rate);
+    AudioDeviceSampleRate sample_rate_for_device;
+    // FIXME: Consider to use other index than 0
+    sample_rate_for_device.index = 0;
+    sample_rate_for_device.rate = sample_rate;
+    int code = ioctl(m_device->fd(), SOUNDCARD_IOCTL_SET_SAMPLE_RATE, &sample_rate_for_device);
     if (code != 0)
         dbgln("Error while setting sample rate to {}: ioctl returned with {}", sample_rate, strerror(code));
     return code;
@@ -175,11 +179,14 @@ int Mixer::audiodevice_set_sample_rate(u16 sample_rate)
 
 u16 Mixer::audiodevice_get_sample_rate() const
 {
-    u16 sample_rate = 0;
+    AudioDeviceSampleRate sample_rate;
+    // FIXME: Consider to use other index than 0
+    sample_rate.index = 0;
+    sample_rate.rate = 0;
     int code = ioctl(m_device->fd(), SOUNDCARD_IOCTL_GET_SAMPLE_RATE, &sample_rate);
     if (code != 0)
         dbgln("Error while getting sample rate: ioctl returned with {}", strerror(code));
-    return sample_rate;
+    return sample_rate.rate;
 }
 
 void Mixer::request_setting_sync()

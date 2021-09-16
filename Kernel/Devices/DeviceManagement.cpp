@@ -22,11 +22,6 @@ UNMAP_AFTER_INIT void DeviceManagement::initialize()
     s_the.ensure_instance();
 }
 
-UNMAP_AFTER_INIT void DeviceManagement::attach_sb16_device(SB16 const& device)
-{
-    m_sb16_device = device;
-}
-
 UNMAP_AFTER_INIT void DeviceManagement::attach_console_device(ConsoleDevice const& device)
 {
     m_console_device = device;

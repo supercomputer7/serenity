@@ -83,6 +83,8 @@ set(KERNEL_SOURCES
     Graphics/VGACompatibleAdapter.cpp
     SanCov.cpp
     Sound/SB16.cpp
+    Sound/AudioInterfaceDevice.cpp
+    Sound/Management.cpp
     Storage/Partition/DiskPartition.cpp
     Storage/Partition/DiskPartitionMetadata.cpp
     Storage/Partition/EBRPartitionTable.cpp

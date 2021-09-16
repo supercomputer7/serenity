@@ -50,6 +50,7 @@
 #include <Kernel/Random.h>
 #include <Kernel/Scheduler.h>
 #include <Kernel/Sections.h>
+#include <Kernel/Sound/Management.h>
 #include <Kernel/Sound/SB16.h>
 #include <Kernel/Storage/StorageManagement.h>
 #include <Kernel/TTY/ConsoleManagement.h>
@@ -318,9 +319,7 @@ void init_stage2(void*)
     (void)RandomDevice::must_create().leak_ref();
     PTYMultiplexer::initialize();
 
-    // FIXME: Once we have a singleton for managing many sound cards, remove this from here
-    if (auto device = SB16::try_detect(); !!device)
-        DeviceManagement::the().attach_sb16_device(*device);
+    SoundManagement::the().initialize_and_enumerate();
 
     StorageManagement::the().initialize(kernel_command_line().root_device(), kernel_command_line().is_force_pio());
     if (VirtualFileSystem::the().mount_root(StorageManagement::the().root_filesystem()).is_error()) {

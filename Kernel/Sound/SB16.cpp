@@ -63,7 +63,6 @@ void SB16::set_sample_rate(uint16_t hz)
 UNMAP_AFTER_INIT SB16::SB16()
     : IRQHandler(SB16_DEFAULT_IRQ)
     // FIXME: We can't change version numbers later, i.e. after the sound card is initialized.
-    , CharacterDevice(42, 42)
 {
     initialize();
 }
@@ -72,7 +71,7 @@ UNMAP_AFTER_INIT SB16::~SB16()
 {
 }
 
-UNMAP_AFTER_INIT RefPtr<SB16> SB16::try_detect()
+UNMAP_AFTER_INIT RefPtr<SB16> SB16::try_detect(Badge<SoundManagement>)
 {
     IO::out8(0x226, 1);
     IO::delay(32);
@@ -81,7 +80,7 @@ UNMAP_AFTER_INIT RefPtr<SB16> SB16::try_detect()
     auto data = dsp_read();
     if (data != 0xaa)
         return {};
-    auto device_or_error = DeviceManagement::try_create_device<SB16>();
+    auto device_or_error = adopt_nonnull_ref_or_enomem(new SB16);
     if (device_or_error.is_error())
         return {};
     return device_or_error.release_value();
@@ -111,26 +110,6 @@ UNMAP_AFTER_INIT void SB16::initialize()
     dmesgln("SB16: IRQ {}", get_irq_line());
 
     set_sample_rate(m_sample_rate);
-}
-
-KResult SB16::ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg)
-{
-    switch (request) {
-    case SOUNDCARD_IOCTL_GET_SAMPLE_RATE: {
-        auto output = static_ptr_cast<u16*>(arg);
-        return copy_to_user(output, &m_sample_rate);
-    }
-    case SOUNDCARD_IOCTL_SET_SAMPLE_RATE: {
-        auto sample_rate_value = static_cast<u16>(arg.ptr());
-        if (sample_rate_value == 0)
-            return EINVAL;
-        if (m_sample_rate != sample_rate_value)
-            set_sample_rate(sample_rate_value);
-        return KSuccess;
-    }
-    default:
-        return EINVAL;
-    }
 }
 
 void SB16::set_irq_register(u8 irq_number)
@@ -181,12 +160,12 @@ void SB16::set_irq_line(u8 irq_number)
     change_irq_number(irq_number);
 }
 
-bool SB16::can_read(OpenFileDescription const&, size_t) const
+bool SB16::can_read() const
 {
     return false;
 }
 
-KResultOr<size_t> SB16::read(OpenFileDescription&, u64, UserOrKernelBuffer&, size_t)
+KResultOr<size_t> SB16::read(UserOrKernelBuffer&, size_t)
 {
     return 0;
 }
@@ -246,7 +225,7 @@ void SB16::wait_for_irq()
     disable_irq();
 }
 
-KResultOr<size_t> SB16::write(OpenFileDescription&, u64, UserOrKernelBuffer const& data, size_t length)
+KResultOr<size_t> SB16::write(UserOrKernelBuffer const& data, size_t length)
 {
     if (!m_dma_region) {
         auto page = MM.allocate_supervisor_physical_page();
