@@ -21,7 +21,6 @@
 #include <Kernel/Devices/NullDevice.h>
 #include <Kernel/Devices/PCISerialDevice.h>
 #include <Kernel/Devices/RandomDevice.h>
-#include <Kernel/Devices/SB16.h>
 #include <Kernel/Devices/SerialDevice.h>
 #include <Kernel/Devices/VMWareBackdoor.h>
 #include <Kernel/Devices/ZeroDevice.h>
@@ -51,6 +50,7 @@
 #include <Kernel/Random.h>
 #include <Kernel/Scheduler.h>
 #include <Kernel/Sections.h>
+#include <Kernel/Sound/SB16.h>
 #include <Kernel/Storage/StorageManagement.h>
 #include <Kernel/TTY/ConsoleManagement.h>
 #include <Kernel/TTY/PTYMultiplexer.h>

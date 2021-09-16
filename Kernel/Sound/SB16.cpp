@@ -9,11 +9,11 @@
 #include <Kernel/Arch/x86/InterruptDisabler.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Devices/DeviceManagement.h>
-#include <Kernel/Devices/SB16.h>
 #include <Kernel/IO.h>
 #include <Kernel/Memory/AnonymousVMObject.h>
 #include <Kernel/Memory/MemoryManager.h>
 #include <Kernel/Sections.h>
+#include <Kernel/Sound/SB16.h>
 #include <Kernel/Thread.h>
 #include <LibC/sys/ioctl_numbers.h>
 

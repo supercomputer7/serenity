@@ -57,7 +57,6 @@ set(KERNEL_SOURCES
     Devices/PCISerialDevice.cpp
     Devices/PCSpeaker.cpp
     Devices/RandomDevice.cpp
-    Devices/SB16.cpp
     Devices/SerialDevice.cpp
     Devices/VMWareBackdoor.cpp
     Devices/ZeroDevice.cpp
@@ -83,6 +82,7 @@ set(KERNEL_SOURCES
     Graphics/VirtIOGPU/GraphicsAdapter.cpp
     Graphics/VGACompatibleAdapter.cpp
     SanCov.cpp
+    Sound/SB16.cpp
     Storage/Partition/DiskPartition.cpp
     Storage/Partition/DiskPartitionMetadata.cpp
     Storage/Partition/EBRPartitionTable.cpp

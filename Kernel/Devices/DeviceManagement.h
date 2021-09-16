@@ -17,7 +17,7 @@
 #include <Kernel/Arch/x86/RegisterState.h>
 #include <Kernel/Devices/ConsoleDevice.h>
 #include <Kernel/Devices/Device.h>
-#include <Kernel/Devices/SB16.h>
+#include <Kernel/Sound/SB16.h>
 #include <Kernel/UnixTypes.h>
 
 namespace Kernel {
