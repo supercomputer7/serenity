@@ -108,10 +108,8 @@ void BIOSSysFSDirectory::create_components()
         dbgln("BIOSSysFSDirectory: invalid smbios structure table length");
         return;
     }
-    auto dmi_entry_point = DMIEntryPointExposedBlob::create(m_dmi_entry_point, m_dmi_entry_point_length);
-    m_components.append(dmi_entry_point);
-    auto smbios_table = SMBIOSExposedTable::create(m_smbios_structure_table, m_smbios_structure_table_length);
-    m_components.append(smbios_table);
+    m_components.append(DMIEntryPointExposedBlob::must_create(m_dmi_entry_point, m_dmi_entry_point_length));
+    m_components.append(SMBIOSExposedTable::must_create(m_smbios_structure_table, m_smbios_structure_table_length));
 }
 
 UNMAP_AFTER_INIT void BIOSSysFSDirectory::initialize_dmi_exposer()
