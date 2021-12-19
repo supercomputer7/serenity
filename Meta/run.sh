@@ -337,7 +337,7 @@ elif [ "$SERENITY_RUN" = "qn" ]; then
         $SERENITY_COMMON_QEMU_ARGS \
         -device $SERENITY_ETHERNET_DEVICE_TYPE \
         -kernel Kernel/Prekernel/Prekernel \
-        -initrd Kernel/Kernel \
+        -initrd Kernel/Kernel.drow \
         -append "${SERENITY_KERNEL_CMDLINE}"
 elif [ "$SERENITY_RUN" = "qtap" ]; then
     # Meta/run.sh qtap: qemu with tap
@@ -350,7 +350,7 @@ elif [ "$SERENITY_RUN" = "qtap" ]; then
         -netdev tap,ifname=tap0,id=br0 \
         -device $SERENITY_ETHERNET_DEVICE_TYPE,netdev=br0 \
         -kernel Kernel/Prekernel/Prekernel \
-        -initrd Kernel/Kernel \
+        -initrd Kernel/Kernel.drow \
         -append "${SERENITY_KERNEL_CMDLINE}"
     sudo ip tuntap del dev tap0 mode tap
 elif [ "$SERENITY_RUN" = "qgrub" ] || [ "$SERENITY_RUN" = "qextlinux" ]; then
@@ -370,7 +370,7 @@ elif [ "$SERENITY_RUN" = "q35" ]; then
         -netdev user,id=breh,hostfwd=tcp:127.0.0.1:8888-10.0.2.15:8888,hostfwd=tcp:127.0.0.1:8823-10.0.2.15:23 \
         -device $SERENITY_ETHERNET_DEVICE_TYPE,netdev=breh \
         -kernel Kernel/Prekernel/Prekernel \
-        -initrd Kernel/Kernel \
+        -initrd Kernel/Kernel.drow \
         -append "${SERENITY_KERNEL_CMDLINE}"
 elif [ "$SERENITY_RUN" = "isapc" ]; then
     # Meta/run.sh q35: qemu (q35 chipset) with SerenityOS
@@ -407,7 +407,7 @@ elif [ "$SERENITY_RUN" = "ci" ]; then
         -display none \
         -debugcon file:debug.log \
         -kernel Kernel/Prekernel/Prekernel \
-        -initrd Kernel/Kernel \
+        -initrd Kernel/Kernel.drow \
         -append "${SERENITY_KERNEL_CMDLINE}"
 else
     # Meta/run.sh: qemu with user networking
@@ -425,6 +425,6 @@ else
         $SERENITY_PACKET_LOGGING_ARG \
         $SERENITY_NETFLAGS \
         -kernel Kernel/Prekernel/Prekernel \
-        -initrd Kernel/Kernel \
+        -initrd Kernel/Kernel.drow \
         -append "${SERENITY_KERNEL_CMDLINE}"
 fi
