@@ -40,7 +40,7 @@ struct ifconf {
     int ifc_len;
     union {
         void* ifcu_buf;
-        struct ifreq* ifc_req;
+        struct ifreq* ifcu_req;
     } ifc_ifcu;
 };
 
