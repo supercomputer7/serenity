@@ -39,10 +39,13 @@ enum {
 struct ifconf {
     int ifc_len;
     union {
-        void* ifc_buf;
+        void* ifcu_buf;
         struct ifreq* ifc_req;
-    };
+    } ifc_ifcu;
 };
+
+# define ifc_buf	ifc_ifcu.ifcu_buf	/* Buffer address.  */
+# define ifc_req	ifc_ifcu.ifcu_req	/* Array of structures.  */
 
 struct ifreq {
 #define IFNAMSIZ 16
