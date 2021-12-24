@@ -176,13 +176,13 @@ struct termios {
 #define ECHONL 0000100
 #define NOFLSH 0000200
 #define TOSTOP 0000400
-#ifdef __USE_MISC
-#    define ECHOCTL 0001000
-#    define ECHOPRT 0002000
-#    define ECHOKE 0004000
-#    define FLUSHO 0010000
-#    define PENDIN 0040000
-#endif
+
+#define ECHOCTL 0001000
+#define ECHOPRT 0002000
+#define ECHOKE 0004000
+#define FLUSHO 0010000
+#define PENDIN 0040000
+
 #define IEXTEN 0100000
 #ifdef __USE_MISC
 #    define EXTPROC 0200000
