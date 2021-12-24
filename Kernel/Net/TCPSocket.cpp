@@ -6,6 +6,7 @@
 
 #include <AK/Singleton.h>
 #include <AK/Time.h>
+#include <Kernel/API/POSIX/netinet/tcp.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Devices/RandomDevice.h>
 #include <Kernel/FileSystem/OpenFileDescription.h>
@@ -27,6 +28,61 @@ void TCPSocket::for_each(Function<void(const TCPSocket&)> callback)
     sockets_by_tuple().for_each_shared([&](const auto& it) {
         callback(*it.value);
     });
+}
+
+u8 TCPSocket::state_to_userspace_uint() const
+{
+    switch (m_state) {
+    case State::Closed:
+        return TCP_CLOSE;
+    case State::Listen:
+        return TCP_LISTEN;
+    case State::SynSent:
+        return TCP_SYN_SENT;
+    case State::SynReceived:
+        return TCP_SYN_RECV;
+    case State::Established:
+        return TCP_ESTABLISHED;
+    case State::CloseWait:
+        return TCP_CLOSE_WAIT;
+    case State::LastAck:
+        return TCP_LAST_ACK;
+    case State::FinWait1:
+        return TCP_FIN_WAIT1;
+    case State::FinWait2:
+        return TCP_FIN_WAIT2;
+    case State::Closing:
+        return TCP_CLOSING;
+    case State::TimeWait:
+        return TCP_TIME_WAIT;
+    }
+    VERIFY_NOT_REACHED();
+}
+
+ErrorOr<void> TCPSocket::getsockopt(OpenFileDescription& description, int level, int option, Userspace<void*> value, Userspace<socklen_t*> value_size)
+{
+    if (level != IPPROTO_TCP)
+        return IPv4Socket::getsockopt(description, level, option, value, value_size);
+
+    socklen_t size;
+    TRY(copy_from_user(&size, value_size.unsafe_userspace_ptr()));
+    switch (option) {
+    case TCP_INFO: {
+        if (size < sizeof(tcp_info))
+            return EINVAL;
+        struct tcp_info socket_tcp_info;
+        TRY(copy_from_user(&socket_tcp_info, static_ptr_cast<struct tcp_info*>(value)));
+        socket_tcp_info.tcpi_state = state_to_userspace_uint();
+        socket_tcp_info.tcpi_options = 0;
+        socket_tcp_info.tcpi_snd_wscale = 0;
+        socket_tcp_info.tcpi_rcv_wscale = 0;
+        TRY(copy_to_user(static_ptr_cast<struct tcp_info*>(value), &socket_tcp_info));
+        size = sizeof(tcp_info);
+        return copy_to_user(value_size, &size);
+    }
+    default:
+        return ENOPROTOOPT;
+    }
 }
 
 void TCPSocket::set_state(State new_state)

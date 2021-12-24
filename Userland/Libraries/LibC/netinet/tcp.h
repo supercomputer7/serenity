@@ -6,4 +6,4 @@
 
 #pragma once
 
-#define TCP_NODELAY 10
+#include <Kernel/API/POSIX/netinet/tcp.h>

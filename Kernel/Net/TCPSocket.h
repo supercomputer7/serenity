@@ -21,6 +21,7 @@ public:
     static void for_each(Function<void(const TCPSocket&)>);
     static ErrorOr<NonnullRefPtr<TCPSocket>> try_create(int protocol, NonnullOwnPtr<DoubleBuffer> receive_buffer);
     virtual ~TCPSocket() override;
+    virtual ErrorOr<void> getsockopt(OpenFileDescription&, int level, int option, Userspace<void*> value, Userspace<socklen_t*> length) override;
 
     enum class Direction {
         Unspecified,
@@ -44,6 +45,8 @@ public:
             return "None"sv;
         }
     }
+
+    u8 state_to_userspace_uint() const;
 
     enum class State {
         Closed,
