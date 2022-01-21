@@ -15,7 +15,8 @@
 #include <Kernel/FileSystem/Ext2FileSystem.h>
 #include <Kernel/Panic.h>
 #include <Kernel/Storage/ATA/AHCIController.h>
-#include <Kernel/Storage/ATA/IDEController.h>
+#include <Kernel/Storage/ATA/ISAIDEController.h>
+#include <Kernel/Storage/ATA/PCIIDEController.h>
 #include <Kernel/Storage/NVMe/NVMeController.h>
 #include <Kernel/Storage/Partition/EBRPartitionTable.h>
 #include <Kernel/Storage/Partition/GUIDPartitionTable.h>
@@ -44,7 +45,7 @@ bool StorageManagement::boot_argument_contains_partition_uuid()
     return m_boot_argument.starts_with(partition_uuid_prefix);
 }
 
-UNMAP_AFTER_INIT void StorageManagement::enumerate_controllers(bool force_pio)
+UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pio)
 {
     VERIFY(m_controllers.is_empty());
 
@@ -76,7 +77,7 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_controllers(bool force_pio)
 
             auto subclass_code = static_cast<SubclassID>(device_identifier.subclass_code().value());
             if (subclass_code == SubclassID::IDEController && kernel_command_line().is_ide_enabled()) {
-                m_controllers.append(IDEController::initialize(device_identifier, force_pio));
+                m_controllers.append(PCIIDEController::initialize(device_identifier, force_pio));
             }
 
             if (subclass_code == SubclassID::SATAController
@@ -278,7 +279,13 @@ UNMAP_AFTER_INIT void StorageManagement::initialize(StringView root_device, bool
 {
     VERIFY(s_device_minor_number == 0);
     m_boot_argument = root_device;
-    enumerate_controllers(force_pio);
+    if (kernel_command_line().is_pci_disabled()) {
+        // Note: If PCI is disabled, we assume that at least we have an ISA IDE controller
+        // to probe and use
+        m_controllers.append(ISAIDEController::initialize());
+    } else {
+        enumerate_pci_controllers(force_pio);
+    }
     enumerate_storage_devices();
     enumerate_disk_partitions();
     if (!boot_argument_contains_partition_uuid()) {
