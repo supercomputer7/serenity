@@ -279,7 +279,7 @@ UNMAP_AFTER_INIT void StorageManagement::initialize(StringView root_device, bool
 {
     VERIFY(s_device_minor_number == 0);
     m_boot_argument = root_device;
-    if (kernel_command_line().is_pci_disabled()) {
+    if (PCI::Access::is_disabled()) {
         // Note: If PCI is disabled, we assume that at least we have an ISA IDE controller
         // to probe and use
         m_controllers.append(ISAIDEController::initialize());

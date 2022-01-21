@@ -218,7 +218,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::initialize()
      * be created, so SystemServer will not try to initialize WindowServer.
      */
 
-    if (kernel_command_line().pci_access_level() == PCIAccessLevel::None) {
+    if (PCI::Access::is_disabled()) {
         determine_and_initialize_isa_graphics_device();
         return true;
     }

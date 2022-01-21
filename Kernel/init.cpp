@@ -288,8 +288,8 @@ void init_stage2(void*)
     }
 
     // Initialize the PCI Bus as early as possible, for early boot (PCI based) serial logging
-    if (!kernel_command_line().is_pci_disabled()) {
-        PCI::initialize();
+    PCI::initialize();
+    if (!PCI::Access::is_disabled()) {
         PCISerialDevice::detect();
     }
 
@@ -312,12 +312,12 @@ void init_stage2(void*)
 
     auto boot_profiling = kernel_command_line().is_boot_profiling_enabled();
 
-    if (!kernel_command_line().is_pci_disabled()) {
+    if (!PCI::Access::is_disabled()) {
         USB::USBManagement::initialize();
     }
     FirmwareSysFSDirectory::initialize();
 
-    if (!kernel_command_line().is_pci_disabled()) {
+    if (!PCI::Access::is_disabled()) {
         VirtIO::detect();
     }
 
@@ -334,7 +334,7 @@ void init_stage2(void*)
     PTYMultiplexer::initialize();
 
     (void)SB16::try_detect_and_create();
-    if (!kernel_command_line().is_pci_disabled()) {
+    if (!PCI::Access::is_disabled()) {
         AC97::detect();
     }
     StorageManagement::the().initialize(kernel_command_line().root_device(), kernel_command_line().is_force_pio());
