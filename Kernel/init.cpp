@@ -288,8 +288,10 @@ void init_stage2(void*)
     }
 
     // Initialize the PCI Bus as early as possible, for early boot (PCI based) serial logging
-    PCI::initialize();
-    PCISerialDevice::detect();
+    if (!kernel_command_line().is_pci_disabled()) {
+        PCI::initialize();
+        PCISerialDevice::detect();
+    }
 
     VirtualFileSystem::initialize();
 
@@ -310,10 +312,14 @@ void init_stage2(void*)
 
     auto boot_profiling = kernel_command_line().is_boot_profiling_enabled();
 
-    USB::USBManagement::initialize();
+    if (!kernel_command_line().is_pci_disabled()) {
+        USB::USBManagement::initialize();
+    }
     FirmwareSysFSDirectory::initialize();
 
-    VirtIO::detect();
+    if (!kernel_command_line().is_pci_disabled()) {
+        VirtIO::detect();
+    }
 
     NetworkingManagement::the().initialize();
     Syscall::initialize();
@@ -328,8 +334,9 @@ void init_stage2(void*)
     PTYMultiplexer::initialize();
 
     (void)SB16::try_detect_and_create();
-    AC97::detect();
-
+    if (!kernel_command_line().is_pci_disabled()) {
+        AC97::detect();
+    }
     StorageManagement::the().initialize(kernel_command_line().root_device(), kernel_command_line().is_force_pio());
     if (VirtualFileSystem::the().mount_root(StorageManagement::the().root_filesystem()).is_error()) {
         PANIC("VirtualFileSystem::mount_root failed");
