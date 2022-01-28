@@ -11,7 +11,10 @@
 
 namespace Kernel {
 
-static constexpr size_t pic_disabled_vector_base = 0x20;
+static constexpr size_t pic_disabled_vector_base = 0x90;
+static constexpr size_t pic_disabled_vector_end = 0x9f;
+static_assert(pic_disabled_vector_base < GENERIC_INTERRUPT_HANDLERS_COUNT);
+static constexpr size_t pic_enabled_vector_base = 0x50;
 
 class PIC final : public IRQController {
 public:

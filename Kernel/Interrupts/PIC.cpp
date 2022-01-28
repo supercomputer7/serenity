@@ -189,8 +189,8 @@ UNMAP_AFTER_INIT void PIC::initialize()
     IO::out8(PIC1_CTL, ICW1_INIT | ICW1_ICW4);
 
     /* ICW2 (upper 5 bits specify ISR indices, lower 3 don't specify anything) */
-    IO::out8(PIC0_CMD, IRQ_VECTOR_BASE);
-    IO::out8(PIC1_CMD, IRQ_VECTOR_BASE + 0x08);
+    IO::out8(PIC0_CMD, pic_enabled_vector_base);
+    IO::out8(PIC1_CMD, pic_enabled_vector_base + 0x08);
 
     /* ICW3 (configure master/slave relationship) */
     IO::out8(PIC0_CMD, 1 << SLAVE_INDEX);
@@ -207,7 +207,7 @@ UNMAP_AFTER_INIT void PIC::initialize()
     // ...except IRQ2, since that's needed for the master to let through slave interrupts.
     enable_vector(2);
 
-    dmesgln("PIC: Cascading mode, vectors {:#02x}-{:#02x}", IRQ_VECTOR_BASE, IRQ_VECTOR_BASE + 0xf);
+    dmesgln("PIC: Cascading mode, vectors {:#02x}-{:#02x}", pic_enabled_vector_base, pic_enabled_vector_base + 0xf);
 }
 
 u16 PIC::get_isr() const
