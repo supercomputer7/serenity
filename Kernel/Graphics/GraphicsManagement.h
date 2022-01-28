@@ -19,7 +19,14 @@
 
 namespace Kernel {
 
+class BochsDisplayConnector;
+class IntelNativeGraphicsAdapter;
+class VGACompatibleAdapter;
 class GraphicsManagement {
+    friend class BochsDisplayConnector;
+    friend class IntelNativeGraphicsAdapter;
+    friend class VGACompatibleAdapter;
+    friend class Graphics::VirtIOGPU::GraphicsAdapter;
 
 public:
     static GraphicsManagement& the();

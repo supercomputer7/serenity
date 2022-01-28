@@ -69,13 +69,13 @@ void VGACompatibleAdapter::disable_consoles()
     m_framebuffer_device->activate_writes();
 }
 
-bool VGACompatibleAdapter::try_to_set_resolution(size_t, size_t, size_t)
+ErrorOr<void> VGACompatibleAdapter::set_resolution(size_t, size_t, size_t)
 {
-    return false;
+    return Error::from_errno(ENOTSUP);
 }
-bool VGACompatibleAdapter::set_y_offset(size_t, size_t)
+ErrorOr<void> VGACompatibleAdapter::set_y_offset(size_t, size_t)
 {
-    return false;
+    return Error::from_errno(ENOTSUP);
 }
 
 ErrorOr<ByteBuffer> VGACompatibleAdapter::get_edid(size_t) const
