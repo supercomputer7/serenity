@@ -166,8 +166,10 @@ extern "C" [[noreturn]] UNMAP_AFTER_INIT void init(BootInfo const& boot_info)
     multiboot_framebuffer_bpp = boot_info.multiboot_framebuffer_bpp;
     multiboot_framebuffer_type = boot_info.multiboot_framebuffer_type;
 
+    dbgln("test2");
     setup_serial_debug();
 
+    dbgln("test3");
     // We need to copy the command line before kmalloc is initialized,
     // as it may overwrite parts of multiboot!
     CommandLine::early_initialize(kernel_cmdline);
@@ -175,25 +177,34 @@ extern "C" [[noreturn]] UNMAP_AFTER_INIT void init(BootInfo const& boot_info)
     multiboot_copy_boot_modules_count = multiboot_modules_count;
     s_bsp_processor.early_initialize(0);
 
+    dbgln("test4");
     // Invoke the constructors needed for the kernel heap
     for (ctor_func_t* ctor = start_heap_ctors; ctor < end_heap_ctors; ctor++)
         (*ctor)();
     kmalloc_init();
 
+    dbgln("test5");
     load_kernel_symbol_table();
 
     s_bsp_processor.initialize(0);
 
+    dbgln("test6");
     CommandLine::initialize();
+    dbgln("test6.5");
     Memory::MemoryManager::initialize(0);
 
+    dbgln("test7");
     DeviceManagement::initialize();
     SysFSComponentRegistry::initialize();
+    dbgln("test8");
     DeviceManagement::the().attach_null_device(*NullDevice::must_initialize());
     DeviceManagement::the().attach_console_device(*ConsoleDevice::must_create());
     DeviceManagement::the().attach_device_control_device(*DeviceControlDevice::must_create());
+    dbgln("test9");
 
     MM.unmap_prekernel();
+
+    dbgln("test10");
 
     // Ensure that the safemem sections are not empty. This could happen if the linker accidentally discards the sections.
     VERIFY(+start_of_safemem_text != +end_of_safemem_text);

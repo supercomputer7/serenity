@@ -80,8 +80,12 @@ void RamdiskDevice::start_request(AsyncBlockDeviceRequest& request)
     ErrorOr<void> result;
     while (remaining_length > 0) {
         size_t length_to_map = min<size_t>(PAGE_SIZE, remaining_length);
-        auto mapping = Memory::map_typed<u8>(m_start_address.offset(request_offset + nprocessed), length_to_map, Memory::Region::Access::ReadWrite);
-        result = do_io_transaction(request, *mapping.region, request_offset, nprocessed, length_to_map);
+        auto mapping_or_error = Memory::map_typed<u8>(m_start_address.offset(request_offset + nprocessed), length_to_map, Memory::Region::Access::ReadWrite);
+        if (mapping_or_error.is_error()) {
+            request.complete(AsyncDeviceRequest::MemoryFault);
+            return;
+        }
+        result = do_io_transaction(request, *mapping_or_error.value().region, request_offset, nprocessed, length_to_map);
         nprocessed += length_to_map;
         remaining_length -= length_to_map;
         if (result.is_error())

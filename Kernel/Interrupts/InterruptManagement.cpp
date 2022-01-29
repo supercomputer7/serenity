@@ -113,6 +113,8 @@ RefPtr<IRQController> InterruptManagement::get_responsible_irq_controller(u8 int
 
 UNMAP_AFTER_INIT PhysicalAddress InterruptManagement::search_for_madt()
 {
+    if (kernel_command_line().acpi_feature_level() == AcpiFeatureLevel::Disabled)
+        return {};
     dbgln("Early access to ACPI tables for interrupt setup");
     auto rsdp = ACPI::StaticParsing::find_rsdp();
     if (!rsdp.has_value())

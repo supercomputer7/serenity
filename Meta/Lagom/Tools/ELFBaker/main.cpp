@@ -71,10 +71,7 @@ public:
         auto& input_header = m_input_image.get_header();
         size_t section_table_size = input_header.e_shnum * input_header.e_shentsize;
 
-        auto result_or_null = ByteBuffer::create_zeroed(m_program_loads_size + section_table_size + m_relocated_sections_size);
-        if (!result_or_null.has_value())
-            return Error::from_errno(ENOMEM);
-        auto& result = result_or_null.value();
+        auto result = TRY(ByteBuffer::create_zeroed(m_program_loads_size + section_table_size + m_relocated_sections_size));
 
         size_t offset = execute_program_headers(result);
         offset += move_section_table(result, offset);

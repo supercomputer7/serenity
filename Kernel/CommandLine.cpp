@@ -13,7 +13,9 @@
 namespace Kernel {
 
 static char s_cmd_line[1024];
-static constexpr StringView s_embedded_cmd_line = "";
+// disable_physical_storage disable_usb disable_virtio disable_uhci_controller disable_ps2_controller disable_physical_networking pci_ecam=off
+//static constexpr StringView s_embedded_cmd_line = "pci=none enable_ioapic=off";
+static constexpr StringView s_embedded_cmd_line = "pci=none acpi=off enable_ioapic=off disable_physical_storage";
 static CommandLine* s_the;
 
 UNMAP_AFTER_INIT void CommandLine::early_initialize(const char* cmd_line)

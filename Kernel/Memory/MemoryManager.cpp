@@ -77,6 +77,7 @@ UNMAP_AFTER_INIT MemoryManager::MemoryManager()
 
     SpinlockLocker lock(s_mm_lock);
     parse_memory_map();
+    dbgln("test - memory manager");
     write_cr3(kernel_page_directory().cr3());
     protect_kernel_image();
 
@@ -227,6 +228,28 @@ bool MemoryManager::is_allowed_to_read_physical_memory_for_userspace(PhysicalAdd
     return false;
 }
 
+/*
+static multiboot_memory_map_t multiboot_example_mmap[] = {
+    { 24, 0x00000000, 644096, 1 },
+    { 24, 0x0009d400, 11264, 2 },
+    { 24, 0x000e0000, 131072, 2 },
+    { 24, 0x00100000, 1468006400, 1 },
+};
+
+0.000 [Kernel]: MM: Multiboot mmap: address=0x00000000, length=654336, type=1
+0.000 [Kernel]: MM: Got an unaligned physical_region from the bootloader; correcting length 654336 by 3072 bytes
+0.000 [Kernel]: MM: Multiboot mmap: address=0x00100000, length=1072562176, type=1
+*/
+
+static multiboot_memory_map_t multiboot_example_mmap[] = {
+    { 24, 0x00000000, 644096, 1 },
+    { 24, 0x0009d400, 11264, 2 },
+    { 24, 0x000e0000, 131072, 2 },
+    { 24, 0x00100000, 1468006400, 1 },
+    { 24, 0xfee00000, 1048576, 2 },
+    { 24, 0xff000000, 16777216, 2 },
+};
+
 UNMAP_AFTER_INIT void MemoryManager::parse_memory_map()
 {
     // Register used memory regions that we know of.
@@ -243,8 +266,10 @@ UNMAP_AFTER_INIT void MemoryManager::parse_memory_map()
         }
     }
 
-    auto* mmap_begin = multiboot_memory_map;
-    auto* mmap_end = multiboot_memory_map + multiboot_memory_map_count;
+    auto* mmap_begin = multiboot_example_mmap;
+    auto* mmap_end = multiboot_example_mmap + sizeof(multiboot_example_mmap) / sizeof(multiboot_memory_map_t);
+    //auto* mmap_begin = multiboot_memory_map;
+    //auto* mmap_end = multiboot_memory_map + multiboot_memory_map_count;
 
     struct ContiguousPhysicalVirtualRange {
         PhysicalAddress lower;
@@ -333,10 +358,13 @@ UNMAP_AFTER_INIT void MemoryManager::parse_memory_map()
             }
         }
     }
+    dbgln("12345");
 
     for (auto& range : contiguous_physical_ranges) {
         m_user_physical_regions.append(PhysicalRegion::try_create(range.lower, range.upper).release_nonnull());
     }
+
+    dbgln("123456");
 
     // Super pages are guaranteed to be in the first 16MB of physical memory
     VERIFY(virtual_to_low_physical((FlatPtr)super_pages) + sizeof(super_pages) < 0x1000000);
@@ -352,15 +380,21 @@ UNMAP_AFTER_INIT void MemoryManager::parse_memory_map()
     for (auto& region : m_user_physical_regions)
         m_system_memory_info.user_physical_pages += region.size();
 
+    dbgln("1234567");
     register_reserved_ranges();
     for (auto& range : m_reserved_memory_ranges) {
         dmesgln("MM: Contiguous reserved range from {}, length is {}", range.start, range.length);
     }
+    dbgln("12345678");
 
     initialize_physical_pages();
 
+    dbgln("1234567__");
+
     VERIFY(m_system_memory_info.super_physical_pages > 0);
     VERIFY(m_system_memory_info.user_physical_pages > 0);
+
+    dbgln("12345679");
 
     // We start out with no committed pages
     m_system_memory_info.user_physical_pages_uncommitted = m_system_memory_info.user_physical_pages;
@@ -380,22 +414,27 @@ UNMAP_AFTER_INIT void MemoryManager::parse_memory_map()
 
 UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
 {
+    dbgln("___1");
     // We assume that the physical page range is contiguous and doesn't contain huge gaps!
     PhysicalAddress highest_physical_address;
     for (auto& range : m_used_memory_ranges) {
         if (range.end.get() > highest_physical_address.get())
             highest_physical_address = range.end;
     }
+    dbgln("___2");
     for (auto& region : m_physical_memory_ranges) {
         auto range_end = PhysicalAddress(region.start).offset(region.length);
         if (range_end.get() > highest_physical_address.get())
             highest_physical_address = range_end;
     }
+    dbgln("___3");
 
     // Calculate how many total physical pages the array will have
     m_physical_page_entries_count = PhysicalAddress::physical_page_index(highest_physical_address.get()) + 1;
     VERIFY(m_physical_page_entries_count != 0);
     VERIFY(!Checked<decltype(m_physical_page_entries_count)>::multiplication_would_overflow(m_physical_page_entries_count, sizeof(PhysicalPageEntry)));
+
+    dbgln("___4");
 
     // Calculate how many bytes the array will consume
     auto physical_page_array_size = m_physical_page_entries_count * sizeof(PhysicalPageEntry);
@@ -407,6 +446,7 @@ UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
 
     auto physical_page_array_pages_and_page_tables_count = physical_page_array_pages + needed_page_table_count;
 
+    dbgln("___5");
     // Now that we know how much memory we need for a contiguous array of PhysicalPage instances, find a memory region that can fit it
     PhysicalRegion* found_region { nullptr };
     Optional<size_t> found_region_index;
@@ -418,11 +458,14 @@ UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
             break;
         }
     }
+    dbgln("___6");
 
     if (!found_region) {
         dmesgln("MM: Need {} bytes for physical page management, but no memory region is large enough!", physical_page_array_pages_and_page_tables_count);
         VERIFY_NOT_REACHED();
     }
+
+    dbgln("___7");
 
     VERIFY(m_system_memory_info.user_physical_pages >= physical_page_array_pages_and_page_tables_count);
     m_system_memory_info.user_physical_pages -= physical_page_array_pages_and_page_tables_count;
@@ -435,6 +478,8 @@ UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
     }
     m_used_memory_ranges.append({ UsedMemoryRangeType::PhysicalPages, m_physical_pages_region->lower(), m_physical_pages_region->upper() });
 
+    dbgln("___8");
+
     // Create the bare page directory. This is not a fully constructed page directory and merely contains the allocators!
     m_kernel_page_directory = PageDirectory::must_create_kernel_page_directory();
 
@@ -445,6 +490,8 @@ UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
         VERIFY_NOT_REACHED();
     }
     auto range = range_or_error.release_value();
+
+    dbgln("___9");
 
     // Now that we have our special m_physical_pages_region region with enough pages to hold the entire array
     // try to map the entire region into kernel space so we always have it
@@ -497,14 +544,43 @@ UNMAP_AFTER_INIT void MemoryManager::initialize_physical_pages()
         flush_tlb_local(VirtualAddress(virtual_page_base_for_this_pt));
     }
 
+    dbgln("___10");
+
     // We now have the entire PhysicalPageEntry array mapped!
     m_physical_page_entries = (PhysicalPageEntry*)range.base().get();
-    for (size_t i = 0; i < m_physical_page_entries_count; i++)
+    dbgln(" - {:p}, {}", m_physical_page_entries, m_physical_page_entries_count);
+    for (size_t i = 0; i < m_physical_page_entries_count; i++) {
+        //dbgln("{:p}", &m_physical_page_entries[i]);
+        //dbgln("{}", i);
         new (&m_physical_page_entries[i]) PageTableEntry();
+    }
+    /*
+    0.000 [#0 Kernel]: 261631
+    0.000 [#0 Kernel]: 261632
+    0.000 [#0 Kernel]: Unrecoverable page fault, write to address V0xc2a00000
+    */
+   /*
+    0.000 [#0 Kernel]:  - 0xc2801000, 262113
+    0.000 [#0 Kernel]: Unrecoverable page fault, write to address V0xc2a00000
+   */
 
+  /*
+    0.000 [#0 Kernel]: ___10
+    0.000 [#0 Kernel]:  - 0xc2801000, 524257
+    0.000 [#0 Kernel]: Unrecoverable page fault, write to address V0xc2c00000
+  */
+
+  /*
+    0.000 [#0 Kernel]: 523776
+    0.000 [#0 Kernel]: Unrecoverable page fault, write to address V0xc2c00000
+  */
+
+    dbgln("___10.5");
     // Now we should be able to allocate PhysicalPage instances,
     // so finish setting up the kernel page directory
     m_kernel_page_directory->allocate_kernel_directory();
+
+    dbgln("___11");
 
     // Now create legit PhysicalPage objects for the page tables we created.
     virtual_page_array_current_page = virtual_page_array_base;

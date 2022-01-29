@@ -94,7 +94,6 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pi
             }
         });
     }
-    m_controllers.append(RamdiskController::initialize());
 }
 
 UNMAP_AFTER_INIT void StorageManagement::enumerate_storage_devices()
@@ -282,10 +281,12 @@ UNMAP_AFTER_INIT void StorageManagement::initialize(StringView root_device, bool
     if (PCI::Access::is_disabled()) {
         // Note: If PCI is disabled, we assume that at least we have an ISA IDE controller
         // to probe and use
-        m_controllers.append(ISAIDEController::initialize());
+        if (!kernel_command_line().disable_physical_storage())
+            m_controllers.append(ISAIDEController::initialize());
     } else {
         enumerate_pci_controllers(force_pio);
     }
+    m_controllers.append(RamdiskController::initialize());
     enumerate_storage_devices();
     enumerate_disk_partitions();
     if (!boot_argument_contains_partition_uuid()) {
