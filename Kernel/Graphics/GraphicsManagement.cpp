@@ -10,6 +10,7 @@
 #include <Kernel/Bus/PCI/IDs.h>
 #include <Kernel/CommandLine.h>
 #include <Kernel/Graphics/Bochs/GraphicsAdapter.h>
+#include <Kernel/Graphics/Console/BootFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Graphics/Intel/NativeGraphicsAdapter.h>
 #include <Kernel/Graphics/VGACompatibleAdapter.h>
@@ -21,6 +22,8 @@
 namespace Kernel {
 
 static Singleton<GraphicsManagement> s_the;
+
+extern Atomic<Graphics::BootFramebufferConsole*> boot_framebuffer_console;
 
 GraphicsManagement& GraphicsManagement::the()
 {
@@ -230,4 +233,18 @@ bool GraphicsManagement::framebuffer_devices_exist() const
     }
     return false;
 }
+
+void GraphicsManagement::set_console(Graphics::Console& console)
+{
+    m_console = console;
+
+    if (auto* boot_console = boot_framebuffer_console.exchange(nullptr)) {
+        // Disable the initial boot framebuffer console permanently
+        boot_console->disable();
+        // TODO: Even though we swapped the pointer and disabled the console
+        // we technically can't safely destroy it as other CPUs might still
+        // try to use it. Once we an, drop the leaked ref when we created it.
+    }
+}
+
 }
