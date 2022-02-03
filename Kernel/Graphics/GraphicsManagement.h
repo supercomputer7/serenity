@@ -13,7 +13,7 @@
 #include <Kernel/Bus/PCI/Definitions.h>
 #include <Kernel/Graphics/Console/Console.h>
 #include <Kernel/Graphics/GenericGraphicsAdapter.h>
-#include <Kernel/Graphics/VGACompatibleAdapter.h>
+#include <Kernel/Graphics/VGA/PCIGenericAdapter.h>
 #include <Kernel/Graphics/VirtIOGPU/GraphicsAdapter.h>
 #include <Kernel/Memory/Region.h>
 
@@ -21,11 +21,12 @@ namespace Kernel {
 
 class BochsDisplayConnector;
 class IntelNativeGraphicsAdapter;
-class VGACompatibleAdapter;
+class PCIVGAGenericAdapter;
 class GraphicsManagement {
     friend class BochsDisplayConnector;
-    friend class IntelNativeGraphicsAdapter;
-    friend class VGACompatibleAdapter;
+    friend class IntelNativeDisplayConnector;
+    friend class VGAGenericDisplayConnector;
+    friend class PCIVGAGenericAdapter;
     friend class Graphics::VirtIOGPU::GraphicsAdapter;
 
 public:
@@ -53,7 +54,7 @@ private:
     RefPtr<Graphics::Console> m_console;
 
     // Note: there could be multiple VGA adapters, but only one can operate in VGA mode
-    RefPtr<VGACompatibleAdapter> m_vga_adapter;
+    RefPtr<PCIVGAGenericAdapter> m_vga_adapter;
     unsigned m_current_minor_number { 0 };
 
     Spinlock m_main_vga_lock;

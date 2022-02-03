@@ -13,7 +13,7 @@
 #include <Kernel/Graphics/Console/BootFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Graphics/Intel/NativeGraphicsAdapter.h>
-#include <Kernel/Graphics/VGACompatibleAdapter.h>
+#include <Kernel/Graphics/VGA/PCIGenericAdapter.h>
 #include <Kernel/Graphics/VirtIOGPU/GraphicsAdapter.h>
 #include <Kernel/Memory/AnonymousVMObject.h>
 #include <Kernel/Multiboot.h>
@@ -99,7 +99,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
             dmesgln("Graphics: The framebuffer set up by the bootloader is not RGB, ignoring fbdev argument");
         } else {
             dmesgln("Graphics: Using a preset resolution from the bootloader");
-            adapter = VGACompatibleAdapter::initialize_with_preset_resolution(device_identifier,
+            adapter = PCIVGAGenericAdapter::must_create_with_preset_resolution(device_identifier,
                 multiboot_framebuffer_addr,
                 multiboot_framebuffer_width,
                 multiboot_framebuffer_height,
@@ -146,7 +146,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
                 create_bootloader_framebuffer_device();
             } else {
                 dmesgln("Graphics: Using a VGA compatible generic adapter");
-                adapter = VGACompatibleAdapter::initialize(device_identifier);
+                adapter = PCIVGAGenericAdapter::must_create(device_identifier);
             }
             break;
         }
@@ -160,7 +160,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
     // Note: If no other VGA adapter is attached as m_vga_adapter, we should attach it then.
     if (!m_vga_adapter && PCI::is_io_space_enabled(device_identifier.address()) && adapter->vga_compatible()) {
         dbgln("Graphics adapter @ {} is operating in VGA mode", device_identifier.address());
-        m_vga_adapter = static_ptr_cast<VGACompatibleAdapter>(adapter);
+        m_vga_adapter = static_ptr_cast<PCIVGAGenericAdapter>(adapter);
     }
     return true;
 }
