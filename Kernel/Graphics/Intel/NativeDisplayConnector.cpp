@@ -180,6 +180,7 @@ NonnullOwnPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_cre
     auto gmbus_connector = MUST(GMBusConnector::create_with_physical_address(registers_region_address.offset(to_underlying(IntelGraphics::RegisterIndex::GMBusClock))));
     auto connector = adopt_own_if_nonnull(new (nothrow) IntelNativeDisplayConnector(framebuffer_address, move(gmbus_connector), move(registers_region))).release_nonnull();
     MUST(connector->initialize_gmbus_settings_and_read_edid());
+    //MUST(connector->set_safe_resolution());
     MUST(connector->create_attached_framebuffer_console(framebuffer_address));
     return connector;
 }
@@ -192,6 +193,9 @@ ErrorOr<void> IntelNativeDisplayConnector::initialize_gmbus_settings_and_read_ed
 
 ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(PhysicalAddress framebuffer_address)
 {
+    m_framebuffer_width = 1280;
+    m_framebuffer_height = 1024;
+    m_framebuffer_pitch  = m_framebuffer_width * sizeof(u32);
     m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(framebuffer_address, m_framebuffer_width, m_framebuffer_height, m_framebuffer_pitch);
     // FIXME: This is a very wrong way to do this...
     GraphicsManagement::the().m_console = m_framebuffer_console;
@@ -214,10 +218,7 @@ ErrorOr<ByteBuffer> IntelNativeDisplayConnector::get_edid() const
 
 ErrorOr<void> IntelNativeDisplayConnector::set_resolution(DisplayConnector::Resolution const&)
 {
-    auto modesetting = calculate_modesetting_from_edid(m_crt_edid.value(), 0);
-    dmesgln("Intel Native Display Connector - safe resolution is {:d}x{:d}", modesetting.horizontal.active, modesetting.vertical.active);
-    set_crt_resolution(modesetting.horizontal.active, modesetting.vertical.active);
-    return {};
+    return Error::from_errno(ENOTIMPL);
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::set_y_offset(size_t)
@@ -238,7 +239,10 @@ ErrorOr<void> IntelNativeDisplayConnector::unblank()
 
 ErrorOr<void> IntelNativeDisplayConnector::set_safe_resolution()
 {
-    return Error::from_errno(ENOTIMPL);
+    auto modesetting = calculate_modesetting_from_edid(m_crt_edid.value(), 0);
+    dmesgln("Intel Native Display Connector - safe resolution is {:d}x{:d}", modesetting.horizontal.active, modesetting.vertical.active);
+    set_crt_resolution(modesetting.horizontal.active, modesetting.vertical.active);
+    return {};
 }
 
 void IntelNativeDisplayConnector::enable_vga_plane()
@@ -343,7 +347,7 @@ void IntelNativeDisplayConnector::gmbus_read_edid()
     if (auto parsed_edid = EDID::Parser::from_bytes({ m_crt_edid_bytes, sizeof(m_crt_edid_bytes) }); !parsed_edid.is_error()) {
         m_crt_edid = parsed_edid.release_value();
     } else {
-        dbgln("IntelNativeDisplayConnector: Parsing EDID failed: {}", parsed_edid.error());
+        dmesgln("IntelNativeDisplayConnector: Parsing EDID failed: {}", parsed_edid.error());
         m_crt_edid = {};
     }
 }

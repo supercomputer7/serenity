@@ -453,9 +453,9 @@ ErrorOr<void> Parser::parse()
         return Error::from_string_literal("Incomplete Parser structure"sv);
 
     auto const& edid = raw_edid();
-    u64 header = read_le(&edid.header);
-    if (header != 0x00ffffffffffff00ull)
-        return Error::from_string_literal("No Parser header"sv);
+    //u64 header = read_le(&edid.header);
+    //if (header != 0x00ffffffffffff00ull)
+    //    return Error::from_string_literal("No Parser header"sv);
 
     u8 major_version = read_host(&edid.version.version);
     m_revision = read_host(&edid.version.revision);

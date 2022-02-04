@@ -47,7 +47,7 @@ ErrorOr<void> IntelNativeGraphicsAdapter::initialize_adapter()
     dmesgln("Intel Native Graphics Adapter @ {}, framebuffer @ {}", address, PhysicalAddress(PCI::get_BAR2(address)));
     PCI::enable_bus_mastering(address);
 
-    m_display_connector = IntelNativeDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR2(address) & 0xfffffffc), PhysicalAddress(PCI::get_BAR0(address) & 0xfffffffc), bar0_space_size);
+    m_display_connector = IntelNativeDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR2(address) & 0xfffffff0), PhysicalAddress(PCI::get_BAR0(address) & 0xfffffffc), bar0_space_size);
     return {};
 }
 

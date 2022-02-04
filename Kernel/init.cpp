@@ -296,7 +296,7 @@ void init_stage2(void*)
 
     // Initialize the PCI Bus as early as possible, for early boot (PCI based) serial logging
     PCI::initialize();
-    PCISerialDevice::detect();
+    //PCISerialDevice::detect();
 
     VirtualFileSystem::initialize();
 
@@ -306,7 +306,7 @@ void init_stage2(void*)
     (void)SerialDevice::must_create(2).leak_ref();
     (void)SerialDevice::must_create(3).leak_ref();
 
-    VMWareBackdoor::the(); // don't wait until first mouse packet
+    //VMWareBackdoor::the(); // don't wait until first mouse packet
     HIDManagement::initialize();
 
     GraphicsManagement::the().initialize();
