@@ -138,11 +138,11 @@ static u8 read8_offsetted(Address address, u32 field) { return Access::the().rea
 static u16 read16_offsetted(Address address, u32 field) { return Access::the().read16_field(address, field); }
 static u32 read32_offsetted(Address address, u32 field) { return Access::the().read32_field(address, field); }
 
-size_t get_BAR_space_size(Address address, u8 bar_number)
+static size_t get_pci_register_space_size(Address address, PCI::RegisterOffset offset)
 {
-    // See PCI Spec 2.3, Page 222
-    VERIFY(bar_number < 6);
-    u8 field = to_underlying(PCI::RegisterOffset::BAR0) + (bar_number << 2);
+    VERIFY((offset >= PCI::RegisterOffset::BAR0 && offset <= PCI::RegisterOffset::BAR5) || offset == PCI::RegisterOffset::EXPANSION_ROM_POINTER);
+
+    u8 field = to_underlying(offset);
     u32 bar_reserved = read32_offsetted(address, field);
     write32_offsetted(address, field, 0xFFFFFFFF);
     u32 space_size = read32_offsetted(address, field);
@@ -150,6 +150,18 @@ size_t get_BAR_space_size(Address address, u8 bar_number)
     space_size &= 0xfffffff0;
     space_size = (~space_size) + 1;
     return space_size;
+}
+
+size_t get_BAR_space_size(Address address, u8 bar_number)
+{
+    // See PCI Spec 2.3, Page 222
+    VERIFY(bar_number < 6);
+    return get_pci_register_space_size(address, static_cast<PCI::RegisterOffset>(to_underlying(PCI::RegisterOffset::BAR0) + (bar_number << 2)));
+}
+
+size_t get_expansion_rom_space_size(Address address)
+{
+    return get_pci_register_space_size(address, PCI::RegisterOffset::EXPANSION_ROM_POINTER);
 }
 
 void raw_access(Address address, u32 field, size_t access_size, u32 value)

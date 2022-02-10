@@ -33,6 +33,7 @@ u32 get_BAR4(Address);
 u32 get_BAR5(Address);
 u32 get_BAR(Address address, u8 bar);
 size_t get_BAR_space_size(Address, u8);
+size_t get_expansion_rom_space_size(Address);
 void enable_bus_mastering(Address);
 void disable_bus_mastering(Address);
 void enable_io_space(Address);
