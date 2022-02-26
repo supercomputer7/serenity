@@ -253,13 +253,13 @@ bool BochsGraphicsAdapter::validate_setup_resolution(size_t width, size_t height
     return true;
 }
 
-bool BochsGraphicsAdapter::set_y_offset(size_t output_port_index, size_t y_offset)
+bool BochsGraphicsAdapter::set_y_offset(size_t, size_t)
 {
-    VERIFY(output_port_index == 0);
-    if (m_console_enabled)
-        return false;
-    m_registers->bochs_regs.y_offset = y_offset;
-    return true;
+    //VERIFY(output_port_index == 0);
+    //if (m_console_enabled)
+    return false;
+    //m_registers->bochs_regs.y_offset = y_offset;
+    //return true;
 }
 
 void BochsGraphicsAdapter::enable_consoles()

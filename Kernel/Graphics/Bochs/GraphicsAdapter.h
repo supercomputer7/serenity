@@ -32,7 +32,7 @@ public:
     virtual bool framebuffer_devices_initialized() const override { return !m_framebuffer_device.is_null(); }
 
     virtual bool modesetting_capable() const override { return true; }
-    virtual bool double_framebuffering_capable() const override { return true; }
+    virtual bool double_framebuffering_capable() const override { return false; }
 
     virtual bool vga_compatible() const override;
 
