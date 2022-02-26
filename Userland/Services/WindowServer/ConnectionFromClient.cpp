@@ -1005,16 +1005,16 @@ void ConnectionFromClient::set_unresponsive(bool unresponsive)
 
 void ConnectionFromClient::may_have_become_unresponsive()
 {
-    async_ping();
-    m_ping_timer = Core::Timer::create_single_shot(1000, [this] {
-        set_unresponsive(true);
-    });
-    m_ping_timer->start();
+    //async_ping();
+    //m_ping_timer = Core::Timer::create_single_shot(1000, [this] {
+    //    set_unresponsive(true);
+    //});
+    //m_ping_timer->start();
 }
 
 void ConnectionFromClient::did_become_responsive()
 {
-    set_unresponsive(false);
+    //set_unresponsive(false);
 }
 
 Messages::WindowServer::GetScreenBitmapResponse ConnectionFromClient::get_screen_bitmap(Optional<Gfx::IntRect> const& rect, Optional<u32> const& screen_index)
