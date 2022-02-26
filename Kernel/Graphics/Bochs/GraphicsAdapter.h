@@ -26,6 +26,12 @@ class BochsGraphicsAdapter final : public GenericGraphicsAdapter
 private:
     TYPEDEF_DISTINCT_ORDERED_ID(u16, IndexID);
 
+    enum class EmulatorType {
+        VirtualBox,
+        QEMU,
+        Bochs,
+    };
+
 public:
     static NonnullRefPtr<BochsGraphicsAdapter> initialize(PCI::DeviceIdentifier const&);
     virtual ~BochsGraphicsAdapter() = default;
@@ -65,6 +71,7 @@ private:
     void set_framebuffer_to_big_endian_format();
     void set_framebuffer_to_little_endian_format();
 
+    EmulatorType m_emulator_type { EmulatorType::QEMU };
     PhysicalAddress m_mmio_registers;
     Memory::TypedMapping<BochsDisplayMMIORegisters volatile> m_registers;
     RefPtr<FramebufferDevice> m_framebuffer_device;

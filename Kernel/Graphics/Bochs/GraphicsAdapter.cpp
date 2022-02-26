@@ -116,8 +116,17 @@ UNMAP_AFTER_INIT BochsGraphicsAdapter::BochsGraphicsAdapter(PCI::DeviceIdentifie
     auto is_bochs = vendor_id == PCI::VendorID::QEMUOld && device_id == 0x1111 && revision_id == 0;
     auto is_virtualbox = vendor_id == PCI::VendorID::VirtualBox && device_id == 0xbeef;
 
-    if (is_bochs || is_virtualbox)
+    if (is_bochs || is_virtualbox) {
         m_io_required = true;
+    }
+
+    if (is_bochs) {
+        m_emulator_type = EmulatorType::Bochs;
+    } else if (is_virtualbox) {
+        m_emulator_type = EmulatorType::VirtualBox;
+    } else {
+        m_emulator_type = EmulatorType::QEMU;
+    }
 
     if (pci_device_identifier.class_code().value() == 0x3 && pci_device_identifier.subclass_code().value() == 0x0)
         m_is_vga_capable = true;
@@ -133,8 +142,16 @@ UNMAP_AFTER_INIT void BochsGraphicsAdapter::initialize_framebuffer_devices()
 {
     // FIXME: Find a better way to determine default resolution...
     m_framebuffer_device = FramebufferDevice::create(*this, PhysicalAddress(PCI::get_BAR0(pci_address()) & 0xfffffff0), 1024, 768, 1024 * sizeof(u32));
-    // While write-combine helps greatly on actual hardware, it greatly reduces performance in QEMU
-    m_framebuffer_device->enable_write_combine(false);
+
+    // Note: While write-combine helps greatly on actual hardware, it greatly reduces performance in QEMU
+    // Note: It seems like we need to enable PAT on bochs because otherwise things are slower
+    // even beyond the unimaginable!
+    if (m_emulator_type == EmulatorType::Bochs) {
+        m_framebuffer_device->enable_write_combine(true);
+    } else {
+        m_framebuffer_device->enable_write_combine(false);
+    }
+    
     // FIXME: Would be nice to be able to return a ErrorOr<void> here.
     VERIFY(!m_framebuffer_device->try_to_initialize().is_error());
 }
