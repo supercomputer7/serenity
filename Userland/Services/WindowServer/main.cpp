@@ -62,17 +62,17 @@ ErrorOr<int> serenity_main(Main::Arguments)
 
         auto add_unconfigured_devices = [&]() {
             // Enumerate the /dev/fbX devices and try to set up any ones we find that we haven't already used
-            Core::DirIterator di("/dev", Core::DirIterator::SkipParentAndBaseDir);
+            Core::DirIterator di("/dev/gpu", Core::DirIterator::SkipParentAndBaseDir);
             while (di.has_next()) {
                 auto path = di.next_path();
-                if (!path.starts_with("fb"))
+                if (!path.starts_with("connector"))
                     continue;
-                auto full_path = String::formatted("/dev/{}", path);
+                auto full_path = String::formatted("/dev/gpu/{}", path);
                 if (!Core::File::is_device(full_path))
                     continue;
                 if (fb_devices_configured.find(full_path) != fb_devices_configured.end())
                     continue;
-                if (!screen_layout.try_auto_add_framebuffer(full_path))
+                if (!screen_layout.try_auto_add_display_connector(full_path))
                     dbgln("Could not auto-add framebuffer device {} to screen layout", full_path);
             }
         };

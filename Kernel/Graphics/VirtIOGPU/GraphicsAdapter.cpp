@@ -26,7 +26,13 @@ NonnullRefPtr<GraphicsAdapter> GraphicsAdapter::initialize(PCI::DeviceIdentifier
     VERIFY(device_identifier.hardware_id().vendor_id == PCI::VendorID::VirtIO);
     auto adapter = adopt_ref(*new GraphicsAdapter(device_identifier));
     adapter->initialize();
+    MUST(adapter->initialize_adapter());
     return adapter;
+}
+
+ErrorOr<void> GraphicsAdapter::initialize_adapter()
+{
+    VirtIODisplayConnector::must_create(*this)
 }
 
 GraphicsAdapter::GraphicsAdapter(PCI::DeviceIdentifier const& device_identifier)
@@ -36,36 +42,6 @@ GraphicsAdapter::GraphicsAdapter(PCI::DeviceIdentifier const& device_identifier)
     if (region_or_error.is_error())
         TODO();
     m_scratch_space = region_or_error.release_value();
-}
-
-void GraphicsAdapter::initialize_framebuffer_devices()
-{
-    dbgln_if(VIRTIO_DEBUG, "VirtIO::GraphicsAdapter: Initializing framebuffer devices");
-    VERIFY(!m_created_framebuffer_devices);
-    create_framebuffer_devices();
-    m_created_framebuffer_devices = true;
-
-    GraphicsManagement::the().set_console(*default_console());
-}
-
-void GraphicsAdapter::enable_consoles()
-{
-    dbgln_if(VIRTIO_DEBUG, "VirtIO::GraphicsAdapter: Enabling consoles");
-    for_each_framebuffer([&](auto& framebuffer, auto& console) {
-        framebuffer.deactivate_writes();
-        console.enable();
-        return IterationDecision::Continue;
-    });
-}
-
-void GraphicsAdapter::disable_consoles()
-{
-    dbgln_if(VIRTIO_DEBUG, "VirtIO::GraphicsAdapter: Disabling consoles");
-    for_each_framebuffer([&](auto& framebuffer, auto& console) {
-        console.disable();
-        framebuffer.activate_writes();
-        return IterationDecision::Continue;
-    });
 }
 
 void GraphicsAdapter::initialize()
@@ -101,16 +77,6 @@ void GraphicsAdapter::initialize()
         query_display_edid({});
     } else {
         VERIFY_NOT_REACHED();
-    }
-}
-
-void GraphicsAdapter::create_framebuffer_devices()
-{
-    for (size_t i = 0; i < min(m_num_scanouts, VIRTIO_GPU_MAX_SCANOUTS); i++) {
-        auto& scanout = m_scanouts[i];
-        scanout.framebuffer = adopt_ref(*new VirtIOGPU::FramebufferDevice(*this, i));
-        scanout.framebuffer->after_inserting();
-        scanout.console = Kernel::Graphics::VirtIOGPU::Console::initialize(scanout.framebuffer);
     }
 }
 

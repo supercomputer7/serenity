@@ -4,12 +4,14 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <Kernel/Arch/x86/IO.h>
 #include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Debug.h>
 #include <Kernel/Graphics/Console/ContiguousFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Graphics/Intel/NativeDisplayConnector.h>
 #include <Kernel/Memory/Region.h>
+#include <Kernel/Devices/DeviceManagement.h>
 
 namespace Kernel {
 
@@ -173,12 +175,14 @@ Optional<IntelGraphics::PLLSettings> IntelNativeDisplayConnector::create_pll_set
     return {};
 }
 
-NonnullOwnPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(PhysicalAddress framebuffer_address, PhysicalAddress registers_region_address, size_t registers_region_length)
+NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(PhysicalAddress framebuffer_address, PhysicalAddress registers_region_address, size_t registers_region_length)
 {
     auto registers_region = MUST(MM.allocate_kernel_region(PhysicalAddress(registers_region_address), registers_region_length, "Intel Native Graphics Registers", Memory::Region::Access::ReadWrite));
     // FIXME: Try to put the address as parameter to this function to allow creating this DisplayConnector for many generations...
     auto gmbus_connector = MUST(GMBusConnector::create_with_physical_address(registers_region_address.offset(to_underlying(IntelGraphics::RegisterIndex::GMBusClock))));
-    auto connector = adopt_own_if_nonnull(new (nothrow) IntelNativeDisplayConnector(framebuffer_address, move(gmbus_connector), move(registers_region))).release_nonnull();
+    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(framebuffer_address, move(gmbus_connector), move(registers_region));
+    VERIFY(!device_or_error.is_error());
+    auto connector = device_or_error.release_value();
     MUST(connector->initialize_gmbus_settings_and_read_edid());
     MUST(connector->create_attached_framebuffer_console(framebuffer_address));
     return connector;
@@ -227,7 +231,7 @@ ErrorOr<void> IntelNativeDisplayConnector::set_y_offset(size_t)
 ErrorOr<DisplayConnector::Resolution> IntelNativeDisplayConnector::get_resolution()
 {
     // FIXME: Get the refresh rate as this is real hardware...
-    return Resolution { m_framebuffer_width, m_framebuffer_height, 32, {} };
+    return Resolution { m_framebuffer_width, m_framebuffer_height, 32, m_framebuffer_width * sizeof(u32), {} };
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::unblank()

@@ -6,6 +6,7 @@
 
 #include <Kernel/Arch/x86/IO.h>
 #include <Kernel/Debug.h>
+#include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Graphics/Bochs/Definitions.h>
 #include <Kernel/Graphics/Bochs/VBoxDisplayConnector.h>
 
@@ -16,9 +17,11 @@ VBoxDisplayConnector::VBoxDisplayConnector()
 {
 }
 
-NonnullOwnPtr<VBoxDisplayConnector> VBoxDisplayConnector::must_create(PhysicalAddress framebuffer_address)
+NonnullRefPtr<VBoxDisplayConnector> VBoxDisplayConnector::must_create(PhysicalAddress framebuffer_address)
 {
-    auto connector = adopt_own_if_nonnull(new (nothrow) VBoxDisplayConnector()).release_nonnull();
+    auto device_or_error = DeviceManagement::try_create_device<VBoxDisplayConnector>();
+    VERIFY(!device_or_error.is_error());
+    auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console(framebuffer_address));
     return connector;
 }
@@ -76,7 +79,7 @@ ErrorOr<DisplayConnector::Resolution> VBoxDisplayConnector::get_resolution()
 {
     MutexLocker locker(m_modeset_lock);
     auto width = get_register_with_io(to_underlying(BochsDISPIRegisters::XRES));
-    return Resolution { width, get_register_with_io(to_underlying(BochsDISPIRegisters::YRES)), 32, {} };
+    return Resolution { width, get_register_with_io(to_underlying(BochsDISPIRegisters::YRES)), 32, width * sizeof(u32), {} };
 }
 
 ErrorOr<void> VBoxDisplayConnector::set_y_offset(size_t y_offset)

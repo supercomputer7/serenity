@@ -5,6 +5,7 @@
  */
 
 #include <Kernel/Debug.h>
+#include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Graphics/Bochs/Definitions.h>
 #include <Kernel/Graphics/Bochs/DisplayConnector.h>
 #include <Kernel/Graphics/Console/ContiguousFramebufferConsole.h>
@@ -12,9 +13,25 @@
 
 namespace Kernel {
 
-NonnullOwnPtr<BochsDisplayConnector> BochsDisplayConnector::must_create(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset)
+/*
+
+UNMAP_AFTER_INIT void BochsGraphicsAdapter::initialize_framebuffer_devices()
 {
-    auto connector = adopt_own_if_nonnull(new (nothrow) BochsDisplayConnector(move(registers_region), registers_region_offset)).release_nonnull();
+    // FIXME: Find a better way to determine default resolution...
+    m_framebuffer_device = FramebufferDevice::create(*this, PhysicalAddress(PCI::get_BAR0(pci_address()) & 0xfffffff0), 1024, 768, 1024 * sizeof(u32));
+    // While write-combine helps greatly on actual hardware, it greatly reduces performance in QEMU
+    m_framebuffer_device->enable_write_combine(false);
+    // FIXME: Would be nice to be able to return a ErrorOr<void> here.
+    VERIFY(!m_framebuffer_device->try_to_initialize().is_error());
+}
+
+*/
+
+NonnullRefPtr<BochsDisplayConnector> BochsDisplayConnector::must_create(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset)
+{
+    auto device_or_error = DeviceManagement::try_create_device<BochsDisplayConnector>(move(registers_region), registers_region_offset);
+    VERIFY(!device_or_error.is_error());
+    auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console(framebuffer_address));
     return connector;
 }
@@ -25,17 +42,6 @@ ErrorOr<void> BochsDisplayConnector::create_attached_framebuffer_console(Physica
     m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(framebuffer_address, 1024, 768, 1024 * sizeof(u32));
     GraphicsManagement::the().set_console(*m_framebuffer_console);
     return {};
-}
-
-void BochsDisplayConnector::enable_console()
-{
-    VERIFY(m_framebuffer_console);
-    m_framebuffer_console->enable();
-}
-void BochsDisplayConnector::disable_console()
-{
-    VERIFY(m_framebuffer_console);
-    m_framebuffer_console->disable();
 }
 
 BochsDisplayConnector::BochsDisplayConnector()
@@ -81,7 +87,7 @@ void BochsDisplayConnector::set_framebuffer_to_little_endian_format()
 
 ErrorOr<void> BochsDisplayConnector::set_safe_resolution()
 {
-    DisplayConnector::Resolution safe_resolution { 1024, 768, 32, {} };
+    DisplayConnector::Resolution safe_resolution { 1024, 768, 32, 1024 * sizeof(u32), {} };
     return set_resolution(safe_resolution);
 }
 
@@ -94,6 +100,16 @@ ErrorOr<void> BochsDisplayConnector::unblank()
     return {};
 }
 
+ErrorOr<size_t> BochsDisplayConnector::write_to_first_surface(u64, UserOrKernelBuffer const&, size_t)
+{
+    TODO();
+}
+
+ErrorOr<void> BochsDisplayConnector::flush_first_surface()
+{
+    TODO();
+}
+
 ErrorOr<void> BochsDisplayConnector::set_y_offset(size_t y_offset)
 {
     MutexLocker locker(m_modeset_lock);
@@ -104,7 +120,7 @@ ErrorOr<void> BochsDisplayConnector::set_y_offset(size_t y_offset)
 ErrorOr<DisplayConnector::Resolution> BochsDisplayConnector::get_resolution()
 {
     MutexLocker locker(m_modeset_lock);
-    return Resolution { m_registers->bochs_regs.xres, m_registers->bochs_regs.yres, 32, {} };
+    return Resolution { m_registers->bochs_regs.xres, m_registers->bochs_regs.yres, 32, m_registers->bochs_regs.xres * sizeof(u32), {} };
 }
 
 ErrorOr<void> BochsDisplayConnector::set_resolution(Resolution const& resolution)

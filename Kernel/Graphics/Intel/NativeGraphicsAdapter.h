@@ -27,13 +27,5 @@ private:
     ErrorOr<void> initialize_adapter();
 
     explicit IntelNativeGraphicsAdapter(PCI::Address);
-
-    // ^GenericGraphicsAdapter
-    virtual void enable_consoles() override;
-    virtual void disable_consoles() override;
-
-    // ^GenericGraphicsAdapter
-    virtual void initialize_framebuffer_devices() override;
-    virtual ErrorOr<ByteBuffer> get_edid(size_t output_port_index) const override;
 };
 }

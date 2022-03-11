@@ -211,15 +211,10 @@ static void populate_devtmpfs_devices_based_on_devctl()
             break;
         }
         case 28: {
-            create_devtmpfs_block_device(String::formatted("/dev/gpu{}", minor_number), 0666, 28, minor_number);
+            create_devtmpfs_char_device(String::formatted("/dev/gpu/connector{}", minor_number), 0666, 28, minor_number);
             break;
         }
         case 29: {
-            if (is_block_device) {
-                create_devtmpfs_block_device(String::formatted("/dev/fb{}", minor_number), 0666, 29, minor_number);
-                break;
-            }
-
             switch (minor_number) {
             case 0: {
                 create_devtmpfs_char_device("/dev/full", 0660, 29, 0);
@@ -395,9 +390,12 @@ static ErrorOr<void> prepare_synthetic_filesystems()
     TRY(Core::System::symlink("/proc/self/fd/2", "/dev/stderr"));
     TRY(Core::System::symlink("/proc/self/tty", "/dev/tty"));
 
+    TRY(Core::System::mkdir("/dev/gpu", 0755));
+
     populate_devtmpfs();
 
     TRY(Core::System::mkdir("/dev/pts", 0755));
+
 
     TRY(Core::System::mount(-1, "/dev/pts", "devpts", 0));
 

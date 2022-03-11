@@ -26,11 +26,9 @@ ALWAYS_INLINE int fb_get_head_properties(int fd, FBHeadProperties* info)
 ALWAYS_INLINE int fb_get_resolution(int fd, FBHeadResolution* info)
 {
     FBHeadProperties head_properties;
-    head_properties.head_index = info->head_index;
     if (auto rc = ioctl(fd, FB_IOCTL_GET_HEAD_PROPERTIES, &head_properties); rc < 0)
         return rc;
-    info->head_index = head_properties.head_index;
-    info->pitch = head_properties.pitch;
+    info->refresh_rate = head_properties.refresh_rate;
     info->width = head_properties.width;
     info->height = head_properties.height;
     return 0;
