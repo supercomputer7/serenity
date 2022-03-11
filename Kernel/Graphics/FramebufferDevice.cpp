@@ -42,15 +42,14 @@ ErrorOr<Memory::Region*> FramebufferDevice::mmap(Process& process, OpenFileDescr
 
     TRY(try_to_initialize());
 
-    if (m_userspace_framebuffer_region)
-        return m_userspace_framebuffer_region;
-
     RefPtr<Memory::VMObject> chosen_vmobject;
+
     if (m_graphical_writes_enabled) {
         chosen_vmobject = m_real_framebuffer_vmobject;
     } else {
         chosen_vmobject = m_swapped_framebuffer_vmobject;
     }
+
     m_userspace_framebuffer_region = TRY(process.address_space().allocate_region_with_vmobject(
         range,
         chosen_vmobject.release_nonnull(),
@@ -100,9 +99,6 @@ void FramebufferDevice::activate_writes()
 
 ErrorOr<void> FramebufferDevice::try_to_initialize()
 {
-    if (m_initialized)
-        return {};
-
     auto framebuffer_length = TRY(buffer_length(0));
     framebuffer_length = TRY(Memory::page_round_up(framebuffer_length));
 
@@ -111,12 +107,10 @@ ErrorOr<void> FramebufferDevice::try_to_initialize()
     auto real_framebuffer_region = TRY(MM.allocate_kernel_region_with_vmobject(*real_framebuffer_vmobject, framebuffer_length, "Framebuffer", Memory::Region::Access::ReadWrite));
     auto swapped_framebuffer_region = TRY(MM.allocate_kernel_region_with_vmobject(*swapped_framebuffer_vmobject, framebuffer_length, "Framebuffer Swap (Blank)", Memory::Region::Access::ReadWrite));
 
-    m_real_framebuffer_vmobject = move(real_framebuffer_vmobject);
-    m_swapped_framebuffer_vmobject = move(swapped_framebuffer_vmobject);
+    m_real_framebuffer_vmobject = real_framebuffer_vmobject;
+    m_swapped_framebuffer_vmobject = swapped_framebuffer_vmobject;
     m_real_framebuffer_region = move(real_framebuffer_region);
     m_swapped_framebuffer_region = move(swapped_framebuffer_region);
-
-    m_initialized = true;
 
     return {};
 }
