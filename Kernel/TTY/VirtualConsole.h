@@ -91,6 +91,7 @@ private:
     // ^TTY
     virtual ErrorOr<size_t> on_tty_write(const UserOrKernelBuffer&, size_t) override;
     virtual void echo(u8) override;
+    virtual ErrorOr<void> set_graphical_mode(bool enabled) override;
 
     // ^TerminalClient
     virtual void beep() override;
