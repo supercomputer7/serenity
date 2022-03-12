@@ -17,17 +17,22 @@ namespace Kernel {
 
 class VGAGenericDisplayConnector
     : public DisplayConnector {
+    friend class DeviceManagement;
 
 public:
-    static NonnullOwnPtr<VGAGenericDisplayConnector> must_create_with_preset_resolution(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
-    static NonnullOwnPtr<VGAGenericDisplayConnector> must_create();
-
-    void enable_console();
-    void disable_console();
+    static NonnullRefPtr<VGAGenericDisplayConnector> must_create_with_preset_resolution(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
+    static NonnullRefPtr<VGAGenericDisplayConnector> must_create();
 
     // ^DisplayConnector
     virtual bool modesetting_capable() const override { return false; }
     virtual bool double_framebuffering_capable() const override { return false; }
+    virtual bool flush_support() const override { return false; }
+    virtual bool partial_flush_support() const override { return false; }
+    // Note: Bare metal hardware probably require a defined refresh rate for modesetting.
+    // However, because this connector doesn't support such capability, this is safe
+    // to just advertise this as not supporting refresh rate of the connected display.
+    virtual bool refresh_rate_support() const override { return false; }
+
     virtual ErrorOr<ByteBuffer> get_edid() const override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_resolution(Resolution const&) override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_safe_resolution() override { return Error::from_errno(ENOTSUP); }
@@ -41,6 +46,12 @@ private:
     ErrorOr<void> create_attached_framebuffer_console();
     VGAGenericDisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
     VGAGenericDisplayConnector();
+
+    virtual ErrorOr<size_t> write_to_first_surface(u64 offset, UserOrKernelBuffer const&, size_t length) override;
+    virtual ErrorOr<void> flush_first_surface() override;
+
+    virtual void enable_console() override;
+    virtual void disable_console() override;
 
 protected:
     explicit VGAGenericDisplayConnector(PhysicalAddress framebuffer_address);
