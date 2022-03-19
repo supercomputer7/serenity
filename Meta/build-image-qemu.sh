@@ -101,6 +101,7 @@ if [ -z "$SERENITY_DISK_SIZE_BYTES" ]; then
     #   * Inodes and block bitmaps for each block group,
     #   * Plenty of extra free space and free inodes.
     DISK_SIZE_BYTES=$((DISK_SIZE_BYTES * 2))
+    DISK_SIZE_BYTES=$(echo "x=l($DISK_SIZE_BYTES)/l(2); scale=0; 2^((x+1)/1)" | bc -l)
     INODE_COUNT=$((INODE_COUNT * 7))
 else
     if [ "$DISK_SIZE_BYTES" -gt "$SERENITY_DISK_SIZE_BYTES" ]; then

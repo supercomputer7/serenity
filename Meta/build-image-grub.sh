@@ -43,6 +43,7 @@ fi
 }
 
 DISK_SIZE=$(($(disk_usage "$SERENITY_SOURCE_DIR/Base") + $(disk_usage Root) + 300))
+DISK_SIZE=$(echo "x=l($DISK_SIZE)/l(2); scale=0; 2^((x+1)/1)" | bc -l)
 
 echo "setting up disk image..."
 if [ "$1" = "ebr" ]; then
