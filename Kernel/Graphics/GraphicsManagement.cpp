@@ -10,6 +10,7 @@
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/PCI/IDs.h>
 #include <Kernel/CommandLine.h>
+#include <Kernel/Graphics/AMD/RadeonAdapter.h>
 #include <Kernel/Graphics/Bochs/GraphicsAdapter.h>
 #include <Kernel/Graphics/Console/BootFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
@@ -191,6 +192,9 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
         case PCI::VendorID::VMWare:
             dmesgln("Graphics: Using VirtIO console");
             adapter = VMWareGraphicsAdapter::try_initialize(device_identifier);
+            break;
+        case PCI::VendorID::ATI:
+            adapter = RadeonGraphicsAdapter::initialize(device_identifier);
             break;
         default:
             if (!is_vga_compatible_pci_device(device_identifier))

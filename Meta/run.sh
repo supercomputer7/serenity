@@ -406,12 +406,15 @@ elif [ "$SERENITY_RUN" = "qgrub" ] || [ "$SERENITY_RUN" = "qextlinux" ]; then
 elif [ "$SERENITY_RUN" = "q35" ]; then
     # Meta/run.sh q35: qemu (q35 chipset) with SerenityOS
     echo "Starting SerenityOS with QEMU Q35 machine, Commandline: ${SERENITY_KERNEL_CMDLINE}"
-    "$SERENITY_QEMU_BIN" \
+    sudo "$SERENITY_QEMU_BIN" \
         $SERENITY_COMMON_QEMU_Q35_ARGS \
         $SERENITY_VIRT_TECH_ARG \
         -netdev user,id=breh,hostfwd=tcp:127.0.0.1:8888-10.0.2.15:8888,hostfwd=tcp:127.0.0.1:8823-10.0.2.15:23 \
         -device $SERENITY_ETHERNET_DEVICE_TYPE,netdev=breh \
         $SERENITY_KERNEL_AND_INITRD \
+        -fw_cfg name=opt/pci-optionrom-exec,string=0 \
+        -device vfio-pci,host=02:00.0 \
+        -device vfio-pci,host=02:00.1 \
         -append "${SERENITY_KERNEL_CMDLINE}"
 elif [ "$SERENITY_RUN" = "isapc" ]; then
     # Meta/run.sh q35: qemu (q35 chipset) with SerenityOS

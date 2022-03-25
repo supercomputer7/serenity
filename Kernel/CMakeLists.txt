@@ -74,6 +74,8 @@ set(KERNEL_SOURCES
     Devices/HID/PS2MouseDevice.cpp
     Devices/HID/VMWareMouseDevice.cpp
     GlobalProcessExposed.cpp
+    Graphics/AMD/RadeonAdapter.cpp
+    Graphics/AMD/ATOMBIOS.cpp
     Graphics/Bochs/DisplayConnector.cpp
     Graphics/Bochs/GraphicsAdapter.cpp
     Graphics/Bochs/VBoxDisplayConnector.cpp

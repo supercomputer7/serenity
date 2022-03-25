@@ -15,6 +15,7 @@ namespace Kernel::Memory {
 class MappedROM {
 public:
     const u8* base() const { return region->vaddr().offset(offset).as_ptr(); }
+    VirtualAddress base_address() const { return region->vaddr().offset(offset); }
     const u8* end() const { return base() + size; }
     OwnPtr<Region> region;
     size_t size { 0 };
