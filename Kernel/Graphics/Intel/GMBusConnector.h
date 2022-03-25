@@ -19,6 +19,7 @@ struct [[gnu::packed]] GMBusRegisters {
     u32 command;
     u32 status;
     u32 data;
+    u32 interrupt_mask;
 };
 
 enum class GMBusStatus;
@@ -37,6 +38,8 @@ public:
 public:
     static ErrorOr<NonnullOwnPtr<GMBusConnector>> create_with_physical_address(PhysicalAddress gmbus_start_address);
 
+    void pre_transaction();
+    void reset();
     void write(unsigned address, u32 data);
     ErrorOr<void> read(unsigned address, u8* buf, size_t length);
     void set_default_rate();

@@ -11,6 +11,7 @@
 namespace Kernel {
 
 enum class GMBusStatus {
+    ResetComplete,
     TransactionCompletion,
     HardwareReady
 };
@@ -33,6 +34,28 @@ GMBusConnector::GMBusConnector(NonnullOwnPtr<Memory::Region> registers_region, s
     set_pin_pair(PinPair::DedicatedAnalog);
 }
 
+void GMBusConnector::reset()
+{
+    SpinlockLocker locker(m_access_lock);
+    u32 original_command_value = m_gmbus_registers->command;
+    if (original_command_value & (1 << 31)) {
+        m_gmbus_registers->command = original_command_value & ~(1 << 31);
+        wait_for(GMBusStatus::HardwareReady, {});
+        return;
+    }
+    IO::delay(1000);
+    full_memory_barrier();
+    m_gmbus_registers->command = original_command_value | ((1 << 31));
+    full_memory_barrier();
+    IO::delay(1000);
+    wait_for(GMBusStatus::HardwareReady, {});
+    full_memory_barrier();
+    m_gmbus_registers->command = original_command_value;
+    IO::delay(1000);
+    full_memory_barrier();
+    wait_for(GMBusStatus::ResetComplete, {});
+}
+
 bool GMBusConnector::wait_for(GMBusStatus desired_status, Optional<size_t> milliseconds_timeout)
 {
     VERIFY(m_access_lock.is_locked());
@@ -42,9 +65,14 @@ bool GMBusConnector::wait_for(GMBusStatus desired_status, Optional<size_t> milli
             return false;
         full_memory_barrier();
         u32 status = m_gmbus_registers->status;
+        u32 command_status = m_gmbus_registers->command;
         full_memory_barrier();
         VERIFY(!(status & (1 << 10))); // error happened
         switch (desired_status) {
+        case GMBusStatus::ResetComplete:
+            if (!(command_status & (1 << 31)))
+                return true;
+            break;
         case GMBusStatus::HardwareReady:
             if (status & (1 << 11))
                 return true;
@@ -88,10 +116,22 @@ void GMBusConnector::set_pin_pair(PinPair pin_pair)
     m_gmbus_registers->clock = (m_gmbus_registers->clock & (~0b111)) | (pin_pair & 0b111);
 }
 
+void GMBusConnector::pre_transaction()
+{
+    VERIFY(m_access_lock.is_locked());
+    m_gmbus_registers->interrupt_mask = 0;
+    m_gmbus_registers->clock = 0;
+}
+
+
+
 ErrorOr<void> GMBusConnector::read(unsigned address, u8* buf, size_t length)
 {
     VERIFY(address < 256);
     SpinlockLocker locker(m_access_lock);
+    pre_transaction();
+    set_default_rate();
+    set_pin_pair(PinPair::DedicatedAnalog);
     size_t nread = 0;
     auto read_set = [&] {
         full_memory_barrier();

@@ -342,9 +342,14 @@ bool IntelNativeDisplayConnector::pipe_b_enabled() const
 void IntelNativeDisplayConnector::gmbus_read_edid()
 {
     {
+        m_gmbus_connector->reset();
         SpinlockLocker control_lock(m_control_lock);
-        m_gmbus_connector->write(DDC2_I2C_ADDRESS, 0);
+        //m_gmbus_connector->write(DDC2_I2C_ADDRESS, 0);
         MUST(m_gmbus_connector->read(DDC2_I2C_ADDRESS, (u8*)&m_crt_edid_bytes, sizeof(m_crt_edid_bytes)));
+
+        dmesgln("IntelNativeGraphicsAdapter: Print EDID");
+        dmesgln("{:02x}", m_crt_edid_bytes[0]);
+
         // FIXME: It seems like the returned EDID is almost correct,
         // but the first byte is set to 0xD0 instead of 0x00.
         // For now, this "hack" works well enough.
