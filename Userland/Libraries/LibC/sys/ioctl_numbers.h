@@ -33,13 +33,13 @@ struct FBHeadModeSetting {
     int horizontal_stride;
     int pixel_clock_in_khz;
     int horizontal_active;
-    int horizontal_sync_start;
-    int horizontal_sync_end;
-    int horizontal_total;
+    int horizontal_front_porch_pixels;
+    int horizontal_sync_time_pixels;
+    int horizontal_blank_pixels;
     int vertical_active;
-    int vertical_sync_start;
-    int vertical_sync_end;
-    int vertical_total;
+    int vertical_front_porch_lines;
+    int vertical_sync_time_lines;
+    int vertical_blank_lines;
 };
 
 struct FBHeadProperties {

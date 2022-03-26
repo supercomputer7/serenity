@@ -53,13 +53,13 @@ VGAGenericDisplayConnector::VGAGenericDisplayConnector(PhysicalAddress framebuff
         .horizontal_stride = framebuffer_pitch,
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = framebuffer_width,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = framebuffer_width,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = framebuffer_height,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = framebuffer_height,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
     m_current_mode_setting = current_mode_setting;
 }

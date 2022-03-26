@@ -23,28 +23,48 @@ public:
         {
             return horizontal_active;
         }
-        size_t horizontal_blanking_end() const
+        size_t horizontal_sync_start() const
         {
-            return horizontal_total;
+            return horizontal_active + horizontal_front_porch_pixels;
         }
+        size_t horizontal_sync_end() const
+        {
+            return horizontal_active + horizontal_front_porch_pixels + horizontal_sync_time_pixels;
+        }
+        size_t horizontal_total() const
+        {
+            return horizontal_active + horizontal_blank_pixels;
+        }
+
         size_t vertical_blanking_start() const
         {
             return vertical_active;
         }
-        size_t vertical_blanking_end() const
+        size_t vertical_sync_start() const
         {
-            return vertical_total;
+            return vertical_active + vertical_front_porch_lines;
         }
+        size_t vertical_sync_end() const
+        {
+            return vertical_active + vertical_front_porch_lines + vertical_sync_time_lines;
+        }
+        size_t vertical_total() const
+        {
+            return vertical_active + vertical_blank_lines;
+        }
+
         size_t horizontal_stride; // Note: This is commonly known as "pitch"
         size_t pixel_clock_in_khz;
+
         size_t horizontal_active;
-        size_t horizontal_sync_start;
-        size_t horizontal_sync_end;
-        size_t horizontal_total;
+        size_t horizontal_front_porch_pixels;
+        size_t horizontal_sync_time_pixels;
+        size_t horizontal_blank_pixels;
+
         size_t vertical_active;
-        size_t vertical_sync_start;
-        size_t vertical_sync_end;
-        size_t vertical_total;
+        size_t vertical_front_porch_lines;
+        size_t vertical_sync_time_lines;
+        size_t vertical_blank_lines;
     };
 
     enum class DisplayMode {

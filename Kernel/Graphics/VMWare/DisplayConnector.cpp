@@ -46,13 +46,13 @@ ErrorOr<void> VMWareDisplayConnector::set_safe_mode_setting()
         .horizontal_stride = 1024 * sizeof(u32),
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = 1024,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = 1024,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = 768,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = 768,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
     return set_mode_setting(safe_mode_setting);
 }
@@ -134,13 +134,13 @@ ErrorOr<void> VMWareDisplayConnector::set_mode_setting(ModeSetting const& mode_s
         .horizontal_stride = pitch,
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = width,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = width,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = height,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = height,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
     m_current_mode_setting = current_mode_setting;
     return {};

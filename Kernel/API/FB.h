@@ -31,13 +31,13 @@ ALWAYS_INLINE int fb_get_mode_setting(int fd, FBHeadModeSetting* info)
     info->horizontal_stride = head_properties.mode_setting.horizontal_stride;
     info->pixel_clock_in_khz = head_properties.mode_setting.pixel_clock_in_khz;
     info->horizontal_active = head_properties.mode_setting.horizontal_active;
-    info->horizontal_sync_start = head_properties.mode_setting.horizontal_sync_start;
-    info->horizontal_sync_end = head_properties.mode_setting.horizontal_sync_end;
-    info->horizontal_total = head_properties.mode_setting.horizontal_total;
+    info->horizontal_front_porch_pixels = head_properties.mode_setting.horizontal_front_porch_pixels;
+    info->horizontal_sync_time_pixels = head_properties.mode_setting.horizontal_sync_time_pixels;
+    info->horizontal_blank_pixels = head_properties.mode_setting.horizontal_blank_pixels;
     info->vertical_active = head_properties.mode_setting.vertical_active;
-    info->vertical_sync_start = head_properties.mode_setting.vertical_sync_start;
-    info->vertical_sync_end = head_properties.mode_setting.vertical_sync_end;
-    info->vertical_total = head_properties.mode_setting.vertical_total;
+    info->vertical_front_porch_lines = head_properties.mode_setting.vertical_front_porch_lines;
+    info->vertical_sync_time_lines = head_properties.mode_setting.vertical_sync_time_lines;
+    info->vertical_blank_lines = head_properties.mode_setting.vertical_blank_lines;
     return 0;
 }
 

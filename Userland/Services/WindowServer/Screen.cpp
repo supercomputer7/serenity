@@ -325,13 +325,13 @@ bool Screen::set_resolution(bool initial)
             .horizontal_stride = 0,
             .pixel_clock_in_khz = 0,
             .horizontal_active = info.resolution.width(),
-            .horizontal_sync_start = 0,
-            .horizontal_sync_end = 0,
-            .horizontal_total = info.resolution.width(),
+            .horizontal_front_porch_pixels = 0,
+            .horizontal_sync_time_pixels = 0,
+            .horizontal_blank_pixels = 0,
             .vertical_active = info.resolution.height(),
-            .vertical_sync_start = 0,
-            .vertical_sync_end = 0,
-            .vertical_total = info.resolution.height(),
+            .vertical_front_porch_lines = 0,
+            .vertical_sync_time_lines = 0,
+            .vertical_blank_lines = 0,
         };
         rc = fb_set_resolution(m_display_connector_fd, &mode_setting);
     }

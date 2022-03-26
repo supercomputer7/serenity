@@ -69,19 +69,19 @@ ErrorOr<void> VBoxDisplayConnector::set_mode_setting(ModeSetting const& mode_set
     }
     auto current_horizontal_active = get_register_with_io(to_underlying(BochsDISPIRegisters::XRES));
     auto current_vertical_active = get_register_with_io(to_underlying(BochsDISPIRegisters::YRES));
-    DisplayConnector::ModeSetting current_mode_setting {
+    DisplayConnector::ModeSetting mode_set {
         .horizontal_stride = current_horizontal_active * sizeof(u32),
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = current_horizontal_active,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = current_horizontal_active,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = current_vertical_active,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = current_vertical_active,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
-    m_current_mode_setting = current_mode_setting;
+    m_current_mode_setting = mode_set;
     return {};
 }
 
