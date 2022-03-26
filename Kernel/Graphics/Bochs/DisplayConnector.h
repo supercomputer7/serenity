@@ -41,7 +41,6 @@ private:
     virtual ErrorOr<ByteBuffer> get_edid() const override;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override;
     virtual ErrorOr<void> set_safe_mode_setting() override;
-    virtual ErrorOr<ModeSetting> current_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 
@@ -58,9 +57,6 @@ private:
 
     virtual void enable_console() override;
     virtual void disable_console() override;
-
-protected:
-    Mutex m_modeset_lock;
 
 private:
     const PhysicalAddress m_framebuffer_address;

@@ -7,7 +7,6 @@
 #include <Kernel/Arch/x86/IO.h>
 #include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Graphics/Console/ContiguousFramebufferConsole.h>
-#include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Graphics/Intel/NativeGraphicsAdapter.h>
 #include <Kernel/PhysicalAddress.h>

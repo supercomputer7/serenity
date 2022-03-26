@@ -9,7 +9,6 @@
 #include <AK/RefPtr.h>
 #include <AK/Try.h>
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
-#include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/Intel/GMBusConnector.h>
 #include <Kernel/Graphics/Intel/NativeDisplayConnector.h>
 #include <Kernel/Memory/TypedMapping.h>
@@ -77,11 +76,9 @@ public:
     static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
-    ErrorOr<DisplayConnector::ModeSetting> current_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const&);
+    ErrorOr<void> set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
 private:
-    ErrorOr<DisplayConnector::ModeSetting> current_mode_setting(IntelNativeDisplayConnector const& connector);
-
     IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
     ErrorOr<void> initialize_connectors();
 
@@ -93,6 +90,7 @@ private:
 
     bool is_resolution_valid(size_t width, size_t height);
 
+    bool set_crt_resolution(DisplayConnector::ModeSetting const&);
     bool set_safe_crt_resolution();
 
     void disable_output();
@@ -112,7 +110,7 @@ private:
     void set_dpll_registers(IntelGraphics::PLLSettings const&);
 
     void enable_dpll_without_vga(IntelGraphics::PLLSettings const&, size_t dac_multiplier);
-    void set_display_timings(Graphics::Modesetting const&);
+    void set_display_timings(DisplayConnector::ModeSetting const&);
     void enable_pipe_a();
     void set_framebuffer_parameters(size_t, size_t);
     void enable_primary_plane(size_t stride);

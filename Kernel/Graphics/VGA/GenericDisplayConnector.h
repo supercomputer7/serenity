@@ -9,7 +9,6 @@
 #include <AK/RefPtr.h>
 #include <AK/Try.h>
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
-#include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/DisplayConnector.h>
 #include <Kernel/Memory/TypedMapping.h>
 
@@ -36,7 +35,6 @@ public:
     virtual ErrorOr<ByteBuffer> get_edid() const override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_safe_mode_setting() override { return Error::from_errno(ENOTSUP); }
-    virtual ErrorOr<ModeSetting> current_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t) override { return Error::from_errno(ENOTSUP); }
     // FIXME: If we operate in VGA mode, we actually can unblank the screen!
     virtual ErrorOr<void> unblank() override { return Error::from_errno(ENOTSUP); }
@@ -57,9 +55,6 @@ protected:
     explicit VGAGenericDisplayConnector(PhysicalAddress framebuffer_address);
 
     Optional<PhysicalAddress> m_framebuffer_address;
-    size_t m_framebuffer_width { 0 };
-    size_t m_framebuffer_height { 0 };
-    size_t m_framebuffer_pitch { 0 };
     OwnPtr<Memory::Region> m_framebuffer_region;
 
     RefPtr<Graphics::Console> m_framebuffer_console;

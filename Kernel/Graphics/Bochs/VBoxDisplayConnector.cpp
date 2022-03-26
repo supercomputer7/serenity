@@ -50,7 +50,7 @@ BochsDisplayConnector::IndexID VBoxDisplayConnector::index_id() const
 
 ErrorOr<void> VBoxDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
-    MutexLocker locker(m_modeset_lock);
+    SpinlockLocker locker(m_modeset_lock);
     size_t width = mode_setting.horizontal_active;
     size_t height = mode_setting.vertical_active;
 
@@ -67,15 +67,9 @@ ErrorOr<void> VBoxDisplayConnector::set_mode_setting(ModeSetting const& mode_set
     if ((u16)width != get_register_with_io(to_underlying(BochsDISPIRegisters::XRES)) || (u16)height != get_register_with_io(to_underlying(BochsDISPIRegisters::YRES))) {
         return Error::from_errno(ENOTIMPL);
     }
-    return {};
-}
-
-ErrorOr<DisplayConnector::ModeSetting> VBoxDisplayConnector::current_mode_setting()
-{
-    MutexLocker locker(m_modeset_lock);
     auto current_horizontal_active = get_register_with_io(to_underlying(BochsDISPIRegisters::XRES));
     auto current_vertical_active = get_register_with_io(to_underlying(BochsDISPIRegisters::YRES));
-    DisplayConnector::ModeSetting mode_setting {
+    DisplayConnector::ModeSetting current_mode_setting {
         .horizontal_stride = current_horizontal_active * sizeof(u32),
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = current_horizontal_active,
@@ -87,12 +81,13 @@ ErrorOr<DisplayConnector::ModeSetting> VBoxDisplayConnector::current_mode_settin
         .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
         .vertical_total = current_vertical_active,
     };
-    return mode_setting;
+    m_current_mode_setting = current_mode_setting;
+    return {};
 }
 
 ErrorOr<void> VBoxDisplayConnector::set_y_offset(size_t y_offset)
 {
-    MutexLocker locker(m_modeset_lock);
+    SpinlockLocker locker(m_modeset_lock);
     set_register_with_io(to_underlying(BochsDISPIRegisters::Y_OFFSET), (u16)y_offset);
     return {};
 }

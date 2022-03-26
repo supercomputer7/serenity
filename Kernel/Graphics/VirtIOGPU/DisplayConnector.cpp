@@ -94,7 +94,7 @@ ErrorOr<ByteBuffer> VirtIODisplayConnector::get_edid() const
 }
 ErrorOr<void> VirtIODisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
-    SpinlockLocker locker(m_operation_lock);
+    SpinlockLocker locker(m_modeset_lock);
     if (mode_setting.horizontal_active > MAX_VIRTIOGPU_RESOLUTION_WIDTH || mode_setting.vertical_active > MAX_VIRTIOGPU_RESOLUTION_HEIGHT)
         return Error::from_errno(ENOTSUP);
 
@@ -107,6 +107,19 @@ ErrorOr<void> VirtIODisplayConnector::set_mode_setting(ModeSetting const& mode_s
         .height = (u32)mode_setting.vertical_active,
     };
     TRY(create_framebuffer());
+    DisplayConnector::ModeSetting mode_set {
+        .horizontal_stride = info.rect.width * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = info.rect.width,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = info.rect.width,
+        .vertical_active = info.rect.height,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = info.rect.height,
+    };
+    m_current_mode_setting = mode_set;
     return {};
 }
 ErrorOr<void> VirtIODisplayConnector::set_safe_mode_setting()
@@ -125,24 +138,7 @@ ErrorOr<void> VirtIODisplayConnector::set_safe_mode_setting()
     };
     return set_mode_setting(safe_mode_setting);
 }
-ErrorOr<DisplayConnector::ModeSetting> VirtIODisplayConnector::current_mode_setting()
-{
-    SpinlockLocker locker(m_operation_lock);
-    auto& info = m_display_info;
-    DisplayConnector::ModeSetting resolution {
-        .horizontal_stride = info.rect.width * sizeof(u32),
-        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
-        .horizontal_active = info.rect.width,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = info.rect.width,
-        .vertical_active = info.rect.height,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = info.rect.height,
-    };
-    return resolution;
-}
+
 ErrorOr<void> VirtIODisplayConnector::set_y_offset(size_t y)
 {
     VERIFY(m_control_lock.is_locked());

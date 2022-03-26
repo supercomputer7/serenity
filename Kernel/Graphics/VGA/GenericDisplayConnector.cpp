@@ -39,7 +39,8 @@ ErrorOr<void> VGAGenericDisplayConnector::create_attached_text_console()
 ErrorOr<void> VGAGenericDisplayConnector::create_attached_framebuffer_console()
 {
     VERIFY(m_framebuffer_address.has_value());
-    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(m_framebuffer_address.value(), m_framebuffer_width, m_framebuffer_height, m_framebuffer_pitch);
+    SpinlockLocker locker(m_modeset_lock);
+    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(m_framebuffer_address.value(), m_current_mode_setting.horizontal_active, m_current_mode_setting.vertical_active, m_current_mode_setting.horizontal_stride);
     GraphicsManagement::the().set_console(*m_framebuffer_console);
     return {};
 }
@@ -47,10 +48,20 @@ ErrorOr<void> VGAGenericDisplayConnector::create_attached_framebuffer_console()
 VGAGenericDisplayConnector::VGAGenericDisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
     : DisplayConnector()
     , m_framebuffer_address(framebuffer_address)
-    , m_framebuffer_width(framebuffer_width)
-    , m_framebuffer_height(framebuffer_height)
-    , m_framebuffer_pitch(framebuffer_pitch)
 {
+    DisplayConnector::ModeSetting current_mode_setting {
+        .horizontal_stride = framebuffer_pitch,
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = framebuffer_width,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = framebuffer_width,
+        .vertical_active = framebuffer_height,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = framebuffer_height,
+    };
+    m_current_mode_setting = current_mode_setting;
 }
 
 VGAGenericDisplayConnector::VGAGenericDisplayConnector()
@@ -90,29 +101,6 @@ ErrorOr<size_t> VGAGenericDisplayConnector::write_to_first_surface(u64 offset, U
 ErrorOr<void> VGAGenericDisplayConnector::flush_first_surface()
 {
     return Error::from_errno(ENOTSUP);
-}
-
-ErrorOr<DisplayConnector::ModeSetting> VGAGenericDisplayConnector::current_mode_setting()
-{
-    if ((m_framebuffer_width == 0) || (m_framebuffer_height == 0) || (m_framebuffer_pitch == 0))
-        return Error::from_errno(ENOTSUP);
-    // Note: We don't know pretty much anything about how to get the mode setting of the adapter
-    // nor the attached display/monitor/panel/whatever to that adapter, so we can't really
-    // modeset the hardware anyway, but that's OK because we can still let userspace to show its
-    // graphics on the framebuffer.
-    DisplayConnector::ModeSetting mode_setting {
-        .horizontal_stride = m_framebuffer_pitch,
-        .pixel_clock_in_khz = 0, // Note: We don't know what the clock is, and it doesn't really matter here
-        .horizontal_active = m_framebuffer_width,
-        .horizontal_sync_start = 0, // Note: We don't know what the horizontal_sync_start is, and it doesn't really matter here
-        .horizontal_sync_end = 0,   // Note: We don't know what the horizontal_sync_end is, and it doesn't really matter here
-        .horizontal_total = m_framebuffer_width,
-        .vertical_active = m_framebuffer_height,
-        .vertical_sync_start = 0, // Note: We don't know what the vertical_sync_start is, and it doesn't really matter here
-        .vertical_sync_end = 0,   // Note: We don't know what the vertical_sync_end is, and it doesn't really matter here
-        .vertical_total = m_framebuffer_height,
-    };
-    return mode_setting;
 }
 
 }

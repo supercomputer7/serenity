@@ -99,27 +99,6 @@ ErrorOr<void> VMWareDisplayConnector::set_y_offset(size_t)
     return Error::from_errno(ENOTSUP);
 }
 
-ErrorOr<DisplayConnector::ModeSetting> VMWareDisplayConnector::current_mode_setting()
-{
-    MutexLocker locker(m_modeset_lock);
-    auto width = m_parent_adapter->primary_screen_width({});
-    auto height = m_parent_adapter->primary_screen_height({});
-    auto pitch = m_parent_adapter->primary_screen_pitch({});
-    DisplayConnector::ModeSetting mode_setting {
-        .horizontal_stride = pitch,
-        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
-        .horizontal_active = width,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = width,
-        .vertical_active = height,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = height,
-    };
-    return mode_setting;
-}
-
 ErrorOr<void> VMWareDisplayConnector::flush_rectangle(size_t, FBRect const&)
 {
     // FIXME: It costs really nothing to flush the entire screen (at least in QEMU).
@@ -134,7 +113,7 @@ ErrorOr<void> VMWareDisplayConnector::flush_rectangle(size_t, FBRect const&)
 
 ErrorOr<void> VMWareDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
-    MutexLocker locker(m_modeset_lock);
+    SpinlockLocker locker(m_modeset_lock);
     VERIFY(m_framebuffer_console);
     size_t width = mode_setting.horizontal_active;
     size_t height = mode_setting.vertical_active;
@@ -149,6 +128,21 @@ ErrorOr<void> VMWareDisplayConnector::set_mode_setting(ModeSetting const& mode_s
     [[maybe_unused]] auto result = m_framebuffer_region->set_write_combine(true);
     m_framebuffer_data = m_framebuffer_region->vaddr().offset(m_framebuffer_address.offset_in_page()).as_ptr();
     m_framebuffer_console->set_resolution(width, height, width * sizeof(u32));
+
+    auto pitch = m_parent_adapter->primary_screen_pitch({});
+    DisplayConnector::ModeSetting current_mode_setting {
+        .horizontal_stride = pitch,
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = width,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = width,
+        .vertical_active = height,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = height,
+    };
+    m_current_mode_setting = current_mode_setting;
     return {};
 }
 
