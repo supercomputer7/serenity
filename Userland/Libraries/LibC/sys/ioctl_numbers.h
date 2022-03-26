@@ -29,20 +29,22 @@ struct FBProperties {
     unsigned char hardware_3d_acceleration_command_set;
 };
 
-struct FBHeadProperties {
-    unsigned refresh_rate;
-    unsigned pitch;
-    unsigned width;
-    unsigned height;
-
-    unsigned offset;
-    unsigned buffer_length;
+struct FBHeadModeSetting {
+    int horizontal_stride;
+    int pixel_clock_in_khz;
+    int horizontal_active;
+    int horizontal_sync_start;
+    int horizontal_sync_end;
+    int horizontal_total;
+    int vertical_active;
+    int vertical_sync_start;
+    int vertical_sync_end;
+    int vertical_total;
 };
 
-struct FBHeadResolution {
-    int refresh_rate;
-    int width;
-    int height;
+struct FBHeadProperties {
+    FBHeadModeSetting mode_setting;
+    unsigned offset;
 };
 
 struct FBHeadEDID {
@@ -91,7 +93,7 @@ enum IOCtlNumber {
     TIOCGPTN,
     FB_IOCTL_GET_PROPERTIES,
     FB_IOCTL_GET_HEAD_PROPERTIES,
-    FB_IOCTL_SET_HEAD_RESOLUTION,
+    FB_IOCTL_SET_HEAD_MODE_SETTING,
     FB_IOCTL_GET_HEAD_EDID,
     FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER,
     FB_IOCTL_GET_HEAD_VERTICAL_OFFSET_BUFFER,
@@ -147,7 +149,7 @@ enum IOCtlNumber {
 #define FB_IOCTL_GET_PROPERTIES FB_IOCTL_GET_PROPERTIES
 #define FB_IOCTL_GET_HEAD_PROPERTIES FB_IOCTL_GET_HEAD_PROPERTIES
 #define FB_IOCTL_GET_HEAD_EDID FB_IOCTL_GET_HEAD_EDID
-#define FB_IOCTL_SET_HEAD_RESOLUTION FB_IOCTL_SET_HEAD_RESOLUTION
+#define FB_IOCTL_SET_HEAD_MODE_SETTING FB_IOCTL_SET_HEAD_MODE_SETTING
 #define FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER
 #define FB_IOCTL_GET_HEAD_VERTICAL_OFFSET_BUFFER FB_IOCTL_GET_HEAD_VERTICAL_OFFSET_BUFFER
 #define FB_IOCTL_FLUSH_HEAD_BUFFERS FB_IOCTL_FLUSH_HEAD_BUFFERS

@@ -42,7 +42,7 @@ private:
     void enqueue_refresh_timer();
     virtual u8* framebuffer_data() override;
 
-    Console(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::Resolution current_resolution);
+    Console(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution);
     NonnullRefPtr<VirtIODisplayConnector> m_parent_display_connector;
     DirtyRect m_dirty_rect;
 };

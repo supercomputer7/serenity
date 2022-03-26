@@ -8,9 +8,9 @@
 
 namespace Kernel {
 
-ErrorOr<void> VGAGenericAdapter::initialize_adapter_with_preset_resolution(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
+ErrorOr<void> VGAGenericAdapter::initialize_adapter_with_preset_mode_setting(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
 {
-    m_display_connector = VGAGenericDisplayConnector::must_create_with_preset_resolution(framebuffer_address, framebuffer_width, framebuffer_height, framebuffer_pitch);
+    m_display_connector = VGAGenericDisplayConnector::must_create_with_preset_mode_setting(framebuffer_address, framebuffer_width, framebuffer_height, framebuffer_pitch);
     return {};
 }
 

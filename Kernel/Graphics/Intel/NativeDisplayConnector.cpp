@@ -62,7 +62,7 @@ ErrorOr<ByteBuffer> IntelNativeDisplayConnector::get_edid() const
     return ByteBuffer {};
 }
 
-ErrorOr<void> IntelNativeDisplayConnector::set_resolution(DisplayConnector::Resolution const&)
+ErrorOr<void> IntelNativeDisplayConnector::set_mode_setting(DisplayConnector::ModeSetting const&)
 {
     return Error::from_errno(ENOTIMPL);
 }
@@ -72,9 +72,9 @@ ErrorOr<void> IntelNativeDisplayConnector::set_y_offset(size_t)
     return Error::from_errno(ENOTIMPL);
 }
 
-ErrorOr<DisplayConnector::Resolution> IntelNativeDisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> IntelNativeDisplayConnector::current_mode_setting()
 {
-    return m_parent_connector_group->get_resolution({}, *this);
+    return m_parent_connector_group->current_mode_setting({}, *this);
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::unblank()
@@ -82,9 +82,9 @@ ErrorOr<void> IntelNativeDisplayConnector::unblank()
     return Error::from_errno(ENOTIMPL);
 }
 
-ErrorOr<void> IntelNativeDisplayConnector::set_safe_resolution()
+ErrorOr<void> IntelNativeDisplayConnector::set_safe_mode_setting()
 {
-    return m_parent_connector_group->set_safe_resolution({}, *this);
+    return m_parent_connector_group->set_safe_mode_setting({}, *this);
 }
 
 }

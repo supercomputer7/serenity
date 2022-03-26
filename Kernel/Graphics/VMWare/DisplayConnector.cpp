@@ -39,11 +39,22 @@ VMWareDisplayConnector::VMWareDisplayConnector(VMWareGraphicsAdapter const& pare
 {
 }
 
-ErrorOr<void> VMWareDisplayConnector::set_safe_resolution()
+ErrorOr<void> VMWareDisplayConnector::set_safe_mode_setting()
 {
     // We assume safe resolution is 1024x768x32
-    DisplayConnector::Resolution safe_resolution { 1024, 768, 32, 1024 * sizeof(u32), {} };
-    return set_resolution(safe_resolution);
+    DisplayConnector::ModeSetting safe_mode_setting {
+        .horizontal_stride = 1024 * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = 1024,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = 1024,
+        .vertical_active = 768,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = 768,
+    };
+    return set_mode_setting(safe_mode_setting);
 }
 
 ErrorOr<void> VMWareDisplayConnector::unblank()
@@ -88,13 +99,25 @@ ErrorOr<void> VMWareDisplayConnector::set_y_offset(size_t)
     return Error::from_errno(ENOTSUP);
 }
 
-ErrorOr<DisplayConnector::Resolution> VMWareDisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> VMWareDisplayConnector::current_mode_setting()
 {
     MutexLocker locker(m_modeset_lock);
     auto width = m_parent_adapter->primary_screen_width({});
     auto height = m_parent_adapter->primary_screen_height({});
     auto pitch = m_parent_adapter->primary_screen_pitch({});
-    return DisplayConnector::Resolution { width, height, 32, pitch, {} };
+    DisplayConnector::ModeSetting mode_setting {
+        .horizontal_stride = pitch,
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = width,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = width,
+        .vertical_active = height,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = height,
+    };
+    return mode_setting;
 }
 
 ErrorOr<void> VMWareDisplayConnector::flush_rectangle(size_t, FBRect const&)
@@ -109,17 +132,12 @@ ErrorOr<void> VMWareDisplayConnector::flush_rectangle(size_t, FBRect const&)
     return {};
 }
 
-ErrorOr<void> VMWareDisplayConnector::set_resolution(Resolution const& resolution)
+ErrorOr<void> VMWareDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
     MutexLocker locker(m_modeset_lock);
     VERIFY(m_framebuffer_console);
-    size_t width = resolution.width;
-    size_t height = resolution.height;
-    size_t bpp = resolution.bpp;
-    if (bpp != 32) {
-        dbgln_if(BXVGA_DEBUG, "VMWareDisplayConnector - no support for non-32bpp resolutions");
-        return Error::from_errno(ENOTSUP);
-    }
+    size_t width = mode_setting.horizontal_active;
+    size_t height = mode_setting.vertical_active;
 
     if (Checked<size_t>::multiplication_would_overflow(width, height, sizeof(u32)))
         return EOVERFLOW;

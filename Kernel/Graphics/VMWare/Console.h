@@ -24,7 +24,7 @@ private:
     void enqueue_refresh_timer();
     virtual u8* framebuffer_data() override;
 
-    VMWareFramebufferConsole(VMWareDisplayConnector const& parent_display_connector, DisplayConnector::Resolution current_resolution);
+    VMWareFramebufferConsole(VMWareDisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution);
     RefPtr<VMWareDisplayConnector> m_parent_display_connector;
     bool m_dirty { false };
 };

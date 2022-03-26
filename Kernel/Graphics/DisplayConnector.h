@@ -18,12 +18,17 @@ class DisplayConnector : public CharacterDevice {
     friend class DeviceManagement;
 
 public:
-    struct Resolution {
-        size_t width;
-        size_t height;
-        size_t bpp;
-        size_t pitch;
-        Optional<size_t> refresh_rate;
+    struct ModeSetting {
+        size_t horizontal_stride; // Note: This is commonly known as "pitch"
+        size_t pixel_clock_in_khz;
+        size_t horizontal_active;
+        size_t horizontal_sync_start;
+        size_t horizontal_sync_end;
+        size_t horizontal_total;
+        size_t vertical_active;
+        size_t vertical_sync_start;
+        size_t vertical_sync_end;
+        size_t vertical_total;
     };
 
 public:
@@ -56,9 +61,9 @@ public:
 
     bool console_mode() const;
     virtual ErrorOr<ByteBuffer> get_edid() const = 0;
-    virtual ErrorOr<void> set_resolution(Resolution const&) = 0;
-    virtual ErrorOr<void> set_safe_resolution() = 0;
-    virtual ErrorOr<Resolution> get_resolution() = 0;
+    virtual ErrorOr<void> set_mode_setting(ModeSetting const&) = 0;
+    virtual ErrorOr<void> set_safe_mode_setting() = 0;
+    virtual ErrorOr<ModeSetting> current_mode_setting() = 0;
     virtual ErrorOr<void> set_y_offset(size_t y) = 0;
     virtual ErrorOr<void> unblank() = 0;
 

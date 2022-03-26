@@ -1164,11 +1164,11 @@ int Emulator::virt$ioctl([[maybe_unused]] int fd, unsigned request, [[maybe_unus
         mmu().copy_to_vm(arg, &size, sizeof(size));
         return rc;
     }
-    case FB_IOCTL_SET_HEAD_RESOLUTION: {
-        FBHeadResolution user_resolution;
-        mmu().copy_from_vm(&user_resolution, arg, sizeof(user_resolution));
-        auto rc = syscall(SC_ioctl, fd, request, &user_resolution);
-        mmu().copy_to_vm(arg, &user_resolution, sizeof(user_resolution));
+    case FB_IOCTL_SET_HEAD_MODE_SETTING: {
+        FBHeadModeSetting user_requested_mode_setting;
+        mmu().copy_from_vm(&user_requested_mode_setting, arg, sizeof(user_requested_mode_setting));
+        auto rc = syscall(SC_ioctl, fd, request, &user_requested_mode_setting);
+        mmu().copy_to_vm(arg, &user_requested_mode_setting, sizeof(user_requested_mode_setting));
         return rc;
     }
     case FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER:

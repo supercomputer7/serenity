@@ -18,7 +18,7 @@ class ISAVGAAdapter final : public VGAGenericAdapter {
     friend class GraphicsManagement;
 
 public:
-    static NonnullRefPtr<ISAVGAAdapter> must_create_with_preset_resolution(PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
+    static NonnullRefPtr<ISAVGAAdapter> must_create_with_preset_mode_setting(PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
     static NonnullRefPtr<ISAVGAAdapter> must_create();
 
 private:

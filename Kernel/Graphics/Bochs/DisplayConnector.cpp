@@ -77,10 +77,21 @@ void BochsDisplayConnector::set_framebuffer_to_little_endian_format()
     full_memory_barrier();
 }
 
-ErrorOr<void> BochsDisplayConnector::set_safe_resolution()
+ErrorOr<void> BochsDisplayConnector::set_safe_mode_setting()
 {
-    DisplayConnector::Resolution safe_resolution { 1024, 768, 32, 1024 * sizeof(u32), {} };
-    return set_resolution(safe_resolution);
+    DisplayConnector::ModeSetting safe_resolution {
+        .horizontal_stride = 1024 * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = 1024,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = 1024,
+        .vertical_active = 768,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = 768,
+    };
+    return set_mode_setting(safe_resolution);
 }
 
 ErrorOr<void> BochsDisplayConnector::unblank()
@@ -127,23 +138,30 @@ ErrorOr<void> BochsDisplayConnector::set_y_offset(size_t y_offset)
     return {};
 }
 
-ErrorOr<DisplayConnector::Resolution> BochsDisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> BochsDisplayConnector::current_mode_setting()
 {
     MutexLocker locker(m_modeset_lock);
-    return Resolution { m_registers->bochs_regs.xres, m_registers->bochs_regs.yres, 32, m_registers->bochs_regs.xres * sizeof(u32), {} };
+    DisplayConnector::ModeSetting resolution {
+        .horizontal_stride = m_registers->bochs_regs.xres * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = m_registers->bochs_regs.xres,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = m_registers->bochs_regs.xres,
+        .vertical_active = m_registers->bochs_regs.yres,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = m_registers->bochs_regs.yres,
+    };
+    return resolution;
 }
 
-ErrorOr<void> BochsDisplayConnector::set_resolution(Resolution const& resolution)
+ErrorOr<void> BochsDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
     MutexLocker locker(m_modeset_lock);
     VERIFY(m_framebuffer_console);
-    size_t width = resolution.width;
-    size_t height = resolution.height;
-    size_t bpp = resolution.bpp;
-    if (bpp != 32) {
-        dbgln_if(BXVGA_DEBUG, "BochsDisplayConnector - no support for non-32bpp resolutions");
-        return Error::from_errno(ENOTSUP);
-    }
+    size_t width = mode_setting.horizontal_active;
+    size_t height = mode_setting.vertical_active;
 
     if (Checked<size_t>::multiplication_would_overflow(width, height, sizeof(u32)))
         return EOVERFLOW;

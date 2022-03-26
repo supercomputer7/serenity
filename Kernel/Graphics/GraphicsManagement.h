@@ -50,7 +50,7 @@ private:
 
     bool determine_and_initialize_graphics_device(PCI::DeviceIdentifier const&);
     bool initialize_isa_graphics_device();
-    bool initialize_isa_graphics_device_with_preset_resolution(PhysicalAddress framebuffer_address, size_t width, size_t height, size_t pitch);
+    bool initialize_isa_graphics_device_with_preset_mode_setting(PhysicalAddress framebuffer_address, size_t width, size_t height, size_t pitch);
 
     NonnullRefPtrVector<GenericGraphicsAdapter> m_graphics_devices;
     RefPtr<Graphics::Console> m_console;

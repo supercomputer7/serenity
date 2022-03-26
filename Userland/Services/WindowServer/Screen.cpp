@@ -319,8 +319,21 @@ bool Screen::set_resolution(bool initial)
 
     int rc = -1;
     {
-        FBHeadResolution physical_resolution { 0, info.resolution.width(), info.resolution.height() };
-        rc = fb_set_resolution(m_display_connector_fd, &physical_resolution);
+        // Note (FIXME): We only support currently modesetting of paravirtualized hardware
+        // so most fields are not needed yet.
+        FBHeadModeSetting mode_setting {
+            .horizontal_stride = 0,
+            .pixel_clock_in_khz = 0,
+            .horizontal_active = info.resolution.width(),
+            .horizontal_sync_start = 0,
+            .horizontal_sync_end = 0,
+            .horizontal_total = info.resolution.width(),
+            .vertical_active = info.resolution.height(),
+            .vertical_sync_start = 0,
+            .vertical_sync_end = 0,
+            .vertical_total = info.resolution.height(),
+        };
+        rc = fb_set_resolution(m_display_connector_fd, &mode_setting);
     }
 
     dbgln_if(WSSCREEN_DEBUG, "Screen #{}: fb_set_resolution() - return code {}", index(), rc);
@@ -334,7 +347,10 @@ bool Screen::set_resolution(bool initial)
             FBHeadProperties properties;
             int rc = fb_get_head_properties(m_display_connector_fd, &properties);
             VERIFY(rc == 0);
-            m_size_in_bytes = properties.buffer_length;
+            if (!m_can_set_buffer)
+                m_size_in_bytes = properties.mode_setting.horizontal_stride * properties.mode_setting.vertical_active;
+            else
+                m_size_in_bytes = properties.mode_setting.horizontal_stride * properties.mode_setting.vertical_active * 2;
 
             m_framebuffer = (Gfx::ARGB32*)malloc(m_size_in_bytes);
             VERIFY(m_framebuffer);
@@ -345,7 +361,7 @@ bool Screen::set_resolution(bool initial)
                 // that does ioctl to figure out the correct offset. If a Framebuffer device ever happens to
                 // to set the second buffer at different location than this, we might need to consider bringing
                 // back a function with ioctl to check this.
-                m_back_buffer_offset = properties.pitch * properties.height;
+                m_back_buffer_offset = properties.mode_setting.horizontal_stride * properties.mode_setting.vertical_active;
             } else {
                 m_back_buffer_offset = 0;
             }
@@ -353,8 +369,8 @@ bool Screen::set_resolution(bool initial)
         FBHeadProperties properties;
         int rc = fb_get_head_properties(m_display_connector_fd, &properties);
         VERIFY(rc == 0);
-        info.resolution = { properties.width, properties.height };
-        m_pitch = properties.pitch;
+        info.resolution = { properties.mode_setting.horizontal_active, properties.mode_setting.vertical_active };
+        m_pitch = properties.mode_setting.horizontal_stride;
 
         update_virtual_rect();
 

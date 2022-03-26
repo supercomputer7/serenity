@@ -23,20 +23,27 @@ ALWAYS_INLINE int fb_get_head_properties(int fd, FBHeadProperties* info)
     return ioctl(fd, FB_IOCTL_GET_HEAD_PROPERTIES, info);
 }
 
-ALWAYS_INLINE int fb_get_resolution(int fd, FBHeadResolution* info)
+ALWAYS_INLINE int fb_get_mode_setting(int fd, FBHeadModeSetting* info)
 {
     FBHeadProperties head_properties;
     if (auto rc = ioctl(fd, FB_IOCTL_GET_HEAD_PROPERTIES, &head_properties); rc < 0)
         return rc;
-    info->refresh_rate = head_properties.refresh_rate;
-    info->width = head_properties.width;
-    info->height = head_properties.height;
+    info->horizontal_stride = head_properties.mode_setting.horizontal_stride;
+    info->pixel_clock_in_khz = head_properties.mode_setting.pixel_clock_in_khz;
+    info->horizontal_active = head_properties.mode_setting.horizontal_active;
+    info->horizontal_sync_start = head_properties.mode_setting.horizontal_sync_start;
+    info->horizontal_sync_end = head_properties.mode_setting.horizontal_sync_end;
+    info->horizontal_total = head_properties.mode_setting.horizontal_total;
+    info->vertical_active = head_properties.mode_setting.vertical_active;
+    info->vertical_sync_start = head_properties.mode_setting.vertical_sync_start;
+    info->vertical_sync_end = head_properties.mode_setting.vertical_sync_end;
+    info->vertical_total = head_properties.mode_setting.vertical_total;
     return 0;
 }
 
-ALWAYS_INLINE int fb_set_resolution(int fd, FBHeadResolution* info)
+ALWAYS_INLINE int fb_set_resolution(int fd, FBHeadModeSetting* info)
 {
-    return ioctl(fd, FB_IOCTL_SET_HEAD_RESOLUTION, info);
+    return ioctl(fd, FB_IOCTL_SET_HEAD_MODE_SETTING, info);
 }
 
 ALWAYS_INLINE int fb_get_head_edid(int fd, FBHeadEDID* info)

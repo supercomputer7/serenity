@@ -61,7 +61,7 @@ UNMAP_AFTER_INIT ErrorOr<void> BochsGraphicsAdapter::initialize_adapter(PCI::Dev
     if (result.is_error() && result.error().code() != ENOTIMPL)
         return result;
 
-    TRY(m_display_connector->set_safe_resolution());
+    TRY(m_display_connector->set_safe_mode_setting());
 
     return {};
 }

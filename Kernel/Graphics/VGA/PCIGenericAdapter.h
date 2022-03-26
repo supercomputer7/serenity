@@ -19,7 +19,7 @@ namespace Kernel {
 class PCIVGAGenericAdapter : public VGAGenericAdapter
     , public PCI::Device {
 public:
-    static NonnullRefPtr<PCIVGAGenericAdapter> must_create_with_preset_resolution(PCI::DeviceIdentifier const&, PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
+    static NonnullRefPtr<PCIVGAGenericAdapter> must_create_with_preset_mode_setting(PCI::DeviceIdentifier const&, PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
     static NonnullRefPtr<PCIVGAGenericAdapter> must_create(PCI::DeviceIdentifier const&);
 
 protected:
