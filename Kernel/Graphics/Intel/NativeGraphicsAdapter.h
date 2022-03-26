@@ -8,7 +8,6 @@
 
 #include <AK/Types.h>
 #include <Kernel/Bus/PCI/Device.h>
-#include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/Intel/DisplayConnectorGroup.h>
 #include <Kernel/Graphics/VGA/PCIGenericAdapter.h>
 #include <Kernel/PhysicalAddress.h>

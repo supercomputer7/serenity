@@ -19,6 +19,22 @@ class DisplayConnector : public CharacterDevice {
 
 public:
     struct ModeSetting {
+        size_t horizontal_blanking_start() const
+        {
+            return horizontal_active;
+        }
+        size_t horizontal_blanking_end() const
+        {
+            return horizontal_total;
+        }
+        size_t vertical_blanking_start() const
+        {
+            return vertical_active;
+        }
+        size_t vertical_blanking_end() const
+        {
+            return vertical_total;
+        }
         size_t horizontal_stride; // Note: This is commonly known as "pitch"
         size_t pixel_clock_in_khz;
         size_t horizontal_active;
@@ -62,7 +78,7 @@ public:
     virtual ErrorOr<ByteBuffer> get_edid() const = 0;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) = 0;
     virtual ErrorOr<void> set_safe_mode_setting() = 0;
-    virtual ErrorOr<ModeSetting> current_mode_setting() = 0;
+    ErrorOr<ModeSetting> current_mode_setting() const;
     virtual ErrorOr<void> set_y_offset(size_t y) = 0;
     virtual ErrorOr<void> unblank() = 0;
 
@@ -92,6 +108,9 @@ protected:
     bool m_console_mode { false };
 
     bool m_vertical_offsetted { false };
+
+    mutable Spinlock m_modeset_lock;
+    ModeSetting m_current_mode_setting {};
 
 private:
     virtual void will_be_destroyed() override;

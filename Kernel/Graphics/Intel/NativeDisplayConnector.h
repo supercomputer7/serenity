@@ -9,7 +9,6 @@
 #include <AK/RefPtr.h>
 #include <AK/Try.h>
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
-#include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/VGA/GenericDisplayConnector.h>
 #include <Kernel/Memory/TypedMapping.h>
 #include <LibEDID/EDID.h>
@@ -37,7 +36,6 @@ private:
     virtual ErrorOr<ByteBuffer> get_edid() const override;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override;
     virtual ErrorOr<void> set_safe_mode_setting() override;
-    virtual ErrorOr<ModeSetting> current_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 

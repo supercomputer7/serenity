@@ -60,29 +60,29 @@ static constexpr PLLMaxSettings G35Limits {
 };
 }
 
-static Graphics::Modesetting calculate_modesetting_from_edid(EDID::Parser& edid, size_t index)
+static DisplayConnector::ModeSetting calculate_modesetting_from_edid(EDID::Parser& edid, size_t index)
 {
     auto details = edid.detailed_timing(index).release_value();
 
-    Graphics::Modesetting mode;
+    DisplayConnector::ModeSetting mode;
     VERIFY(details.pixel_clock_khz());
     mode.pixel_clock_in_khz = details.pixel_clock_khz();
 
     size_t horizontal_active = details.horizontal_addressable_pixels();
     size_t horizontal_sync_offset = details.horizontal_front_porch_pixels();
 
-    mode.horizontal.active = horizontal_active;
-    mode.horizontal.sync_start = horizontal_active + horizontal_sync_offset;
-    mode.horizontal.sync_end = horizontal_active + horizontal_sync_offset + details.horizontal_sync_pulse_width_pixels();
-    mode.horizontal.total = horizontal_active + details.horizontal_blanking_pixels();
+    mode.horizontal_active = horizontal_active;
+    mode.horizontal_sync_start = horizontal_active + horizontal_sync_offset;
+    mode.horizontal_sync_end = horizontal_active + horizontal_sync_offset + details.horizontal_sync_pulse_width_pixels();
+    mode.horizontal_total = horizontal_active + details.horizontal_blanking_pixels();
 
     size_t vertical_active = details.vertical_addressable_lines();
     size_t vertical_sync_offset = details.vertical_front_porch_lines();
 
-    mode.vertical.active = vertical_active;
-    mode.vertical.sync_start = vertical_active + vertical_sync_offset;
-    mode.vertical.sync_end = vertical_active + vertical_sync_offset + details.vertical_sync_pulse_width_lines();
-    mode.vertical.total = vertical_active + details.vertical_blanking_lines();
+    mode.vertical_active = vertical_active;
+    mode.vertical_sync_start = vertical_active + vertical_sync_offset;
+    mode.vertical_sync_end = vertical_active + vertical_sync_offset + details.vertical_sync_pulse_width_lines();
+    mode.vertical_total = vertical_active + details.vertical_blanking_lines();
     return mode;
 }
 
@@ -217,41 +217,39 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
+    SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
     auto result = set_safe_crt_resolution();
     VERIFY(result);
     auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
-    connector.m_framebuffer_width = modesetting.horizontal.active;
-    connector.m_framebuffer_height = modesetting.vertical.active;
-    connector.m_framebuffer_pitch = modesetting.horizontal.active * 4;
+    connector.m_current_mode_setting.horizontal_active = modesetting.horizontal_active;
+    connector.m_current_mode_setting.vertical_active = modesetting.vertical_active;
+    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_active * 4;
     connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
-    auto rounded_size = TRY(Memory::page_round_up(connector.m_framebuffer_pitch * connector.m_framebuffer_height));
+    auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.vertical_active));
     connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
+
+    connector.m_current_mode_setting = modesetting;
+    // Note: We apply the horizontal_stride value again because the previous line probably removed it...
+    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_active * 4;
     return {};
 }
 
-ErrorOr<DisplayConnector::ModeSetting> IntelDisplayConnectorGroup::current_mode_setting(IntelNativeDisplayConnector const& connector)
+ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
+    SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
-    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
-    DisplayConnector::ModeSetting mode_setting {
-        .horizontal_stride = modesetting.horizontal.active * sizeof(u32),
-        .pixel_clock_in_khz = modesetting.pixel_clock_in_khz,
-        .horizontal_active = modesetting.horizontal.active,
-        .horizontal_sync_start = modesetting.horizontal.sync_start,
-        .horizontal_sync_end = modesetting.horizontal.sync_end,
-        .horizontal_total = modesetting.horizontal.total,
-        .vertical_active = modesetting.vertical.active,
-        .vertical_sync_start = modesetting.vertical.sync_start,
-        .vertical_sync_end = modesetting.vertical.sync_end,
-        .vertical_total = modesetting.vertical.total,
-    };
-    return mode_setting;
-}
+    auto result = set_crt_resolution(mode_setting);
+    VERIFY(result);
+    connector.m_current_mode_setting.horizontal_active = mode_setting.horizontal_active;
+    connector.m_current_mode_setting.vertical_active = mode_setting.vertical_active;
+    connector.m_current_mode_setting.horizontal_stride = mode_setting.horizontal_active * 4;
+    connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
+    auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.horizontal_active));
+    connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
 
-ErrorOr<DisplayConnector::ModeSetting> IntelDisplayConnectorGroup::current_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const& connector)
-{
-    return current_mode_setting(connector);
+    connector.m_current_mode_setting = mode_setting;
+    return {};
 }
 
 void IntelDisplayConnectorGroup::enable_vga_plane()
@@ -379,56 +377,61 @@ static size_t compute_dac_multiplier(size_t pixel_clock_in_khz)
     }
 }
 
-bool IntelDisplayConnectorGroup::set_safe_crt_resolution()
+bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSetting const& mode_setting)
 {
     SpinlockLocker control_lock(m_control_lock);
     SpinlockLocker modeset_lock(m_modeset_lock);
 
     // Note: Just in case we still allow access to VGA IO ports, disable it now.
     GraphicsManagement::the().disable_vga_emulation_access_permanently();
-    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
 
     disable_output();
-    auto dac_multiplier = compute_dac_multiplier(modesetting.pixel_clock_in_khz);
-    auto pll_settings = create_pll_settings((1000 * modesetting.pixel_clock_in_khz * dac_multiplier), 96'000'000, IntelGraphics::G35Limits);
+    auto dac_multiplier = compute_dac_multiplier(mode_setting.pixel_clock_in_khz);
+    auto pll_settings = create_pll_settings((1000 * mode_setting.pixel_clock_in_khz * dac_multiplier), 96'000'000, IntelGraphics::G35Limits);
     if (!pll_settings.has_value())
         VERIFY_NOT_REACHED();
     auto settings = pll_settings.value();
     dbgln_if(INTEL_GRAPHICS_DEBUG, "PLL settings for {} {} {} {} {}", settings.n, settings.m1, settings.m2, settings.p1, settings.p2);
     enable_dpll_without_vga(pll_settings.value(), dac_multiplier);
-    set_display_timings(modesetting);
-    enable_output(modesetting.horizontal.active);
+    set_display_timings(mode_setting);
+    enable_output(mode_setting.horizontal_active);
 
     return true;
 }
 
-void IntelDisplayConnectorGroup::set_display_timings(Graphics::Modesetting const& modesetting)
+bool IntelDisplayConnectorGroup::set_safe_crt_resolution()
+{
+    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+    return set_crt_resolution(modesetting);
+}
+
+void IntelDisplayConnectorGroup::set_display_timings(DisplayConnector::ModeSetting const& mode_setting)
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());
     VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 31)));
     VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 30)));
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "htotal - {}, {}", (modesetting.horizontal.active - 1), (modesetting.horizontal.total - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HTotalA, (modesetting.horizontal.active - 1) | (modesetting.horizontal.total - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "htotal - {}, {}", (mode_setting.horizontal_active - 1), (mode_setting.horizontal_total - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HTotalA, (mode_setting.horizontal_active - 1) | (mode_setting.horizontal_total - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "hblank - {}, {}", (modesetting.horizontal.blanking_start() - 1), (modesetting.horizontal.blanking_end() - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HBlankA, (modesetting.horizontal.blanking_start() - 1) | (modesetting.horizontal.blanking_end() - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hblank - {}, {}", (mode_setting.horizontal_blanking_start() - 1), (mode_setting.horizontal_blanking_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HBlankA, (mode_setting.horizontal_blanking_start() - 1) | (mode_setting.horizontal_blanking_end() - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "hsync - {}, {}", (modesetting.horizontal.sync_start - 1), (modesetting.horizontal.sync_end - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HSyncA, (modesetting.horizontal.sync_start - 1) | (modesetting.horizontal.sync_end - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hsync - {}, {}", (mode_setting.horizontal_sync_start - 1), (mode_setting.horizontal_sync_end - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HSyncA, (mode_setting.horizontal_sync_start - 1) | (mode_setting.horizontal_sync_end - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vtotal - {}, {}", (modesetting.vertical.active - 1), (modesetting.vertical.total - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VTotalA, (modesetting.vertical.active - 1) | (modesetting.vertical.total - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vtotal - {}, {}", (mode_setting.vertical_active - 1), (mode_setting.vertical_total - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VTotalA, (mode_setting.vertical_active - 1) | (mode_setting.vertical_total - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vblank - {}, {}", (modesetting.vertical.blanking_start() - 1), (modesetting.vertical.blanking_end() - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VBlankA, (modesetting.vertical.blanking_start() - 1) | (modesetting.vertical.blanking_end() - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vblank - {}, {}", (mode_setting.vertical_blanking_start() - 1), (mode_setting.vertical_blanking_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VBlankA, (mode_setting.vertical_blanking_start() - 1) | (mode_setting.vertical_blanking_end() - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vsync - {}, {}", (modesetting.vertical.sync_start - 1), (modesetting.vertical.sync_end - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VSyncA, (modesetting.vertical.sync_start - 1) | (modesetting.vertical.sync_end - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vsync - {}, {}", (mode_setting.vertical_sync_start - 1), (mode_setting.vertical_sync_end - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VSyncA, (mode_setting.vertical_sync_start - 1) | (mode_setting.vertical_sync_end - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "sourceSize - {}, {}", (modesetting.vertical.active - 1), (modesetting.horizontal.active - 1));
-    write_to_register(IntelGraphics::RegisterIndex::PipeASource, (modesetting.vertical.active - 1) | (modesetting.horizontal.active - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "sourceSize - {}, {}", (mode_setting.vertical_active - 1), (mode_setting.horizontal_active - 1));
+    write_to_register(IntelGraphics::RegisterIndex::PipeASource, (mode_setting.vertical_active - 1) | (mode_setting.horizontal_active - 1) << 16);
 
     IO::delay(200);
 }

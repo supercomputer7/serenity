@@ -26,7 +26,7 @@ NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_cre
 
 ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>, PhysicalAddress framebuffer_address)
 {
-    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(framebuffer_address, m_framebuffer_width, m_framebuffer_height, m_framebuffer_pitch);
+    m_framebuffer_console = Graphics::ContiguousFramebufferConsole::initialize(framebuffer_address, m_current_mode_setting.horizontal_active, m_current_mode_setting.vertical_active, m_current_mode_setting.horizontal_stride);
     GraphicsManagement::the().set_console(*m_framebuffer_console);
     return {};
 }
@@ -64,17 +64,14 @@ ErrorOr<ByteBuffer> IntelNativeDisplayConnector::get_edid() const
 
 ErrorOr<void> IntelNativeDisplayConnector::set_mode_setting(DisplayConnector::ModeSetting const&)
 {
+    // Note: We still can't mode set the hardware from userspace because userspace doesn't know how to correctly handle
+    // detailed timings.
     return Error::from_errno(ENOTIMPL);
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::set_y_offset(size_t)
 {
     return Error::from_errno(ENOTIMPL);
-}
-
-ErrorOr<DisplayConnector::ModeSetting> IntelNativeDisplayConnector::current_mode_setting()
-{
-    return m_parent_connector_group->current_mode_setting({}, *this);
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::unblank()

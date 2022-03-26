@@ -73,9 +73,14 @@ ErrorOr<void> DisplayConnector::flush_rectangle(size_t, FBRect const&)
     return Error::from_errno(ENOTSUP);
 }
 
+ErrorOr<DisplayConnector::ModeSetting> DisplayConnector::current_mode_setting() const
+{
+    SpinlockLocker locker(m_modeset_lock);
+    return m_current_mode_setting;
+}
+
 ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg)
 {
-    SpinlockLocker locker(m_control_lock);
     if (request != FB_IOCTL_GET_HEAD_EDID) {
         // Allow anyone to query the EDID. Eventually we'll publish the current EDID on /sys
         // so it doesn't really make sense to require the video pledge to query it.
@@ -100,17 +105,17 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         FBHeadProperties head_properties {};
         TRY(copy_from_user(&head_properties, user_head_properties));
 
-        ModeSetting mode_setting = TRY(current_mode_setting());
-        head_properties.mode_setting.horizontal_stride = mode_setting.horizontal_stride;
-        head_properties.mode_setting.pixel_clock_in_khz = mode_setting.pixel_clock_in_khz;
-        head_properties.mode_setting.horizontal_active = mode_setting.horizontal_active;
-        head_properties.mode_setting.horizontal_sync_start = mode_setting.horizontal_sync_start;
-        head_properties.mode_setting.horizontal_sync_end = mode_setting.horizontal_sync_end;
-        head_properties.mode_setting.horizontal_total = mode_setting.horizontal_total;
-        head_properties.mode_setting.vertical_active = mode_setting.vertical_active;
-        head_properties.mode_setting.vertical_sync_start = mode_setting.vertical_sync_start;
-        head_properties.mode_setting.vertical_sync_end = mode_setting.vertical_sync_end;
-        head_properties.mode_setting.vertical_total = mode_setting.vertical_total;
+        SpinlockLocker locker(m_modeset_lock);
+        head_properties.mode_setting.horizontal_stride = m_current_mode_setting.horizontal_stride;
+        head_properties.mode_setting.pixel_clock_in_khz = m_current_mode_setting.pixel_clock_in_khz;
+        head_properties.mode_setting.horizontal_active = m_current_mode_setting.horizontal_active;
+        head_properties.mode_setting.horizontal_sync_start = m_current_mode_setting.horizontal_sync_start;
+        head_properties.mode_setting.horizontal_sync_end = m_current_mode_setting.horizontal_sync_end;
+        head_properties.mode_setting.horizontal_total = m_current_mode_setting.horizontal_total;
+        head_properties.mode_setting.vertical_active = m_current_mode_setting.vertical_active;
+        head_properties.mode_setting.vertical_sync_start = m_current_mode_setting.vertical_sync_start;
+        head_properties.mode_setting.vertical_sync_end = m_current_mode_setting.vertical_sync_end;
+        head_properties.mode_setting.vertical_total = m_current_mode_setting.vertical_total;
         head_properties.offset = 0;
         return copy_to_user(user_head_properties, &head_properties);
     }
@@ -177,17 +182,18 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
     case FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER: {
         // FIXME: We silently ignore the request if we are in console mode.
         // WindowServer is not ready yet to handle errors such as EBUSY currently.
+        SpinlockLocker control_locker(m_control_lock);
         if (console_mode()) {
             return {};
         }
-        ModeSetting mode_setting = TRY(current_mode_setting());
+        SpinlockLocker locker(m_modeset_lock);
 
         auto user_head_vertical_buffer_offset = static_ptr_cast<FBHeadVerticalOffset const*>(arg);
         auto head_vertical_buffer_offset = TRY(copy_typed_from_user(user_head_vertical_buffer_offset));
 
         if (head_vertical_buffer_offset.offsetted < 0 || head_vertical_buffer_offset.offsetted > 1)
             return Error::from_errno(EINVAL);
-        TRY(set_y_offset(head_vertical_buffer_offset.offsetted == 0 ? 0 : mode_setting.vertical_active));
+        TRY(set_y_offset(head_vertical_buffer_offset.offsetted == 0 ? 0 : m_current_mode_setting.vertical_active));
         if (head_vertical_buffer_offset.offsetted == 0)
             m_vertical_offsetted = false;
         else
@@ -203,6 +209,7 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         return copy_to_user(user_head_vertical_buffer_offset, &head_vertical_buffer_offset);
     }
     case FB_IOCTL_FLUSH_HEAD_BUFFERS: {
+        SpinlockLocker control_locker(m_control_lock);
         if (console_mode())
             return {};
         if (!partial_flush_support())
@@ -224,6 +231,7 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
     case FB_IOCTL_FLUSH_HEAD: {
         // FIXME: We silently ignore the request if we are in console mode.
         // WindowServer is not ready yet to handle errors such as EBUSY currently.
+        SpinlockLocker control_locker(m_control_lock);
         if (console_mode())
             return {};
         if (!flush_support())

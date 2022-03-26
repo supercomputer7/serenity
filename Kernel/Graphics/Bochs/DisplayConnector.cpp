@@ -55,7 +55,7 @@ BochsDisplayConnector::IndexID BochsDisplayConnector::index_id() const
 
 void BochsDisplayConnector::set_framebuffer_to_big_endian_format()
 {
-    MutexLocker locker(m_modeset_lock);
+    VERIFY(m_modeset_lock.is_locked());
     dbgln_if(BXVGA_DEBUG, "BochsDisplayConnector set_framebuffer_to_big_endian_format");
     full_memory_barrier();
     if (m_registers->extension_regs.region_size == 0xFFFFFFFF || m_registers->extension_regs.region_size == 0)
@@ -67,7 +67,7 @@ void BochsDisplayConnector::set_framebuffer_to_big_endian_format()
 
 void BochsDisplayConnector::set_framebuffer_to_little_endian_format()
 {
-    MutexLocker locker(m_modeset_lock);
+    VERIFY(m_modeset_lock.is_locked());
     dbgln_if(BXVGA_DEBUG, "BochsDisplayConnector set_framebuffer_to_little_endian_format");
     full_memory_barrier();
     if (m_registers->extension_regs.region_size == 0xFFFFFFFF || m_registers->extension_regs.region_size == 0)
@@ -96,7 +96,7 @@ ErrorOr<void> BochsDisplayConnector::set_safe_mode_setting()
 
 ErrorOr<void> BochsDisplayConnector::unblank()
 {
-    MutexLocker locker(m_modeset_lock);
+    SpinlockLocker locker(m_modeset_lock);
     full_memory_barrier();
     m_registers->vga_ioports[0] = 0x20;
     full_memory_barrier();
@@ -133,32 +133,14 @@ ErrorOr<void> BochsDisplayConnector::flush_first_surface()
 
 ErrorOr<void> BochsDisplayConnector::set_y_offset(size_t y_offset)
 {
-    MutexLocker locker(m_modeset_lock);
+    VERIFY(m_modeset_lock.is_locked());
     m_registers->bochs_regs.y_offset = y_offset;
     return {};
 }
 
-ErrorOr<DisplayConnector::ModeSetting> BochsDisplayConnector::current_mode_setting()
-{
-    MutexLocker locker(m_modeset_lock);
-    DisplayConnector::ModeSetting resolution {
-        .horizontal_stride = m_registers->bochs_regs.xres * sizeof(u32),
-        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
-        .horizontal_active = m_registers->bochs_regs.xres,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = m_registers->bochs_regs.xres,
-        .vertical_active = m_registers->bochs_regs.yres,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = m_registers->bochs_regs.yres,
-    };
-    return resolution;
-}
-
 ErrorOr<void> BochsDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
-    MutexLocker locker(m_modeset_lock);
+    SpinlockLocker locker(m_modeset_lock);
     VERIFY(m_framebuffer_console);
     size_t width = mode_setting.horizontal_active;
     size_t height = mode_setting.vertical_active;
@@ -190,6 +172,21 @@ ErrorOr<void> BochsDisplayConnector::set_mode_setting(ModeSetting const& mode_se
     [[maybe_unused]] auto result = m_framebuffer_region->set_write_combine(true);
     m_framebuffer_data = m_framebuffer_region->vaddr().offset(m_framebuffer_address.offset_in_page()).as_ptr();
     m_framebuffer_console->set_resolution(width, height, width * sizeof(u32));
+
+    DisplayConnector::ModeSetting mode_set {
+        .horizontal_stride = m_registers->bochs_regs.xres * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = m_registers->bochs_regs.xres,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = m_registers->bochs_regs.xres,
+        .vertical_active = m_registers->bochs_regs.yres,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = m_registers->bochs_regs.yres,
+    };
+
+    m_current_mode_setting = mode_set;
     return {};
 }
 
