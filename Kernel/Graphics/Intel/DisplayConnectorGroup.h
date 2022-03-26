@@ -76,11 +76,11 @@ public:
 public:
     static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(MMIORegion const&, MMIORegion const&);
 
-    ErrorOr<void> set_safe_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
-    ErrorOr<DisplayConnector::Resolution> get_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const&);
+    ErrorOr<void> set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
+    ErrorOr<DisplayConnector::ModeSetting> current_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const&);
 
 private:
-    ErrorOr<DisplayConnector::Resolution> get_resolution(IntelNativeDisplayConnector const& connector);
+    ErrorOr<DisplayConnector::ModeSetting> current_mode_setting(IntelNativeDisplayConnector const& connector);
 
     IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
     ErrorOr<void> initialize_connectors();

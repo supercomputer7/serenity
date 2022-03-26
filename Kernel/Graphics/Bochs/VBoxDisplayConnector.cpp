@@ -48,16 +48,11 @@ BochsDisplayConnector::IndexID VBoxDisplayConnector::index_id() const
     return get_register_with_io(0);
 }
 
-ErrorOr<void> VBoxDisplayConnector::set_resolution(Resolution const& resolution)
+ErrorOr<void> VBoxDisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
     MutexLocker locker(m_modeset_lock);
-    size_t width = resolution.width;
-    size_t height = resolution.height;
-    size_t bpp = resolution.bpp;
-    if (bpp != 32) {
-        dbgln_if(BXVGA_DEBUG, "VBoxDisplayConnector - no support for non-32bpp resolutions");
-        return Error::from_errno(ENOTSUP);
-    }
+    size_t width = mode_setting.horizontal_active;
+    size_t height = mode_setting.vertical_active;
 
     dbgln_if(BXVGA_DEBUG, "VBoxDisplayConnector resolution registers set to - {}x{}", width, height);
 
@@ -75,11 +70,24 @@ ErrorOr<void> VBoxDisplayConnector::set_resolution(Resolution const& resolution)
     return {};
 }
 
-ErrorOr<DisplayConnector::Resolution> VBoxDisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> VBoxDisplayConnector::current_mode_setting()
 {
     MutexLocker locker(m_modeset_lock);
-    auto width = get_register_with_io(to_underlying(BochsDISPIRegisters::XRES));
-    return Resolution { width, get_register_with_io(to_underlying(BochsDISPIRegisters::YRES)), 32, width * sizeof(u32), {} };
+    auto current_horizontal_active = get_register_with_io(to_underlying(BochsDISPIRegisters::XRES));
+    auto current_vertical_active = get_register_with_io(to_underlying(BochsDISPIRegisters::YRES));
+    DisplayConnector::ModeSetting mode_setting {
+        .horizontal_stride = current_horizontal_active * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = current_horizontal_active,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = current_horizontal_active,
+        .vertical_active = current_vertical_active,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = current_vertical_active,
+    };
+    return mode_setting;
 }
 
 ErrorOr<void> VBoxDisplayConnector::set_y_offset(size_t y_offset)

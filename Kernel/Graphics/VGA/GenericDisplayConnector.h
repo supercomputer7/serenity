@@ -20,7 +20,7 @@ class VGAGenericDisplayConnector
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<VGAGenericDisplayConnector> must_create_with_preset_resolution(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
+    static NonnullRefPtr<VGAGenericDisplayConnector> must_create_with_preset_mode_setting(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
     static NonnullRefPtr<VGAGenericDisplayConnector> must_create();
 
     // ^DisplayConnector
@@ -34,9 +34,9 @@ public:
     virtual bool refresh_rate_support() const override { return false; }
 
     virtual ErrorOr<ByteBuffer> get_edid() const override { return Error::from_errno(ENOTSUP); }
-    virtual ErrorOr<void> set_resolution(Resolution const&) override { return Error::from_errno(ENOTSUP); }
-    virtual ErrorOr<void> set_safe_resolution() override { return Error::from_errno(ENOTSUP); }
-    virtual ErrorOr<Resolution> get_resolution() override;
+    virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override { return Error::from_errno(ENOTSUP); }
+    virtual ErrorOr<void> set_safe_mode_setting() override { return Error::from_errno(ENOTSUP); }
+    virtual ErrorOr<ModeSetting> current_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t) override { return Error::from_errno(ENOTSUP); }
     // FIXME: If we operate in VGA mode, we actually can unblank the screen!
     virtual ErrorOr<void> unblank() override { return Error::from_errno(ENOTSUP); }

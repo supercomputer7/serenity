@@ -13,7 +13,7 @@
 
 namespace Kernel {
 
-NonnullRefPtr<VGAGenericDisplayConnector> VGAGenericDisplayConnector::must_create_with_preset_resolution(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
+NonnullRefPtr<VGAGenericDisplayConnector> VGAGenericDisplayConnector::must_create_with_preset_mode_setting(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
 {
     auto device_or_error = DeviceManagement::try_create_device<VGAGenericDisplayConnector>(framebuffer_address, framebuffer_width, framebuffer_height, framebuffer_pitch);
     VERIFY(!device_or_error.is_error());
@@ -92,11 +92,27 @@ ErrorOr<void> VGAGenericDisplayConnector::flush_first_surface()
     return Error::from_errno(ENOTSUP);
 }
 
-ErrorOr<DisplayConnector::Resolution> VGAGenericDisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> VGAGenericDisplayConnector::current_mode_setting()
 {
     if ((m_framebuffer_width == 0) || (m_framebuffer_height == 0) || (m_framebuffer_pitch == 0))
         return Error::from_errno(ENOTSUP);
-    return Resolution { m_framebuffer_width, m_framebuffer_height, 32, m_framebuffer_pitch, {} };
+    // Note: We don't know pretty much anything about how to get the mode setting of the adapter
+    // nor the attached display/monitor/panel/whatever to that adapter, so we can't really
+    // modeset the hardware anyway, but that's OK because we can still let userspace to show its
+    // graphics on the framebuffer.
+    DisplayConnector::ModeSetting mode_setting {
+        .horizontal_stride = m_framebuffer_pitch,
+        .pixel_clock_in_khz = 0, // Note: We don't know what the clock is, and it doesn't really matter here
+        .horizontal_active = m_framebuffer_width,
+        .horizontal_sync_start = 0, // Note: We don't know what the horizontal_sync_start is, and it doesn't really matter here
+        .horizontal_sync_end = 0,   // Note: We don't know what the horizontal_sync_end is, and it doesn't really matter here
+        .horizontal_total = m_framebuffer_width,
+        .vertical_active = m_framebuffer_height,
+        .vertical_sync_start = 0, // Note: We don't know what the vertical_sync_start is, and it doesn't really matter here
+        .vertical_sync_end = 0,   // Note: We don't know what the vertical_sync_end is, and it doesn't really matter here
+        .vertical_total = m_framebuffer_height,
+    };
+    return mode_setting;
 }
 
 }

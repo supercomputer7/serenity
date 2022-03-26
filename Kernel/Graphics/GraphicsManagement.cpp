@@ -130,10 +130,10 @@ UNMAP_AFTER_INIT bool GraphicsManagement::initialize_isa_graphics_device()
     return true;
 }
 
-UNMAP_AFTER_INIT bool GraphicsManagement::initialize_isa_graphics_device_with_preset_resolution(PhysicalAddress framebuffer_address, size_t width, size_t height, size_t pitch)
+UNMAP_AFTER_INIT bool GraphicsManagement::initialize_isa_graphics_device_with_preset_mode_setting(PhysicalAddress framebuffer_address, size_t width, size_t height, size_t pitch)
 {
     dmesgln("Graphics: Using a ISA VGA compatible generic adapter with preset resolution");
-    auto adapter = ISAVGAAdapter::must_create_with_preset_resolution(framebuffer_address, width, height, pitch);
+    auto adapter = ISAVGAAdapter::must_create_with_preset_mode_setting(framebuffer_address, width, height, pitch);
     m_graphics_devices.append(*adapter);
     m_vga_adapter = adapter;
     return true;
@@ -163,7 +163,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
             dmesgln("Graphics: The framebuffer set up by the bootloader is not RGB, ignoring fbdev argument");
         } else {
             dmesgln("Graphics: Using a preset resolution from the bootloader");
-            adapter = PCIVGAGenericAdapter::must_create_with_preset_resolution(device_identifier,
+            adapter = PCIVGAGenericAdapter::must_create_with_preset_mode_setting(device_identifier,
                 multiboot_framebuffer_addr,
                 multiboot_framebuffer_width,
                 multiboot_framebuffer_height,
@@ -287,7 +287,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::initialize()
             initialize_isa_graphics_device();
         } else {
             dmesgln("Graphics: Using a preset resolution from the bootloader");
-            initialize_isa_graphics_device_with_preset_resolution(multiboot_framebuffer_addr,
+            initialize_isa_graphics_device_with_preset_mode_setting(multiboot_framebuffer_addr,
                 multiboot_framebuffer_width,
                 multiboot_framebuffer_height,
                 multiboot_framebuffer_pitch);
@@ -300,7 +300,7 @@ UNMAP_AFTER_INIT bool GraphicsManagement::initialize()
         dbgln("Forcing exclusive console mode)");
     else if (use_bootloader_framebuffer_only()) {
         dbgln("Forcing use of framebuffer set up by the bootloader");
-        initialize_isa_graphics_device_with_preset_resolution(multiboot_framebuffer_addr,
+        initialize_isa_graphics_device_with_preset_mode_setting(multiboot_framebuffer_addr,
             multiboot_framebuffer_width,
             multiboot_framebuffer_height,
             multiboot_framebuffer_pitch);

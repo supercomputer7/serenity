@@ -22,7 +22,6 @@ int main()
 
     size_t width = 17825;
     size_t height = 1000;
-    size_t refresh_rate = 0;
     size_t framebuffer_size_in_bytes = width * sizeof(u32) * height * 2;
 
     FBHeadProperties original_properties;
@@ -31,12 +30,11 @@ int main()
         return 1;
     }
 
-    FBHeadResolution resolution;
-    resolution.width = width;
-    resolution.height = height;
-    resolution.refresh_rate = refresh_rate;
+    FBHeadModeSetting mode_setting;
+    mode_setting.horizontal_active = width;
+    mode_setting.vertical_active = height;
 
-    if (ioctl(fd, FB_IOCTL_SET_HEAD_RESOLUTION, &resolution) < 0) {
+    if (ioctl(fd, FB_IOCTL_SET_HEAD_MODE_SETTING, &mode_setting) < 0) {
         perror("ioctl");
         return 1;
     }
@@ -87,11 +85,10 @@ int main()
         process->uid = 0;
     }
 
-    FBHeadResolution original_resolution;
-    original_resolution.width = original_properties.width;
-    original_resolution.height = original_properties.height;
-    original_resolution.refresh_rate = original_properties.refresh_rate;
-    if (ioctl(fd, FB_IOCTL_SET_HEAD_RESOLUTION, &original_resolution) < 0) {
+    FBHeadModeSetting original_mode_setting;
+    mode_setting.horizontal_active = original_properties.mode_setting.horizontal_active;
+    mode_setting.vertical_active = original_properties.mode_setting.vertical_active;
+    if (ioctl(fd, FB_IOCTL_SET_HEAD_MODE_SETTING, &original_mode_setting) < 0) {
         perror("ioctl");
         return 1;
     }

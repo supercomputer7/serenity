@@ -12,10 +12,10 @@
 
 namespace Kernel {
 
-UNMAP_AFTER_INIT NonnullRefPtr<PCIVGAGenericAdapter> PCIVGAGenericAdapter::must_create_with_preset_resolution(PCI::DeviceIdentifier const& pci_device_identifier, PhysicalAddress m_framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
+UNMAP_AFTER_INIT NonnullRefPtr<PCIVGAGenericAdapter> PCIVGAGenericAdapter::must_create_with_preset_mode_setting(PCI::DeviceIdentifier const& pci_device_identifier, PhysicalAddress m_framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch)
 {
     auto adapter = adopt_ref_if_nonnull(new (nothrow) PCIVGAGenericAdapter(pci_device_identifier.address())).release_nonnull();
-    MUST(adapter->initialize_adapter_with_preset_resolution(m_framebuffer_address, framebuffer_width, framebuffer_height, framebuffer_pitch));
+    MUST(adapter->initialize_adapter_with_preset_mode_setting(m_framebuffer_address, framebuffer_width, framebuffer_height, framebuffer_pitch));
     return adapter;
 }
 

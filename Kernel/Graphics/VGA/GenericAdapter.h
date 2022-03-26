@@ -22,7 +22,7 @@ public:
 protected:
     VGAGenericAdapter() { }
 
-    ErrorOr<void> initialize_adapter_with_preset_resolution(PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
+    ErrorOr<void> initialize_adapter_with_preset_mode_setting(PhysicalAddress, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
     ErrorOr<void> initialize_adapter();
 
     RefPtr<VGAGenericDisplayConnector> m_display_connector;

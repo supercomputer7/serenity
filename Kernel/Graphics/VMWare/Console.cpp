@@ -13,12 +13,12 @@ constexpr static AK::Time refresh_interval = AK::Time::from_milliseconds(16);
 
 NonnullRefPtr<VMWareFramebufferConsole> VMWareFramebufferConsole::initialize(VMWareDisplayConnector& parent_display_connector)
 {
-    auto current_resolution = MUST(parent_display_connector.get_resolution());
+    auto current_resolution = MUST(parent_display_connector.current_mode_setting());
     return adopt_ref_if_nonnull(new (nothrow) VMWareFramebufferConsole(parent_display_connector, current_resolution)).release_nonnull();
 }
 
-VMWareFramebufferConsole::VMWareFramebufferConsole(VMWareDisplayConnector const& parent_display_connector, DisplayConnector::Resolution current_resolution)
-    : GenericFramebufferConsole(current_resolution.width, current_resolution.height, current_resolution.pitch)
+VMWareFramebufferConsole::VMWareFramebufferConsole(VMWareDisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution)
+    : GenericFramebufferConsole(current_resolution.horizontal_active, current_resolution.vertical_active, current_resolution.horizontal_stride)
     , m_parent_display_connector(parent_display_connector)
 {
     enqueue_refresh_timer();
@@ -54,11 +54,11 @@ void VMWareFramebufferConsole::enqueue_refresh_timer()
 
 void VMWareFramebufferConsole::enable()
 {
-    auto current_resolution = MUST(m_parent_display_connector->get_resolution());
+    auto current_resolution = MUST(m_parent_display_connector->current_mode_setting());
     GenericFramebufferConsole::enable();
-    m_width = current_resolution.width;
-    m_height = current_resolution.height;
-    m_pitch = current_resolution.pitch;
+    m_width = current_resolution.horizontal_active;
+    m_height = current_resolution.vertical_active;
+    m_pitch = current_resolution.horizontal_stride;
 }
 
 u8* VMWareFramebufferConsole::framebuffer_data()

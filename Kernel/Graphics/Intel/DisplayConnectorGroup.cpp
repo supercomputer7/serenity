@@ -210,12 +210,12 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
         crt_edid_bytes[0] = 0x0;
     }
     connector->set_edid_bytes({}, crt_edid_bytes);
-    TRY(connector->set_safe_resolution());
+    TRY(connector->set_safe_mode_setting());
     TRY(connector->create_attached_framebuffer_console({}, m_mmio_second_region.pci_bar_paddr));
     return {};
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::set_safe_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
+ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
     auto result = set_safe_crt_resolution();
@@ -230,21 +230,28 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_safe_resolution(Badge<IntelNativeD
     return {};
 }
 
-ErrorOr<DisplayConnector::Resolution> IntelDisplayConnectorGroup::get_resolution(IntelNativeDisplayConnector const& connector)
+ErrorOr<DisplayConnector::ModeSetting> IntelDisplayConnectorGroup::current_mode_setting(IntelNativeDisplayConnector const& connector)
 {
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
     auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
-    auto width = modesetting.horizontal.active;
-    auto height = modesetting.vertical.active;
-    auto pitch = width * 4;
-    size_t bpp = 32;
-    // FIXME: Provide the actual refresh rate
-    return DisplayConnector::Resolution { width, height, bpp, pitch, {} };
+    DisplayConnector::ModeSetting mode_setting {
+        .horizontal_stride = modesetting.horizontal.active * sizeof(u32),
+        .pixel_clock_in_khz = modesetting.pixel_clock_in_khz,
+        .horizontal_active = modesetting.horizontal.active,
+        .horizontal_sync_start = modesetting.horizontal.sync_start,
+        .horizontal_sync_end = modesetting.horizontal.sync_end,
+        .horizontal_total = modesetting.horizontal.total,
+        .vertical_active = modesetting.vertical.active,
+        .vertical_sync_start = modesetting.vertical.sync_start,
+        .vertical_sync_end = modesetting.vertical.sync_end,
+        .vertical_total = modesetting.vertical.total,
+    };
+    return mode_setting;
 }
 
-ErrorOr<DisplayConnector::Resolution> IntelDisplayConnectorGroup::get_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const& connector)
+ErrorOr<DisplayConnector::ModeSetting> IntelDisplayConnectorGroup::current_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const& connector)
 {
-    return get_resolution(connector);
+    return current_mode_setting(connector);
 }
 
 void IntelDisplayConnectorGroup::enable_vga_plane()

@@ -22,8 +22,8 @@ public:
 private:
     virtual bool double_framebuffering_capable() const override { return false; }
     virtual ErrorOr<ByteBuffer> get_edid() const override;
-    virtual ErrorOr<void> set_resolution(Resolution const&) override;
-    virtual ErrorOr<Resolution> get_resolution() override;
+    virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override;
+    virtual ErrorOr<ModeSetting> current_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 

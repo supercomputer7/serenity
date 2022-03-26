@@ -303,21 +303,21 @@ bool ScreenLayout::try_auto_add_display_connector(String const& device_path)
         close(display_connector_fd);
     });
     // FIXME: Add multihead support for one framebuffer
-    FBHeadResolution resolution {};
-    memset(&resolution, 0, sizeof(FBHeadResolution));
-    if (fb_get_resolution(display_connector_fd, &resolution) < 0) {
+    FBHeadModeSetting mode_setting {};
+    memset(&mode_setting, 0, sizeof(FBHeadModeSetting));
+    if (fb_get_mode_setting(display_connector_fd, &mode_setting) < 0) {
         int err = errno;
-        dbgln("Error ({}) querying resolution from display connector device {}", err, device_path);
+        dbgln("Error ({}) querying mode setting from display connector device {}", err, device_path);
         return false;
     }
-    if (resolution.width == 0 || resolution.height == 0) {
+    if (mode_setting.horizontal_active == 0 || mode_setting.vertical_active == 0) {
         // Looks like the display is not turned on. Since we don't know what the desired
         // resolution should be, use the main display as reference.
         if (screens.is_empty())
             return false;
         auto& main_screen = screens[main_screen_index];
-        resolution.width = main_screen.resolution.width();
-        resolution.height = main_screen.resolution.height();
+        mode_setting.horizontal_active = main_screen.resolution.width();
+        mode_setting.vertical_active = main_screen.resolution.height();
     }
 
     auto append_screen = [&](Gfx::IntRect const& new_screen_rect) {
@@ -328,7 +328,7 @@ bool ScreenLayout::try_auto_add_display_connector(String const& device_path)
     };
 
     if (screens.is_empty()) {
-        append_screen({ 0, 0, (int)resolution.width, (int)resolution.height });
+        append_screen({ 0, 0, (int)mode_setting.horizontal_active, (int)mode_setting.vertical_active });
         return true;
     }
 
@@ -345,8 +345,8 @@ bool ScreenLayout::try_auto_add_display_connector(String const& device_path)
         Gfx::IntRect new_screen_rect {
             screen_rect.right() + 1,
             screen_rect.top(),
-            (int)resolution.width,
-            (int)resolution.height
+            (int)mode_setting.horizontal_active,
+            (int)mode_setting.vertical_active
         };
 
         bool collision = false;
@@ -369,7 +369,7 @@ bool ScreenLayout::try_auto_add_display_connector(String const& device_path)
         }
     }
 
-    dbgln("Failed to add display connector device {} with resolution {}x{} to screen layout", device_path, resolution.width, resolution.height);
+    dbgln("Failed to add display connector device {} with resolution {}x{} to screen layout", device_path, mode_setting.horizontal_active, mode_setting.vertical_active);
     return false;
 }
 

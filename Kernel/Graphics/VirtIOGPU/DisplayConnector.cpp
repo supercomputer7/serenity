@@ -54,7 +54,7 @@ NonnullRefPtr<VirtIODisplayConnector> VirtIODisplayConnector::must_create(VirtIO
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     connector->initialize_3d_context();
-    MUST(connector->set_safe_resolution());
+    MUST(connector->set_safe_mode_setting());
     connector->initialize_console();
     return connector;
 }
@@ -92,10 +92,10 @@ ErrorOr<ByteBuffer> VirtIODisplayConnector::get_edid() const
         return Error::from_errno(ENOTSUP);
     return ByteBuffer::copy(m_edid.value().bytes());
 }
-ErrorOr<void> VirtIODisplayConnector::set_resolution(Resolution const& resolution)
+ErrorOr<void> VirtIODisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
     SpinlockLocker locker(m_operation_lock);
-    if (resolution.width > MAX_VIRTIOGPU_RESOLUTION_WIDTH || resolution.height > MAX_VIRTIOGPU_RESOLUTION_HEIGHT)
+    if (mode_setting.horizontal_active > MAX_VIRTIOGPU_RESOLUTION_WIDTH || mode_setting.vertical_active > MAX_VIRTIOGPU_RESOLUTION_HEIGHT)
         return Error::from_errno(ENOTSUP);
 
     auto& info = m_display_info;
@@ -103,27 +103,45 @@ ErrorOr<void> VirtIODisplayConnector::set_resolution(Resolution const& resolutio
     info.rect = {
         .x = 0,
         .y = 0,
-        .width = (u32)resolution.width,
-        .height = (u32)resolution.height,
+        .width = (u32)mode_setting.horizontal_active,
+        .height = (u32)mode_setting.vertical_active,
     };
     TRY(create_framebuffer());
     return {};
 }
-ErrorOr<void> VirtIODisplayConnector::set_safe_resolution()
+ErrorOr<void> VirtIODisplayConnector::set_safe_mode_setting()
 {
-    DisplayConnector::Resolution safe_resolution { 1024, 768, 32, 1024 * sizeof(u32), {} };
-    return set_resolution(safe_resolution);
+    DisplayConnector::ModeSetting safe_mode_setting {
+        .horizontal_stride = 1024 * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = 1024,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = 1024,
+        .vertical_active = 768,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = 768,
+    };
+    return set_mode_setting(safe_mode_setting);
 }
-ErrorOr<DisplayConnector::Resolution> VirtIODisplayConnector::get_resolution()
+ErrorOr<DisplayConnector::ModeSetting> VirtIODisplayConnector::current_mode_setting()
 {
     SpinlockLocker locker(m_operation_lock);
     auto& info = m_display_info;
-    Resolution current_resolution;
-    current_resolution.width = info.rect.width;
-    current_resolution.pitch = info.rect.width * sizeof(u32);
-    current_resolution.bpp = 32;
-    current_resolution.height = info.rect.height;
-    return current_resolution;
+    DisplayConnector::ModeSetting resolution {
+        .horizontal_stride = info.rect.width * sizeof(u32),
+        .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
+        .horizontal_active = info.rect.width,
+        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
+        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
+        .horizontal_total = info.rect.width,
+        .vertical_active = info.rect.height,
+        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
+        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
+        .vertical_total = info.rect.height,
+    };
+    return resolution;
 }
 ErrorOr<void> VirtIODisplayConnector::set_y_offset(size_t y)
 {

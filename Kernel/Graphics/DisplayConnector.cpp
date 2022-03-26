@@ -100,14 +100,17 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         FBHeadProperties head_properties {};
         TRY(copy_from_user(&head_properties, user_head_properties));
 
-        Resolution current_resolution = TRY(get_resolution());
-        head_properties.refresh_rate = 0;
-        head_properties.pitch = current_resolution.pitch;
-        head_properties.width = current_resolution.width;
-        head_properties.height = current_resolution.height;
-        head_properties.buffer_length = current_resolution.height * current_resolution.pitch;
-        if (double_framebuffering_capable())
-            head_properties.buffer_length = head_properties.buffer_length * 2;
+        ModeSetting mode_setting = TRY(current_mode_setting());
+        head_properties.mode_setting.horizontal_stride = mode_setting.horizontal_stride;
+        head_properties.mode_setting.pixel_clock_in_khz = mode_setting.pixel_clock_in_khz;
+        head_properties.mode_setting.horizontal_active = mode_setting.horizontal_active;
+        head_properties.mode_setting.horizontal_sync_start = mode_setting.horizontal_sync_start;
+        head_properties.mode_setting.horizontal_sync_end = mode_setting.horizontal_sync_end;
+        head_properties.mode_setting.horizontal_total = mode_setting.horizontal_total;
+        head_properties.mode_setting.vertical_active = mode_setting.vertical_active;
+        head_properties.mode_setting.vertical_sync_start = mode_setting.vertical_sync_start;
+        head_properties.mode_setting.vertical_sync_end = mode_setting.vertical_sync_end;
+        head_properties.mode_setting.vertical_total = mode_setting.vertical_total;
         head_properties.offset = 0;
         return copy_to_user(user_head_properties, &head_properties);
     }
@@ -130,24 +133,44 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         head_edid.bytes_size = edid_bytes.size();
         return copy_to_user(user_head_edid, &head_edid);
     }
-    case FB_IOCTL_SET_HEAD_RESOLUTION: {
-        auto user_resolution = static_ptr_cast<FBHeadResolution const*>(arg);
-        auto head_resolution = TRY(copy_typed_from_user(user_resolution));
+    case FB_IOCTL_SET_HEAD_MODE_SETTING: {
+        auto user_mode_setting = static_ptr_cast<FBHeadModeSetting const*>(arg);
+        auto head_mode_setting = TRY(copy_typed_from_user(user_mode_setting));
 
-        if (head_resolution.refresh_rate < 0)
+        if (head_mode_setting.horizontal_stride < 0)
             return Error::from_errno(EINVAL);
-        if (head_resolution.width < 0)
+        if (head_mode_setting.pixel_clock_in_khz < 0)
             return Error::from_errno(EINVAL);
-        if (head_resolution.height < 0)
+        if (head_mode_setting.horizontal_active < 0)
             return Error::from_errno(EINVAL);
-        Resolution requested_resolution;
-        requested_resolution.bpp = 32;
-        if (refresh_rate_support())
-            requested_resolution.refresh_rate = head_resolution.refresh_rate;
-        requested_resolution.width = head_resolution.width;
-        requested_resolution.height = head_resolution.height;
+        if (head_mode_setting.horizontal_sync_start < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.horizontal_sync_end < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.horizontal_total < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.vertical_active < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.vertical_sync_start < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.vertical_sync_end < 0)
+            return Error::from_errno(EINVAL);
+        if (head_mode_setting.vertical_total < 0)
+            return Error::from_errno(EINVAL);
 
-        TRY(set_resolution(requested_resolution));
+        ModeSetting requested_mode_setting;
+        requested_mode_setting.horizontal_stride = head_mode_setting.horizontal_stride;
+        requested_mode_setting.pixel_clock_in_khz = head_mode_setting.pixel_clock_in_khz;
+        requested_mode_setting.horizontal_active = head_mode_setting.horizontal_active;
+        requested_mode_setting.horizontal_sync_start = head_mode_setting.horizontal_sync_start;
+        requested_mode_setting.horizontal_sync_end = head_mode_setting.horizontal_sync_end;
+        requested_mode_setting.horizontal_total = head_mode_setting.horizontal_total;
+        requested_mode_setting.vertical_active = head_mode_setting.vertical_active;
+        requested_mode_setting.vertical_sync_start = head_mode_setting.vertical_sync_start;
+        requested_mode_setting.vertical_sync_end = head_mode_setting.vertical_sync_end;
+        requested_mode_setting.vertical_total = head_mode_setting.vertical_total;
+
+        TRY(set_mode_setting(requested_mode_setting));
         return {};
     }
 
@@ -157,14 +180,14 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         if (console_mode()) {
             return {};
         }
-        Resolution current_resolution = TRY(get_resolution());
+        ModeSetting mode_setting = TRY(current_mode_setting());
 
         auto user_head_vertical_buffer_offset = static_ptr_cast<FBHeadVerticalOffset const*>(arg);
         auto head_vertical_buffer_offset = TRY(copy_typed_from_user(user_head_vertical_buffer_offset));
 
         if (head_vertical_buffer_offset.offsetted < 0 || head_vertical_buffer_offset.offsetted > 1)
             return Error::from_errno(EINVAL);
-        TRY(set_y_offset(head_vertical_buffer_offset.offsetted == 0 ? 0 : current_resolution.height));
+        TRY(set_y_offset(head_vertical_buffer_offset.offsetted == 0 ? 0 : mode_setting.vertical_active));
         if (head_vertical_buffer_offset.offsetted == 0)
             m_vertical_offsetted = false;
         else

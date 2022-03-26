@@ -37,12 +37,12 @@ namespace Graphics {
 
 NonnullRefPtr<VirtIOGPUConsole> VirtIOGPUConsole::initialize(VirtIODisplayConnector& parent_display_connector)
 {
-    auto current_resolution = MUST(parent_display_connector.get_resolution());
+    auto current_resolution = MUST(parent_display_connector.current_mode_setting());
     return adopt_ref(*new VirtIOGPUConsole(parent_display_connector, current_resolution));
 }
 
-VirtIOGPUConsole::VirtIOGPUConsole(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::Resolution current_resolution)
-    : GenericFramebufferConsole(current_resolution.width, current_resolution.height, current_resolution.pitch)
+VirtIOGPUConsole::VirtIOGPUConsole(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution)
+    : GenericFramebufferConsole(current_resolution.horizontal_active, current_resolution.vertical_active, current_resolution.horizontal_stride)
     , m_parent_display_connector(parent_display_connector)
 {
     enqueue_refresh_timer();
@@ -79,11 +79,11 @@ void VirtIOGPUConsole::enqueue_refresh_timer()
 
 void VirtIOGPUConsole::enable()
 {
-    auto current_resolution = MUST(m_parent_display_connector->get_resolution());
+    auto current_resolution = MUST(m_parent_display_connector->current_mode_setting());
     GenericFramebufferConsole::enable();
-    m_width = current_resolution.width;
-    m_height = current_resolution.height;
-    m_pitch = current_resolution.pitch;
+    m_width = current_resolution.horizontal_active;
+    m_height = current_resolution.vertical_active;
+    m_pitch = current_resolution.horizontal_stride;
     m_dirty_rect.union_rect(0, 0, m_width, m_height);
 }
 

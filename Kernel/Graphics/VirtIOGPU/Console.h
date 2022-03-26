@@ -48,7 +48,7 @@ private:
     void enqueue_refresh_timer();
     virtual u8* framebuffer_data() override;
 
-    VirtIOGPUConsole(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::Resolution current_resolution);
+    VirtIOGPUConsole(VirtIODisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution);
     NonnullRefPtr<VirtIODisplayConnector> m_parent_display_connector;
     VirtIOGPU::DirtyRect m_dirty_rect;
 };
