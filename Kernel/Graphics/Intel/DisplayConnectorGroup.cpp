@@ -1,0 +1,577 @@
+/*
+ * Copyright (c) 2022, Liav A. <liavalb@hotmail.co.il>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
+#include <Kernel/Arch/x86/IO.h>
+#include <Kernel/Bus/PCI/API.h>
+#include <Kernel/Debug.h>
+#include <Kernel/Devices/DeviceManagement.h>
+#include <Kernel/Graphics/Console/ContiguousFramebufferConsole.h>
+#include <Kernel/Graphics/GraphicsManagement.h>
+#include <Kernel/Graphics/Intel/DisplayConnectorGroup.h>
+#include <Kernel/Memory/Region.h>
+
+namespace Kernel {
+
+namespace IntelGraphics {
+
+#define DDC2_I2C_ADDRESS 0x50
+
+struct PLLSettings {
+    bool is_valid() const { return (n != 0 && m1 != 0 && m2 != 0 && p1 != 0 && p2 != 0); }
+    u64 compute_dot_clock(u64 refclock) const
+    {
+        return (refclock * (5 * m1 + m2) / n) / (p1 * p2);
+    }
+
+    u64 compute_vco(u64 refclock) const
+    {
+        return refclock * (5 * m1 + m2) / n;
+    }
+
+    u64 compute_m() const
+    {
+        return 5 * m1 + m2;
+    }
+
+    u64 compute_p() const
+    {
+        return p1 * p2;
+    }
+    u64 n { 0 };
+    u64 m1 { 0 };
+    u64 m2 { 0 };
+    u64 p1 { 0 };
+    u64 p2 { 0 };
+};
+
+static constexpr PLLMaxSettings G35Limits {
+    { 20'000'000, 400'000'000 },      // values in Hz, dot_clock
+    { 1'400'000'000, 2'800'000'000 }, // values in Hz, VCO
+    { 3, 8 },                         // n
+    { 70, 120 },                      // m
+    { 10, 20 },                       // m1
+    { 5, 9 },                         // m2
+    { 5, 80 },                        // p
+    { 1, 8 },                         // p1
+    { 5, 10 }                         // p2
+};
+}
+
+static Graphics::Modesetting calculate_modesetting_from_edid(EDID::Parser& edid, size_t index)
+{
+    auto details = edid.detailed_timing(index).release_value();
+
+    Graphics::Modesetting mode;
+    VERIFY(details.pixel_clock_khz());
+    mode.pixel_clock_in_khz = details.pixel_clock_khz();
+
+    size_t horizontal_active = details.horizontal_addressable_pixels();
+    size_t horizontal_sync_offset = details.horizontal_front_porch_pixels();
+
+    mode.horizontal.active = horizontal_active;
+    mode.horizontal.sync_start = horizontal_active + horizontal_sync_offset;
+    mode.horizontal.sync_end = horizontal_active + horizontal_sync_offset + details.horizontal_sync_pulse_width_pixels();
+    mode.horizontal.total = horizontal_active + details.horizontal_blanking_pixels();
+
+    size_t vertical_active = details.vertical_addressable_lines();
+    size_t vertical_sync_offset = details.vertical_front_porch_lines();
+
+    mode.vertical.active = vertical_active;
+    mode.vertical.sync_start = vertical_active + vertical_sync_offset;
+    mode.vertical.sync_end = vertical_active + vertical_sync_offset + details.vertical_sync_pulse_width_lines();
+    mode.vertical.total = vertical_active + details.vertical_blanking_lines();
+    return mode;
+}
+
+static bool check_pll_settings(IntelGraphics::PLLSettings const& settings, size_t reference_clock, IntelGraphics::PLLMaxSettings const& limits)
+{
+    if (settings.n < limits.n.min || settings.n > limits.n.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "N is invalid {}", settings.n);
+        return false;
+    }
+    if (settings.m1 < limits.m1.min || settings.m1 > limits.m1.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "m1 is invalid {}", settings.m1);
+        return false;
+    }
+    if (settings.m2 < limits.m2.min || settings.m2 > limits.m2.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "m2 is invalid {}", settings.m2);
+        return false;
+    }
+    if (settings.p1 < limits.p1.min || settings.p1 > limits.p1.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "p1 is invalid {}", settings.p1);
+        return false;
+    }
+
+    if (settings.m1 <= settings.m2) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "m2 is invalid {} as it is bigger than m1 {}", settings.m2, settings.m1);
+        return false;
+    }
+
+    auto m = settings.compute_m();
+    auto p = settings.compute_p();
+
+    if (m < limits.m.min || m > limits.m.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "m invalid {}", m);
+        return false;
+    }
+    if (p < limits.p.min || p > limits.p.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "p invalid {}", p);
+        return false;
+    }
+
+    auto dot = settings.compute_dot_clock(reference_clock);
+    auto vco = settings.compute_vco(reference_clock);
+
+    if (dot < limits.dot_clock.min || dot > limits.dot_clock.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "Dot clock invalid {}", dot);
+        return false;
+    }
+    if (vco < limits.vco.min || vco > limits.vco.max) {
+        dbgln_if(INTEL_GRAPHICS_DEBUG, "VCO clock invalid {}", vco);
+        return false;
+    }
+    return true;
+}
+
+static size_t find_absolute_difference(u64 target_frequency, u64 checked_frequency)
+{
+    if (target_frequency >= checked_frequency)
+        return target_frequency - checked_frequency;
+    return checked_frequency - target_frequency;
+}
+
+Optional<IntelGraphics::PLLSettings> IntelDisplayConnectorGroup::create_pll_settings(u64 target_frequency, u64 reference_clock, IntelGraphics::PLLMaxSettings const& limits)
+{
+    IntelGraphics::PLLSettings settings;
+    IntelGraphics::PLLSettings best_settings;
+    // FIXME: Is this correct for all Intel Native graphics cards?
+    settings.p2 = 10;
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Check PLL settings for ref clock of {} Hz, for target of {} Hz", reference_clock, target_frequency);
+    u64 best_difference = 0xffffffff;
+    for (settings.n = limits.n.min; settings.n <= limits.n.max; ++settings.n) {
+        for (settings.m1 = limits.m1.max; settings.m1 >= limits.m1.min; --settings.m1) {
+            for (settings.m2 = limits.m2.max; settings.m2 >= limits.m2.min; --settings.m2) {
+                for (settings.p1 = limits.p1.max; settings.p1 >= limits.p1.min; --settings.p1) {
+                    dbgln_if(INTEL_GRAPHICS_DEBUG, "Check PLL settings for {} {} {} {} {}", settings.n, settings.m1, settings.m2, settings.p1, settings.p2);
+                    if (!check_pll_settings(settings, reference_clock, limits))
+                        continue;
+                    auto current_dot_clock = settings.compute_dot_clock(reference_clock);
+                    if (current_dot_clock == target_frequency)
+                        return settings;
+                    auto difference = find_absolute_difference(target_frequency, current_dot_clock);
+                    if (difference < best_difference && (current_dot_clock > target_frequency)) {
+                        best_settings = settings;
+                        best_difference = difference;
+                    }
+                }
+            }
+        }
+    }
+    if (best_settings.is_valid())
+        return best_settings;
+    return {};
+}
+
+NonnullRefPtr<IntelDisplayConnectorGroup> IntelDisplayConnectorGroup::must_create(MMIORegion const& first_region, MMIORegion const& second_region)
+{
+    auto registers_region = MUST(MM.allocate_kernel_region(first_region.pci_bar_paddr, first_region.pci_bar_space_length, "Intel Native Graphics Registers", Memory::Region::Access::ReadWrite));
+    // FIXME: Try to put the address as parameter to this function to allow creating this DisplayConnector for many generations...
+    auto gmbus_connector = MUST(GMBusConnector::create_with_physical_address(first_region.pci_bar_paddr.offset(to_underlying(IntelGraphics::RegisterIndex::GMBusClock))));
+    auto connector_group = adopt_ref_if_nonnull(new (nothrow) IntelDisplayConnectorGroup(move(gmbus_connector), move(registers_region), first_region, second_region)).release_nonnull();
+    MUST(connector_group->initialize_connectors());
+    return connector_group;
+}
+
+IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
+    : m_mmio_first_region(first_region)
+    , m_mmio_second_region(second_region)
+    , m_assigned_mmio_registers_region(m_mmio_first_region)
+    , m_registers_region(move(registers_region))
+    , m_gmbus_connector(move(gmbus_connector))
+{
+}
+
+ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
+{
+    auto connector = IntelNativeDisplayConnector::must_create(*this);
+    MUST(m_connectors.try_append(connector));
+    EDID::Parser::RawBytes crt_edid_bytes {};
+    {
+        SpinlockLocker control_lock(m_control_lock);
+        m_gmbus_connector->write(DDC2_I2C_ADDRESS, 0);
+        MUST(m_gmbus_connector->read(DDC2_I2C_ADDRESS, (u8*)&crt_edid_bytes, sizeof(crt_edid_bytes)));
+
+        // FIXME: It seems like the returned EDID is almost correct,
+        // but the first byte is set to 0xD0 instead of 0x00.
+        // For now, this "hack" works well enough.
+        crt_edid_bytes[0] = 0x0;
+    }
+    connector->set_edid_bytes({}, crt_edid_bytes);
+    TRY(connector->set_safe_resolution());
+    TRY(connector->create_attached_framebuffer_console({}, m_mmio_second_region.pci_bar_paddr));
+    return {};
+}
+
+ErrorOr<void> IntelDisplayConnectorGroup::set_safe_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
+{
+    VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
+    auto result = set_safe_crt_resolution();
+    VERIFY(result);
+    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+    connector.m_framebuffer_width = modesetting.horizontal.active;
+    connector.m_framebuffer_height = modesetting.vertical.active;
+    connector.m_framebuffer_pitch = modesetting.horizontal.active * 4;
+    connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
+    auto rounded_size = TRY(Memory::page_round_up(connector.m_framebuffer_pitch * connector.m_framebuffer_height));
+    connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
+    return {};
+}
+
+ErrorOr<DisplayConnector::Resolution> IntelDisplayConnectorGroup::get_resolution(IntelNativeDisplayConnector const& connector)
+{
+    VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
+    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+    auto width = modesetting.horizontal.active;
+    auto height = modesetting.vertical.active;
+    auto pitch = width * 4;
+    size_t bpp = 32;
+    // FIXME: Provide the actual refresh rate
+    return DisplayConnector::Resolution { width, height, bpp, pitch, {} };
+}
+
+ErrorOr<DisplayConnector::Resolution> IntelDisplayConnectorGroup::get_resolution(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector const& connector)
+{
+    return get_resolution(connector);
+}
+
+void IntelDisplayConnectorGroup::enable_vga_plane()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+}
+
+[[maybe_unused]] static StringView convert_register_index_to_string(IntelGraphics::RegisterIndex index)
+{
+    switch (index) {
+    case IntelGraphics::RegisterIndex::PipeAConf:
+        return "PipeAConf"sv;
+    case IntelGraphics::RegisterIndex::PipeBConf:
+        return "PipeBConf"sv;
+    case IntelGraphics::RegisterIndex::GMBusData:
+        return "GMBusData"sv;
+    case IntelGraphics::RegisterIndex::GMBusStatus:
+        return "GMBusStatus"sv;
+    case IntelGraphics::RegisterIndex::GMBusCommand:
+        return "GMBusCommand"sv;
+    case IntelGraphics::RegisterIndex::GMBusClock:
+        return "GMBusClock"sv;
+    case IntelGraphics::RegisterIndex::DisplayPlaneAControl:
+        return "DisplayPlaneAControl"sv;
+    case IntelGraphics::RegisterIndex::DisplayPlaneALinearOffset:
+        return "DisplayPlaneALinearOffset"sv;
+    case IntelGraphics::RegisterIndex::DisplayPlaneAStride:
+        return "DisplayPlaneAStride"sv;
+    case IntelGraphics::RegisterIndex::DisplayPlaneASurface:
+        return "DisplayPlaneASurface"sv;
+    case IntelGraphics::RegisterIndex::DPLLDivisorA0:
+        return "DPLLDivisorA0"sv;
+    case IntelGraphics::RegisterIndex::DPLLDivisorA1:
+        return "DPLLDivisorA1"sv;
+    case IntelGraphics::RegisterIndex::DPLLControlA:
+        return "DPLLControlA"sv;
+    case IntelGraphics::RegisterIndex::DPLLControlB:
+        return "DPLLControlB"sv;
+    case IntelGraphics::RegisterIndex::DPLLMultiplierA:
+        return "DPLLMultiplierA"sv;
+    case IntelGraphics::RegisterIndex::HTotalA:
+        return "HTotalA"sv;
+    case IntelGraphics::RegisterIndex::HBlankA:
+        return "HBlankA"sv;
+    case IntelGraphics::RegisterIndex::HSyncA:
+        return "HSyncA"sv;
+    case IntelGraphics::RegisterIndex::VTotalA:
+        return "VTotalA"sv;
+    case IntelGraphics::RegisterIndex::VBlankA:
+        return "VBlankA"sv;
+    case IntelGraphics::RegisterIndex::VSyncA:
+        return "VSyncA"sv;
+    case IntelGraphics::RegisterIndex::PipeASource:
+        return "PipeASource"sv;
+    case IntelGraphics::RegisterIndex::AnalogDisplayPort:
+        return "AnalogDisplayPort"sv;
+    case IntelGraphics::RegisterIndex::VGADisplayPlaneControl:
+        return "VGADisplayPlaneControl"sv;
+    default:
+        VERIFY_NOT_REACHED();
+    }
+}
+
+void IntelDisplayConnectorGroup::write_to_register(IntelGraphics::RegisterIndex index, u32 value) const
+{
+    VERIFY(m_control_lock.is_locked());
+    SpinlockLocker lock(m_registers_lock);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Intel Graphics Display Connector:: Write to {} value of {:x}", convert_register_index_to_string(index), value);
+    auto* reg = (u32 volatile*)m_registers_region->vaddr().offset(to_underlying(index)).as_ptr();
+    *reg = value;
+}
+u32 IntelDisplayConnectorGroup::read_from_register(IntelGraphics::RegisterIndex index) const
+{
+    VERIFY(m_control_lock.is_locked());
+    SpinlockLocker lock(m_registers_lock);
+    auto* reg = (u32 volatile*)m_registers_region->vaddr().offset(to_underlying(index)).as_ptr();
+    u32 value = *reg;
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Intel Graphics Display Connector: Read from {} value of {:x}", convert_register_index_to_string(index), value);
+    return value;
+}
+
+bool IntelDisplayConnectorGroup::pipe_a_enabled() const
+{
+    VERIFY(m_control_lock.is_locked());
+    return read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 30);
+}
+
+bool IntelDisplayConnectorGroup::pipe_b_enabled() const
+{
+    VERIFY(m_control_lock.is_locked());
+    return read_from_register(IntelGraphics::RegisterIndex::PipeBConf) & (1 << 30);
+}
+
+void IntelDisplayConnectorGroup::disable_output()
+{
+    VERIFY(m_control_lock.is_locked());
+    disable_dac_output();
+    disable_all_planes();
+    disable_pipe_a();
+    disable_pipe_b();
+    disable_dpll();
+    disable_vga_emulation();
+}
+
+void IntelDisplayConnectorGroup::enable_output(size_t width)
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(!pipe_a_enabled());
+    enable_pipe_a();
+    enable_primary_plane(width);
+    enable_dac_output();
+}
+
+static size_t compute_dac_multiplier(size_t pixel_clock_in_khz)
+{
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Intel native graphics: Pixel clock is {} KHz", pixel_clock_in_khz);
+    VERIFY(pixel_clock_in_khz >= 25000);
+    if (pixel_clock_in_khz >= 100000) {
+        return 1;
+    } else if (pixel_clock_in_khz >= 50000) {
+        return 2;
+    } else {
+        return 4;
+    }
+}
+
+bool IntelDisplayConnectorGroup::set_safe_crt_resolution()
+{
+    SpinlockLocker control_lock(m_control_lock);
+    SpinlockLocker modeset_lock(m_modeset_lock);
+
+    // Note: Just in case we still allow access to VGA IO ports, disable it now.
+    GraphicsManagement::the().disable_vga_emulation_access_permanently();
+    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+
+    disable_output();
+    auto dac_multiplier = compute_dac_multiplier(modesetting.pixel_clock_in_khz);
+    auto pll_settings = create_pll_settings((1000 * modesetting.pixel_clock_in_khz * dac_multiplier), 96'000'000, IntelGraphics::G35Limits);
+    if (!pll_settings.has_value())
+        VERIFY_NOT_REACHED();
+    auto settings = pll_settings.value();
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "PLL settings for {} {} {} {} {}", settings.n, settings.m1, settings.m2, settings.p1, settings.p2);
+    enable_dpll_without_vga(pll_settings.value(), dac_multiplier);
+    set_display_timings(modesetting);
+    enable_output(modesetting.horizontal.active);
+
+    return true;
+}
+
+void IntelDisplayConnectorGroup::set_display_timings(Graphics::Modesetting const& modesetting)
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 31)));
+    VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 30)));
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "htotal - {}, {}", (modesetting.horizontal.active - 1), (modesetting.horizontal.total - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HTotalA, (modesetting.horizontal.active - 1) | (modesetting.horizontal.total - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hblank - {}, {}", (modesetting.horizontal.blanking_start() - 1), (modesetting.horizontal.blanking_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HBlankA, (modesetting.horizontal.blanking_start() - 1) | (modesetting.horizontal.blanking_end() - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hsync - {}, {}", (modesetting.horizontal.sync_start - 1), (modesetting.horizontal.sync_end - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HSyncA, (modesetting.horizontal.sync_start - 1) | (modesetting.horizontal.sync_end - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vtotal - {}, {}", (modesetting.vertical.active - 1), (modesetting.vertical.total - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VTotalA, (modesetting.vertical.active - 1) | (modesetting.vertical.total - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vblank - {}, {}", (modesetting.vertical.blanking_start() - 1), (modesetting.vertical.blanking_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VBlankA, (modesetting.vertical.blanking_start() - 1) | (modesetting.vertical.blanking_end() - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vsync - {}, {}", (modesetting.vertical.sync_start - 1), (modesetting.vertical.sync_end - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VSyncA, (modesetting.vertical.sync_start - 1) | (modesetting.vertical.sync_end - 1) << 16);
+
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "sourceSize - {}, {}", (modesetting.vertical.active - 1), (modesetting.horizontal.active - 1));
+    write_to_register(IntelGraphics::RegisterIndex::PipeASource, (modesetting.vertical.active - 1) | (modesetting.horizontal.active - 1) << 16);
+
+    IO::delay(200);
+}
+
+bool IntelDisplayConnectorGroup::wait_for_enabled_pipe_a(size_t milliseconds_timeout) const
+{
+    size_t current_time = 0;
+    while (current_time < milliseconds_timeout) {
+        if (pipe_a_enabled())
+            return true;
+        IO::delay(1000);
+        current_time++;
+    }
+    return false;
+}
+bool IntelDisplayConnectorGroup::wait_for_disabled_pipe_a(size_t milliseconds_timeout) const
+{
+    size_t current_time = 0;
+    while (current_time < milliseconds_timeout) {
+        if (!pipe_a_enabled())
+            return true;
+        IO::delay(1000);
+        current_time++;
+    }
+    return false;
+}
+
+bool IntelDisplayConnectorGroup::wait_for_disabled_pipe_b(size_t milliseconds_timeout) const
+{
+    size_t current_time = 0;
+    while (current_time < milliseconds_timeout) {
+        if (!pipe_b_enabled())
+            return true;
+        IO::delay(1000);
+        current_time++;
+    }
+    return false;
+}
+
+void IntelDisplayConnectorGroup::disable_dpll()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::DPLLControlA, 0);
+    write_to_register(IntelGraphics::RegisterIndex::DPLLControlB, 0);
+}
+
+void IntelDisplayConnectorGroup::disable_pipe_a()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::PipeAConf, 0);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Disabling Pipe A");
+    wait_for_disabled_pipe_a(100);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Disabling Pipe A - done.");
+}
+
+void IntelDisplayConnectorGroup::disable_pipe_b()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::PipeAConf, 0);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Disabling Pipe B");
+    wait_for_disabled_pipe_b(100);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "Disabling Pipe B - done.");
+}
+
+void IntelDisplayConnectorGroup::enable_pipe_a()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 31)));
+    VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 30)));
+    write_to_register(IntelGraphics::RegisterIndex::PipeAConf, (1 << 31) | (1 << 24));
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "enabling Pipe A");
+    // FIXME: Seems like my video card is buggy and doesn't set the enabled bit (bit 30)!!
+    wait_for_enabled_pipe_a(100);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "enabling Pipe A - done.");
+}
+
+void IntelDisplayConnectorGroup::enable_primary_plane(size_t width)
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    VERIFY(((width * 4) % 64 == 0));
+
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneAStride, width * 4);
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneALinearOffset, 0);
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneASurface, m_mmio_second_region.pci_bar_paddr.get());
+
+    // FIXME: Serenity uses BGR 32 bit pixel format, but maybe we should try to determine it somehow!
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneAControl, (0b0110 << 26) | (1 << 31));
+}
+
+void IntelDisplayConnectorGroup::set_dpll_registers(IntelGraphics::PLLSettings const& settings)
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::DPLLDivisorA0, (settings.m2 - 2) | ((settings.m1 - 2) << 8) | ((settings.n - 2) << 16));
+    write_to_register(IntelGraphics::RegisterIndex::DPLLDivisorA1, (settings.m2 - 2) | ((settings.m1 - 2) << 8) | ((settings.n - 2) << 16));
+
+    write_to_register(IntelGraphics::RegisterIndex::DPLLControlA, 0);
+}
+
+void IntelDisplayConnectorGroup::enable_dpll_without_vga(IntelGraphics::PLLSettings const& settings, size_t dac_multiplier)
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+
+    set_dpll_registers(settings);
+
+    IO::delay(200);
+
+    write_to_register(IntelGraphics::RegisterIndex::DPLLControlA, (6 << 9) | (settings.p1) << 16 | (1 << 26) | (1 << 28) | (1 << 31));
+    write_to_register(IntelGraphics::RegisterIndex::DPLLMultiplierA, (dac_multiplier - 1) | ((dac_multiplier - 1) << 8));
+
+    // The specification says we should wait (at least) about 150 microseconds
+    // after enabling the DPLL to allow the clock to stabilize
+    IO::delay(200);
+    VERIFY(read_from_register(IntelGraphics::RegisterIndex::DPLLControlA) & (1 << 31));
+}
+
+void IntelDisplayConnectorGroup::disable_dac_output()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::AnalogDisplayPort, 0b11 << 10);
+}
+
+void IntelDisplayConnectorGroup::enable_dac_output()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::AnalogDisplayPort, (1 << 31));
+}
+
+void IntelDisplayConnectorGroup::disable_vga_emulation()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::VGADisplayPlaneControl, (1 << 31));
+    read_from_register(IntelGraphics::RegisterIndex::VGADisplayPlaneControl);
+}
+
+void IntelDisplayConnectorGroup::disable_all_planes()
+{
+    VERIFY(m_control_lock.is_locked());
+    VERIFY(m_modeset_lock.is_locked());
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneAControl, 0);
+    write_to_register(IntelGraphics::RegisterIndex::DisplayPlaneBControl, 0);
+}
+
+}

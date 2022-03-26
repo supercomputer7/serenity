@@ -45,7 +45,6 @@ private:
     ErrorOr<void> create_attached_text_console();
     ErrorOr<void> create_attached_framebuffer_console();
     VGAGenericDisplayConnector(PhysicalAddress framebuffer_address, size_t framebuffer_width, size_t framebuffer_height, size_t framebuffer_pitch);
-    VGAGenericDisplayConnector();
 
     virtual ErrorOr<size_t> write_to_first_surface(u64 offset, UserOrKernelBuffer const&, size_t length) override;
     virtual ErrorOr<void> flush_first_surface() override;
@@ -54,9 +53,10 @@ private:
     virtual void disable_console() override;
 
 protected:
+    VGAGenericDisplayConnector();
     explicit VGAGenericDisplayConnector(PhysicalAddress framebuffer_address);
 
-    Optional<PhysicalAddress> const m_framebuffer_address;
+    Optional<PhysicalAddress> m_framebuffer_address;
     size_t m_framebuffer_width { 0 };
     size_t m_framebuffer_height { 0 };
     size_t m_framebuffer_pitch { 0 };
