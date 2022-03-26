@@ -79,19 +79,19 @@ void BochsDisplayConnector::set_framebuffer_to_little_endian_format()
 
 ErrorOr<void> BochsDisplayConnector::set_safe_mode_setting()
 {
-    DisplayConnector::ModeSetting safe_resolution {
+    DisplayConnector::ModeSetting safe_mode_setting {
         .horizontal_stride = 1024 * sizeof(u32),
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = 1024,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = 1024,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = 768,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = 768,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
-    return set_mode_setting(safe_resolution);
+    return set_mode_setting(safe_mode_setting);
 }
 
 ErrorOr<void> BochsDisplayConnector::unblank()
@@ -177,13 +177,13 @@ ErrorOr<void> BochsDisplayConnector::set_mode_setting(ModeSetting const& mode_se
         .horizontal_stride = m_registers->bochs_regs.xres * sizeof(u32),
         .pixel_clock_in_khz = 0, // Note: There's no pixel clock in paravirtualized hardware
         .horizontal_active = m_registers->bochs_regs.xres,
-        .horizontal_sync_start = 0, // Note: There's no horizontal_sync_start in paravirtualized hardware
-        .horizontal_sync_end = 0,   // Note: There's no horizontal_sync_end in paravirtualized hardware
-        .horizontal_total = m_registers->bochs_regs.xres,
+        .horizontal_front_porch_pixels = 0, // Note: There's no horizontal_front_porch_pixels in paravirtualized hardware
+        .horizontal_sync_time_pixels = 0,   // Note: There's no horizontal_sync_time_pixels in paravirtualized hardware
+        .horizontal_blank_pixels = 0,       // Note: There's no horizontal_blank_pixels in paravirtualized hardware
         .vertical_active = m_registers->bochs_regs.yres,
-        .vertical_sync_start = 0, // Note: There's no vertical_sync_start in paravirtualized hardware
-        .vertical_sync_end = 0,   // Note: There's no vertical_sync_end in paravirtualized hardware
-        .vertical_total = m_registers->bochs_regs.yres,
+        .vertical_front_porch_lines = 0, // Note: There's no vertical_front_porch_lines in paravirtualized hardware
+        .vertical_sync_time_lines = 0,   // Note: There's no vertical_sync_time_lines in paravirtualized hardware
+        .vertical_blank_lines = 0,       // Note: There's no vertical_blank_lines in paravirtualized hardware
     };
 
     m_current_mode_setting = mode_set;

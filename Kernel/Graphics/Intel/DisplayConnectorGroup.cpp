@@ -68,21 +68,15 @@ static DisplayConnector::ModeSetting calculate_modesetting_from_edid(EDID::Parse
     VERIFY(details.pixel_clock_khz());
     mode.pixel_clock_in_khz = details.pixel_clock_khz();
 
-    size_t horizontal_active = details.horizontal_addressable_pixels();
-    size_t horizontal_sync_offset = details.horizontal_front_porch_pixels();
+    mode.horizontal_active = details.horizontal_addressable_pixels();
+    mode.horizontal_front_porch_pixels = details.horizontal_front_porch_pixels();
+    mode.horizontal_sync_time_pixels = details.horizontal_sync_pulse_width_pixels();
+    mode.horizontal_blank_pixels = details.horizontal_blanking_pixels();
 
-    mode.horizontal_active = horizontal_active;
-    mode.horizontal_sync_start = horizontal_active + horizontal_sync_offset;
-    mode.horizontal_sync_end = horizontal_active + horizontal_sync_offset + details.horizontal_sync_pulse_width_pixels();
-    mode.horizontal_total = horizontal_active + details.horizontal_blanking_pixels();
-
-    size_t vertical_active = details.vertical_addressable_lines();
-    size_t vertical_sync_offset = details.vertical_front_porch_lines();
-
-    mode.vertical_active = vertical_active;
-    mode.vertical_sync_start = vertical_active + vertical_sync_offset;
-    mode.vertical_sync_end = vertical_active + vertical_sync_offset + details.vertical_sync_pulse_width_lines();
-    mode.vertical_total = vertical_active + details.vertical_blanking_lines();
+    mode.vertical_active = details.vertical_addressable_lines();
+    mode.vertical_front_porch_lines = details.vertical_front_porch_lines();
+    mode.vertical_sync_time_lines = details.vertical_sync_pulse_width_lines();
+    mode.vertical_blank_lines = details.vertical_blanking_lines();
     return mode;
 }
 
@@ -412,23 +406,23 @@ void IntelDisplayConnectorGroup::set_display_timings(DisplayConnector::ModeSetti
     VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 31)));
     VERIFY(!(read_from_register(IntelGraphics::RegisterIndex::PipeAConf) & (1 << 30)));
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "htotal - {}, {}", (mode_setting.horizontal_active - 1), (mode_setting.horizontal_total - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HTotalA, (mode_setting.horizontal_active - 1) | (mode_setting.horizontal_total - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "htotal - {}, {}", (mode_setting.horizontal_active - 1), (mode_setting.horizontal_total() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HTotalA, (mode_setting.horizontal_active - 1) | (mode_setting.horizontal_total() - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "hblank - {}, {}", (mode_setting.horizontal_blanking_start() - 1), (mode_setting.horizontal_blanking_end() - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HBlankA, (mode_setting.horizontal_blanking_start() - 1) | (mode_setting.horizontal_blanking_end() - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hblank - {}, {}", (mode_setting.horizontal_blanking_start() - 1), (mode_setting.horizontal_blanking_start() + mode_setting.horizontal_blank_pixels - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HBlankA, (mode_setting.horizontal_blanking_start() - 1) | (mode_setting.horizontal_blanking_start() + mode_setting.horizontal_blank_pixels - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "hsync - {}, {}", (mode_setting.horizontal_sync_start - 1), (mode_setting.horizontal_sync_end - 1));
-    write_to_register(IntelGraphics::RegisterIndex::HSyncA, (mode_setting.horizontal_sync_start - 1) | (mode_setting.horizontal_sync_end - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "hsync - {}, {}", (mode_setting.horizontal_sync_start() - 1), (mode_setting.horizontal_sync_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::HSyncA, (mode_setting.horizontal_sync_start() - 1) | (mode_setting.horizontal_sync_end() - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vtotal - {}, {}", (mode_setting.vertical_active - 1), (mode_setting.vertical_total - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VTotalA, (mode_setting.vertical_active - 1) | (mode_setting.vertical_total - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vtotal - {}, {}", (mode_setting.vertical_active - 1), (mode_setting.vertical_blanking_start() + mode_setting.vertical_blank_lines - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VTotalA, (mode_setting.vertical_active - 1) | (mode_setting.vertical_blanking_start() + mode_setting.vertical_blank_lines - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vblank - {}, {}", (mode_setting.vertical_blanking_start() - 1), (mode_setting.vertical_blanking_end() - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VBlankA, (mode_setting.vertical_blanking_start() - 1) | (mode_setting.vertical_blanking_end() - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vblank - {}, {}", (mode_setting.vertical_blanking_start() - 1), (mode_setting.vertical_blanking_start() + mode_setting.vertical_blank_lines - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VBlankA, (mode_setting.vertical_blanking_start() - 1) | (mode_setting.vertical_blanking_start() + mode_setting.vertical_blank_lines - 1) << 16);
 
-    dbgln_if(INTEL_GRAPHICS_DEBUG, "vsync - {}, {}", (mode_setting.vertical_sync_start - 1), (mode_setting.vertical_sync_end - 1));
-    write_to_register(IntelGraphics::RegisterIndex::VSyncA, (mode_setting.vertical_sync_start - 1) | (mode_setting.vertical_sync_end - 1) << 16);
+    dbgln_if(INTEL_GRAPHICS_DEBUG, "vsync - {}, {}", (mode_setting.vertical_sync_start() - 1), (mode_setting.vertical_sync_end() - 1));
+    write_to_register(IntelGraphics::RegisterIndex::VSyncA, (mode_setting.vertical_sync_start() - 1) | (mode_setting.vertical_sync_end() - 1) << 16);
 
     dbgln_if(INTEL_GRAPHICS_DEBUG, "sourceSize - {}, {}", (mode_setting.vertical_active - 1), (mode_setting.horizontal_active - 1));
     write_to_register(IntelGraphics::RegisterIndex::PipeASource, (mode_setting.vertical_active - 1) | (mode_setting.horizontal_active - 1) << 16);

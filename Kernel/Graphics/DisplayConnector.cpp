@@ -109,13 +109,13 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         head_properties.mode_setting.horizontal_stride = m_current_mode_setting.horizontal_stride;
         head_properties.mode_setting.pixel_clock_in_khz = m_current_mode_setting.pixel_clock_in_khz;
         head_properties.mode_setting.horizontal_active = m_current_mode_setting.horizontal_active;
-        head_properties.mode_setting.horizontal_sync_start = m_current_mode_setting.horizontal_sync_start;
-        head_properties.mode_setting.horizontal_sync_end = m_current_mode_setting.horizontal_sync_end;
-        head_properties.mode_setting.horizontal_total = m_current_mode_setting.horizontal_total;
+        head_properties.mode_setting.horizontal_front_porch_pixels = m_current_mode_setting.horizontal_front_porch_pixels;
+        head_properties.mode_setting.horizontal_sync_time_pixels = m_current_mode_setting.horizontal_sync_time_pixels;
+        head_properties.mode_setting.horizontal_blank_pixels = m_current_mode_setting.horizontal_blank_pixels;
         head_properties.mode_setting.vertical_active = m_current_mode_setting.vertical_active;
-        head_properties.mode_setting.vertical_sync_start = m_current_mode_setting.vertical_sync_start;
-        head_properties.mode_setting.vertical_sync_end = m_current_mode_setting.vertical_sync_end;
-        head_properties.mode_setting.vertical_total = m_current_mode_setting.vertical_total;
+        head_properties.mode_setting.vertical_front_porch_lines = m_current_mode_setting.vertical_front_porch_lines;
+        head_properties.mode_setting.vertical_sync_time_lines = m_current_mode_setting.vertical_sync_time_lines;
+        head_properties.mode_setting.vertical_blank_lines = m_current_mode_setting.vertical_blank_lines;
         head_properties.offset = 0;
         return copy_to_user(user_head_properties, &head_properties);
     }
@@ -148,32 +148,32 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
             return Error::from_errno(EINVAL);
         if (head_mode_setting.horizontal_active < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.horizontal_sync_start < 0)
+        if (head_mode_setting.horizontal_front_porch_pixels < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.horizontal_sync_end < 0)
+        if (head_mode_setting.horizontal_sync_time_pixels < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.horizontal_total < 0)
+        if (head_mode_setting.horizontal_blank_pixels < 0)
             return Error::from_errno(EINVAL);
         if (head_mode_setting.vertical_active < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.vertical_sync_start < 0)
+        if (head_mode_setting.vertical_front_porch_lines < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.vertical_sync_end < 0)
+        if (head_mode_setting.vertical_sync_time_lines < 0)
             return Error::from_errno(EINVAL);
-        if (head_mode_setting.vertical_total < 0)
+        if (head_mode_setting.vertical_blank_lines < 0)
             return Error::from_errno(EINVAL);
 
         ModeSetting requested_mode_setting;
         requested_mode_setting.horizontal_stride = head_mode_setting.horizontal_stride;
         requested_mode_setting.pixel_clock_in_khz = head_mode_setting.pixel_clock_in_khz;
         requested_mode_setting.horizontal_active = head_mode_setting.horizontal_active;
-        requested_mode_setting.horizontal_sync_start = head_mode_setting.horizontal_sync_start;
-        requested_mode_setting.horizontal_sync_end = head_mode_setting.horizontal_sync_end;
-        requested_mode_setting.horizontal_total = head_mode_setting.horizontal_total;
+        requested_mode_setting.horizontal_front_porch_pixels = head_mode_setting.horizontal_front_porch_pixels;
+        requested_mode_setting.horizontal_sync_time_pixels = head_mode_setting.horizontal_sync_time_pixels;
+        requested_mode_setting.horizontal_blank_pixels = head_mode_setting.horizontal_blank_pixels;
         requested_mode_setting.vertical_active = head_mode_setting.vertical_active;
-        requested_mode_setting.vertical_sync_start = head_mode_setting.vertical_sync_start;
-        requested_mode_setting.vertical_sync_end = head_mode_setting.vertical_sync_end;
-        requested_mode_setting.vertical_total = head_mode_setting.vertical_total;
+        requested_mode_setting.vertical_front_porch_lines = head_mode_setting.vertical_front_porch_lines;
+        requested_mode_setting.vertical_sync_time_lines = head_mode_setting.vertical_sync_time_lines;
+        requested_mode_setting.vertical_blank_lines = head_mode_setting.vertical_blank_lines;
 
         TRY(set_mode_setting(requested_mode_setting));
         return {};
