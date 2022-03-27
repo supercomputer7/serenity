@@ -68,6 +68,9 @@ static DisplayConnector::ModeSetting calculate_modesetting_from_edid(EDID::Parse
     VERIFY(details.pixel_clock_khz());
     mode.pixel_clock_in_khz = details.pixel_clock_khz();
 
+    // Note: We assume that we always use 32 bit framebuffers.
+    mode.horizontal_stride = details.horizontal_addressable_pixels() * sizeof(u32);
+
     mode.horizontal_active = details.horizontal_addressable_pixels();
     mode.horizontal_front_porch_pixels = details.horizontal_front_porch_pixels();
     mode.horizontal_sync_time_pixels = details.horizontal_sync_pulse_width_pixels();
@@ -213,19 +216,19 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativ
 {
     SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
-    auto result = set_safe_crt_resolution();
-    VERIFY(result);
     auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+
+    auto result = set_crt_resolution(modesetting);
+    VERIFY(result);
+
     connector.m_current_mode_setting.horizontal_active = modesetting.horizontal_active;
     connector.m_current_mode_setting.vertical_active = modesetting.vertical_active;
-    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_active * 4;
+    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_stride;
     connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
     auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.vertical_active));
     connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
 
     connector.m_current_mode_setting = modesetting;
-    // Note: We apply the horizontal_stride value again because the previous line probably removed it...
-    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_active * 4;
     return {};
 }
 
@@ -391,12 +394,6 @@ bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSettin
     enable_output(mode_setting.horizontal_active);
 
     return true;
-}
-
-bool IntelDisplayConnectorGroup::set_safe_crt_resolution()
-{
-    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
-    return set_crt_resolution(modesetting);
 }
 
 void IntelDisplayConnectorGroup::set_display_timings(DisplayConnector::ModeSetting const& mode_setting)

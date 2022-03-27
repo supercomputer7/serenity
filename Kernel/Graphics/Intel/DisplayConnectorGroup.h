@@ -91,7 +91,6 @@ private:
     bool is_resolution_valid(size_t width, size_t height);
 
     bool set_crt_resolution(DisplayConnector::ModeSetting const&);
-    bool set_safe_crt_resolution();
 
     void disable_output();
     void enable_output(size_t width);
