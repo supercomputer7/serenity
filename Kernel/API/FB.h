@@ -41,6 +41,11 @@ ALWAYS_INLINE int fb_get_mode_setting(int fd, FBHeadModeSetting* info)
     return 0;
 }
 
+ALWAYS_INLINE int fb_set_safe_resolution(int fd)
+{
+    return ioctl(fd, FB_IOCTL_SET_SAFE_HEAD_MODE_SETTING, nullptr);
+}
+
 ALWAYS_INLINE int fb_set_resolution(int fd, FBHeadModeSetting* info)
 {
     return ioctl(fd, FB_IOCTL_SET_HEAD_MODE_SETTING, info);
