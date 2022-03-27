@@ -142,7 +142,6 @@ private:
     virtual bool modesetting_capable() const override { return true; }
     virtual bool double_framebuffering_capable() const override { return true; }
     virtual bool partial_flush_support() const override { return true; }
-    virtual ErrorOr<ByteBuffer> get_edid() const override;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override;
     virtual ErrorOr<void> set_safe_mode_setting() override;
     virtual ErrorOr<void> set_y_offset(size_t y) override;
@@ -190,7 +189,7 @@ private:
     void set_scanout_resource(Graphics::VirtIOGPU::ResourceID resource_id, Graphics::VirtIOGPU::Protocol::Rect rect);
     void transfer_framebuffer_data_to_host(Graphics::VirtIOGPU::ResourceID resource_id, Graphics::VirtIOGPU::Protocol::Rect const& rect);
     void flush_displayed_image(Graphics::VirtIOGPU::ResourceID resource_id, Graphics::VirtIOGPU::Protocol::Rect const& dirty_rect);
-    ErrorOr<Optional<EDID::Parser>> query_edid_from_virtio_adapter();
+    ErrorOr<void> query_edid_from_virtio_adapter();
     void query_display_edid();
 
     void flush_dirty_rectangle(Graphics::VirtIOGPU::ResourceID, Graphics::VirtIOGPU::Protocol::Rect const& dirty_rect);
@@ -224,7 +223,6 @@ private:
     NonnullRefPtr<VirtIOGraphicsAdapter> m_graphics_adapter;
     RefPtr<Graphics::Console> m_console;
     Graphics::VirtIOGPU::Protocol::DisplayInfoResponse::Display m_display_info {};
-    Optional<EDID::Parser> m_edid;
     Graphics::VirtIOGPU::ScanoutID m_scanout_id;
 
     // 2D framebuffer Member data

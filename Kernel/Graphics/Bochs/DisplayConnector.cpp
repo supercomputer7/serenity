@@ -19,7 +19,17 @@ NonnullRefPtr<BochsDisplayConnector> BochsDisplayConnector::must_create(Physical
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console());
+    MUST(connector->fetch_and_initialize_edid());
     return connector;
+}
+
+ErrorOr<void> BochsDisplayConnector::fetch_and_initialize_edid()
+{
+    Array<u8, 128> bochs_edid;
+    static_assert(sizeof(BochsDisplayMMIORegisters::edid_data) >= sizeof(EDID::Definitions::EDID));
+    memcpy(bochs_edid.data(), (u8 const*)(m_registers.base_address().offset(__builtin_offsetof(BochsDisplayMMIORegisters, edid_data)).as_ptr()), sizeof(bochs_edid));
+    set_edid_bytes(bochs_edid);
+    return {};
 }
 
 ErrorOr<void> BochsDisplayConnector::create_attached_framebuffer_console()
@@ -188,11 +198,6 @@ ErrorOr<void> BochsDisplayConnector::set_mode_setting(ModeSetting const& mode_se
 
     m_current_mode_setting = mode_set;
     return {};
-}
-
-ErrorOr<ByteBuffer> BochsDisplayConnector::get_edid() const
-{
-    return ByteBuffer::copy(const_cast<u8 const*>(m_registers->edid_data), sizeof(m_registers->edid_data));
 }
 
 }

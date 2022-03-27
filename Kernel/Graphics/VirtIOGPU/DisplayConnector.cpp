@@ -85,13 +85,6 @@ DisplayConnector::Hardware3DAccelerationCommandSet VirtIODisplayConnector::hardw
     return DisplayConnector::Hardware3DAccelerationCommandSet::VirGL;
 }
 
-ErrorOr<ByteBuffer> VirtIODisplayConnector::get_edid() const
-{
-    SpinlockLocker locker(m_operation_lock);
-    if (!m_edid.has_value())
-        return Error::from_errno(ENOTSUP);
-    return ByteBuffer::copy(m_edid.value().bytes());
-}
 ErrorOr<void> VirtIODisplayConnector::set_mode_setting(ModeSetting const& mode_setting)
 {
     SpinlockLocker locker(m_modeset_lock);
@@ -471,7 +464,6 @@ void VirtIODisplayConnector::query_display_information()
     auto& scanout = m_display_info;
     scanout = response.scanout_modes[m_scanout_id.value()];
     dbgln_if(VIRTIO_DEBUG, "VirtIODisplayConnector (Scanout {}): enabled: {} x: {}, y: {}, width: {}, height: {}", m_scanout_id.value(), !!scanout.enabled, scanout.rect.x, scanout.rect.y, scanout.rect.width, scanout.rect.height);
-    m_edid = {};
 }
 
 void VirtIODisplayConnector::query_display_edid()
@@ -484,15 +476,12 @@ void VirtIODisplayConnector::query_display_edid()
     // scanout.display_info.enabled doesn't seem to reflect the actual state,
     // even if we were to call query_display_information prior to calling
     // this function. So, just ignore, we seem to get EDID information regardless.
-
     auto query_edid_result = query_edid_from_virtio_adapter();
     if (query_edid_result.is_error()) {
         dbgln("VirtIODisplayConnector: (Scanout {}): Failed to parse EDID: {}", m_scanout_id, query_edid_result.error());
-        m_edid = {};
     } else {
-        m_edid = query_edid_result.release_value();
-        if (m_edid.has_value()) {
-            auto& parsed_edid = m_edid.value();
+        if (m_edid_parser.has_value()) {
+            auto& parsed_edid = m_edid_parser.value();
             dbgln("VirtIODisplayConnector (Scanout {}): EDID {}: Manufacturer: {} Product: {} Serial #{}", m_scanout_id,
                 parsed_edid.version(), parsed_edid.legacy_manufacturer_id(), parsed_edid.product_code(), parsed_edid.serial_number());
             if (auto screen_size = parsed_edid.screen_size(); screen_size.has_value()) {
@@ -511,7 +500,7 @@ void VirtIODisplayConnector::query_display_edid()
     }
 }
 
-ErrorOr<Optional<EDID::Parser>> VirtIODisplayConnector::query_edid_from_virtio_adapter()
+ErrorOr<void> VirtIODisplayConnector::query_edid_from_virtio_adapter()
 {
     VERIFY(m_operation_lock.is_locked());
     auto writer = create_scratchspace_writer();
@@ -531,9 +520,11 @@ ErrorOr<Optional<EDID::Parser>> VirtIODisplayConnector::query_edid_from_virtio_a
     if (response.size == 0)
         return Error::from_string_literal("VirtIODisplayConnector: Failed to get EDID, empty buffer");
 
-    auto edid_buffer = TRY(ByteBuffer::copy(response.edid, response.size));
-    auto edid = TRY(EDID::Parser::from_bytes(move(edid_buffer)));
-    return edid;
+    VERIFY(response.size >= sizeof(EDID::Definitions::EDID));
+    Array<u8, 128> raw_edid_bytes;
+    memcpy(raw_edid_bytes.data(), response.edid, sizeof(raw_edid_bytes));
+    set_edid_bytes(raw_edid_bytes);
+    return {};
 }
 
 Graphics::VirtIOGPU::ResourceID VirtIODisplayConnector::create_2d_resource(Graphics::VirtIOGPU::Protocol::Rect rect)

@@ -195,11 +195,11 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 {
     auto connector = IntelNativeDisplayConnector::must_create(*this);
     MUST(m_connectors.try_append(connector));
-    EDID::Parser::RawBytes crt_edid_bytes {};
+    Array<u8, 128> crt_edid_bytes {};
     {
         SpinlockLocker control_lock(m_control_lock);
         m_gmbus_connector->write(DDC2_I2C_ADDRESS, 0);
-        MUST(m_gmbus_connector->read(DDC2_I2C_ADDRESS, (u8*)&crt_edid_bytes, sizeof(crt_edid_bytes)));
+        MUST(m_gmbus_connector->read(DDC2_I2C_ADDRESS, crt_edid_bytes.data(), sizeof(crt_edid_bytes)));
 
         // FIXME: It seems like the returned EDID is almost correct,
         // but the first byte is set to 0xD0 instead of 0x00.
@@ -214,7 +214,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
-    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
+    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_edid_parser.value(), 0);
     return set_mode_setting(connector, modesetting);
 }
 
