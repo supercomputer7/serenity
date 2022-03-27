@@ -391,6 +391,7 @@ bool Screen::set_resolution(bool initial)
     if (rc == -1) {
         int err = errno;
         dbgln("Screen #{}: Failed to set resolution {}: {}", index(), info.resolution, strerror(err));
+        fb_set_safe_resolution(m_display_connector_fd);
         on_change_resolution();
         return false;
     }
