@@ -214,25 +214,16 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
-    SpinlockLocker locker(connector.m_modeset_lock);
-    VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
     auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_crt_edid.value(), 0);
-
-    auto result = set_crt_resolution(modesetting);
-    VERIFY(result);
-
-    connector.m_current_mode_setting.horizontal_active = modesetting.horizontal_active;
-    connector.m_current_mode_setting.vertical_active = modesetting.vertical_active;
-    connector.m_current_mode_setting.horizontal_stride = modesetting.horizontal_stride;
-    connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
-    auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.vertical_active));
-    connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
-
-    connector.m_current_mode_setting = modesetting;
-    return {};
+    return set_mode_setting(connector, modesetting);
 }
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
+{
+    return set_mode_setting(connector, mode_setting);
+}
+
+ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
     SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);

@@ -82,6 +82,8 @@ private:
     IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
     ErrorOr<void> initialize_connectors();
 
+    ErrorOr<void> set_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
+
     void write_to_register(IntelGraphics::RegisterIndex, u32 value) const;
     u32 read_from_register(IntelGraphics::RegisterIndex) const;
 
