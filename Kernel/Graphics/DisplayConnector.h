@@ -9,6 +9,7 @@
 #include <AK/Types.h>
 #include <Kernel/Devices/CharacterDevice.h>
 #include <LibC/sys/ioctl_numbers.h>
+#include <LibEDID/EDID.h>
 
 namespace Kernel {
 
@@ -96,7 +97,7 @@ public:
     virtual bool refresh_rate_support() const = 0;
 
     bool console_mode() const;
-    virtual ErrorOr<ByteBuffer> get_edid() const = 0;
+    ErrorOr<ByteBuffer> get_edid() const;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) = 0;
     virtual ErrorOr<void> set_safe_mode_setting() = 0;
     ErrorOr<ModeSetting> current_mode_setting() const;
@@ -106,6 +107,8 @@ public:
     void set_display_mode(Badge<GraphicsManagement>, DisplayMode);
 
 protected:
+    void set_edid_bytes(Array<u8, 128> const& edid_bytes);
+
     // ^File
     virtual bool is_seekable() const override { return true; }
     virtual bool can_read(OpenFileDescription const&, u64) const final override { return true; }
@@ -123,6 +126,8 @@ protected:
     virtual ErrorOr<void> flush_first_surface() = 0;
     virtual ErrorOr<void> flush_rectangle(size_t buffer_index, FBRect const& rect);
 
+    ErrorOr<void> initialize_edid_for_generic_monitor();
+
     mutable Spinlock m_control_lock;
     mutable Mutex m_flushing_lock;
 
@@ -132,6 +137,10 @@ protected:
 
     mutable Spinlock m_modeset_lock;
     ModeSetting m_current_mode_setting {};
+
+    Optional<EDID::Parser> m_edid_parser;
+    EDID::Parser::RawBytes m_edid_bytes {};
+    bool m_edid_valid { false };
 
 private:
     virtual void will_be_destroyed() override;

@@ -18,6 +18,7 @@ NonnullRefPtr<VMWareDisplayConnector> VMWareDisplayConnector::must_create(VMWare
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console());
+    MUST(connector->initialize_edid_for_generic_monitor());
     return connector;
 }
 
@@ -144,11 +145,6 @@ ErrorOr<void> VMWareDisplayConnector::set_mode_setting(ModeSetting const& mode_s
     };
     m_current_mode_setting = current_mode_setting;
     return {};
-}
-
-ErrorOr<ByteBuffer> VMWareDisplayConnector::get_edid() const
-{
-    return Error::from_errno(ENOTSUP);
 }
 
 }

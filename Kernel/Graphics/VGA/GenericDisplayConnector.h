@@ -32,7 +32,6 @@ public:
     // to just advertise this as not supporting refresh rate of the connected display.
     virtual bool refresh_rate_support() const override { return false; }
 
-    virtual ErrorOr<ByteBuffer> get_edid() const override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_safe_mode_setting() override { return Error::from_errno(ENOTSUP); }
     virtual ErrorOr<void> set_y_offset(size_t) override { return Error::from_errno(ENOTSUP); }

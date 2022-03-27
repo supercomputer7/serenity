@@ -37,29 +37,9 @@ IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGr
 {
 }
 
-void IntelNativeDisplayConnector::set_edid_bytes(Badge<IntelDisplayConnectorGroup>, EDID::Parser::RawBytes raw_bytes)
+void IntelNativeDisplayConnector::set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const& raw_bytes)
 {
-    memcpy((u8*)m_crt_edid_bytes, (u8*)raw_bytes, sizeof(m_crt_edid_bytes));
-    if (auto parsed_edid = EDID::Parser::from_bytes({ m_crt_edid_bytes, sizeof(m_crt_edid_bytes) }); !parsed_edid.is_error()) {
-        m_crt_edid = parsed_edid.release_value();
-    } else {
-        for (size_t x = 0; x < 128; x = x + 16) {
-            dmesgln("IntelNativeGraphicsAdapter: Print offending EDID");
-            dmesgln("{:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}",
-                m_crt_edid_bytes[x], m_crt_edid_bytes[x + 1], m_crt_edid_bytes[x + 2], m_crt_edid_bytes[x + 3],
-                m_crt_edid_bytes[x + 4], m_crt_edid_bytes[x + 5], m_crt_edid_bytes[x + 6], m_crt_edid_bytes[x + 7],
-                m_crt_edid_bytes[x + 8], m_crt_edid_bytes[x + 9], m_crt_edid_bytes[x + 10], m_crt_edid_bytes[x + 11],
-                m_crt_edid_bytes[x + 12], m_crt_edid_bytes[x + 13], m_crt_edid_bytes[x + 14], m_crt_edid_bytes[x + 15]);
-        }
-        dmesgln("IntelNativeGraphicsAdapter: Parsing EDID failed: {}", parsed_edid.error());
-    }
-}
-
-ErrorOr<ByteBuffer> IntelNativeDisplayConnector::get_edid() const
-{
-    if (m_crt_edid.has_value())
-        return ByteBuffer::copy(m_crt_edid_bytes, sizeof(m_crt_edid_bytes));
-    return ByteBuffer {};
+    DisplayConnector::set_edid_bytes(raw_bytes);
 }
 
 ErrorOr<void> IntelNativeDisplayConnector::set_mode_setting(DisplayConnector::ModeSetting const&)

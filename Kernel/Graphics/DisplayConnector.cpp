@@ -68,6 +68,72 @@ void DisplayConnector::set_display_mode(Badge<GraphicsManagement>, DisplayMode m
         disable_console();
 }
 
+ErrorOr<void> DisplayConnector::initialize_edid_for_generic_monitor()
+{
+    Array<u8, 128> virtual_monitor_edid = {
+        0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, /* header */
+        0x0, 0x0,                                       /* manufacturer */
+        0x00, 0x00,                                     /* product code */
+        0x00, 0x00, 0x00, 0x00,                         /* serial number goes here */
+        0x01,                                           /* week of manufacture */
+        0x00,                                           /* year of manufacture */
+        0x01, 0x03,                                     /* EDID version */
+        0x80,                                           /* capabilities - digital */
+        0x00,                                           /* horiz. res in cm, zero for projectors */
+        0x00,                                           /* vert. res in cm */
+        0x78,                                           /* display gamma (120 == 2.2). */
+        0xEE,                                           /* features (standby, suspend, off, RGB, std */
+                                                        /* colour space, preferred timing mode) */
+        0xEE, 0x91, 0xA3, 0x54, 0x4C, 0x99, 0x26, 0x0F, 0x50, 0x54,
+        /* chromaticity for standard colour space. */
+        0x00, 0x00, 0x00, /* no default timings */
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, /* no standard timings */
+        0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x06, 0x00, 0x02, 0x02,
+        0x02, 0x02,
+        /* descriptor block 1 goes below */
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        /* descriptor block 2, monitor ranges */
+        0x00, 0x00, 0x00, 0xFD, 0x00,
+        0x00, 0xC8, 0x00, 0xC8, 0x64, 0x00, 0x0A, 0x20, 0x20, 0x20,
+        0x20, 0x20,
+        /* 0-200Hz vertical, 0-200KHz horizontal, 1000MHz pixel clock */
+        0x20,
+        /* descriptor block 3, monitor name */
+        0x00, 0x00, 0x00, 0xFC, 0x00,
+        'G', 'e', 'n', 'e', 'r', 'i', 'c', 'S', 'c', 'r', 'e', 'e', 'n',
+        /* descriptor block 4: dummy data */
+        0x00, 0x00, 0x00, 0x10, 0x00,
+        0x0A, 0x20, 0x20, 0x20, 0x20, 0x20,
+        0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+        0x20,
+        0x00, /* number of extensions */
+        0x00  /* checksum goes here */
+    };
+    set_edid_bytes(virtual_monitor_edid);
+    return {};
+}
+
+void DisplayConnector::set_edid_bytes(Array<u8, 128> const& edid_bytes)
+{
+    memcpy((u8*)m_edid_bytes, edid_bytes.data(), sizeof(m_edid_bytes));
+    if (auto parsed_edid = EDID::Parser::from_bytes({ m_edid_bytes, sizeof(m_edid_bytes) }); !parsed_edid.is_error()) {
+        m_edid_parser = parsed_edid.release_value();
+        m_edid_valid = true;
+    } else {
+        dmesgln("DisplayConnector: Print offending EDID");
+        for (size_t x = 0; x < 128; x = x + 16) {
+            dmesgln("{:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}",
+                m_edid_bytes[x], m_edid_bytes[x + 1], m_edid_bytes[x + 2], m_edid_bytes[x + 3],
+                m_edid_bytes[x + 4], m_edid_bytes[x + 5], m_edid_bytes[x + 6], m_edid_bytes[x + 7],
+                m_edid_bytes[x + 8], m_edid_bytes[x + 9], m_edid_bytes[x + 10], m_edid_bytes[x + 11],
+                m_edid_bytes[x + 12], m_edid_bytes[x + 13], m_edid_bytes[x + 14], m_edid_bytes[x + 15]);
+        }
+        dmesgln("DisplayConnector: Parsing EDID failed: {}", parsed_edid.error());
+    }
+}
+
 ErrorOr<void> DisplayConnector::flush_rectangle(size_t, FBRect const&)
 {
     return Error::from_errno(ENOTSUP);
@@ -77,6 +143,13 @@ ErrorOr<DisplayConnector::ModeSetting> DisplayConnector::current_mode_setting() 
 {
     SpinlockLocker locker(m_modeset_lock);
     return m_current_mode_setting;
+}
+
+ErrorOr<ByteBuffer> DisplayConnector::get_edid() const
+{
+    if (!m_edid_valid)
+        return Error::from_errno(ENOTIMPL);
+    return ByteBuffer::copy(m_edid_bytes, sizeof(m_edid_bytes));
 }
 
 ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Userspace<void*> arg)

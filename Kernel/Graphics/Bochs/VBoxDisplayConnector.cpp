@@ -18,6 +18,7 @@ NonnullRefPtr<VBoxDisplayConnector> VBoxDisplayConnector::must_create(PhysicalAd
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console());
+    MUST(connector->initialize_edid_for_generic_monitor());
     return connector;
 }
 
@@ -36,11 +37,6 @@ static u16 get_register_with_io(u16 index)
 {
     IO::out16(VBE_DISPI_IOPORT_INDEX, index);
     return IO::in16(VBE_DISPI_IOPORT_DATA);
-}
-
-ErrorOr<ByteBuffer> VBoxDisplayConnector::get_edid() const
-{
-    return Error::from_errno(ENOTIMPL);
 }
 
 BochsDisplayConnector::IndexID VBoxDisplayConnector::index_id() const
