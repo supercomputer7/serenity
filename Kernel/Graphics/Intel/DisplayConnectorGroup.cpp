@@ -227,8 +227,8 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayCon
 {
     SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
-    auto result = set_crt_resolution(mode_setting);
-    VERIFY(result);
+    if (!set_crt_resolution(mode_setting))
+        return Error::from_errno(ENOTSUP);
     connector.m_current_mode_setting.horizontal_active = mode_setting.horizontal_active;
     connector.m_current_mode_setting.vertical_active = mode_setting.vertical_active;
     connector.m_current_mode_setting.horizontal_stride = mode_setting.horizontal_active * 4;
@@ -373,14 +373,15 @@ bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSettin
     // Note: Just in case we still allow access to VGA IO ports, disable it now.
     GraphicsManagement::the().disable_vga_emulation_access_permanently();
 
-    disable_output();
     auto dac_multiplier = compute_dac_multiplier(mode_setting.pixel_clock_in_khz);
     auto pll_settings = create_pll_settings((1000 * mode_setting.pixel_clock_in_khz * dac_multiplier), 96'000'000, IntelGraphics::G35Limits);
     if (!pll_settings.has_value())
-        VERIFY_NOT_REACHED();
+        return false;
     auto settings = pll_settings.value();
+
+    disable_output();
     dbgln_if(INTEL_GRAPHICS_DEBUG, "PLL settings for {} {} {} {} {}", settings.n, settings.m1, settings.m2, settings.p1, settings.p2);
-    enable_dpll_without_vga(pll_settings.value(), dac_multiplier);
+    enable_dpll_without_vga(settings, dac_multiplier);
     set_display_timings(mode_setting);
     enable_output(mode_setting.horizontal_active);
 
