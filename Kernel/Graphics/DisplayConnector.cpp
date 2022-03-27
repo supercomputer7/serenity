@@ -252,6 +252,11 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         return {};
     }
 
+    case FB_IOCTL_SET_SAFE_HEAD_MODE_SETTING: {
+        TRY(set_safe_mode_setting());
+        return {};
+    }
+
     case FB_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER: {
         // FIXME: We silently ignore the request if we are in console mode.
         // WindowServer is not ready yet to handle errors such as EBUSY currently.
