@@ -126,7 +126,9 @@ private:
     Spinlock m_modeset_lock;
     mutable Spinlock m_registers_lock;
 
-    NonnullRefPtrVector<IntelNativeDisplayConnector> m_connectors;
+    // Note: The linux driver specifies an enum of possible ports and there is only
+    // 9 ports (PORT_{A-I}). PORT_TC{1-6} are mapped to PORT_{D-I}.
+    Array<RefPtr<IntelNativeDisplayConnector>, 9> m_connectors;
 
     const MMIORegion m_mmio_first_region;
     const MMIORegion m_mmio_second_region;

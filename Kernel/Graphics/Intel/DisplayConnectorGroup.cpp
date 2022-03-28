@@ -171,7 +171,7 @@ IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnec
 ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 {
     auto connector = IntelNativeDisplayConnector::must_create(*this);
-    MUST(m_connectors.try_append(connector));
+    m_connectors[0] = connector;
     Array<u8, 128> crt_edid_bytes {};
     {
         SpinlockLocker control_lock(m_control_lock);
@@ -191,11 +191,11 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
-    if (!m_connectors[0].m_edid_parser.has_value())
+    if (!m_connectors[0]->m_edid_parser.has_value())
         return Error::from_errno(ENOTSUP);
-    if (!m_connectors[0].m_edid_parser.value().detailed_timing(0).has_value())
+    if (!m_connectors[0]->m_edid_parser.value().detailed_timing(0).has_value())
         return Error::from_errno(ENOTSUP);
-    auto details = m_connectors[0].m_edid_parser.value().detailed_timing(0).release_value();
+    auto details = m_connectors[0]->m_edid_parser.value().detailed_timing(0).release_value();
 
     DisplayConnector::ModeSetting modesetting {
         // Note: We assume that we always use 32 bit framebuffers.
@@ -222,7 +222,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(Badge<IntelNativeDisp
 ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
     SpinlockLocker locker(connector.m_modeset_lock);
-    VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
+    VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == m_connectors[0].ptr());
     DisplayConnector::ModeSetting actual_mode_setting = mode_setting;
     actual_mode_setting.horizontal_stride = actual_mode_setting.horizontal_active * sizeof(u32);
     VERIFY(actual_mode_setting.horizontal_stride != 0);
