@@ -100,7 +100,7 @@ public:
     ErrorOr<ByteBuffer> get_edid() const;
     virtual ErrorOr<void> set_mode_setting(ModeSetting const&) = 0;
     virtual ErrorOr<void> set_safe_mode_setting() = 0;
-    ErrorOr<ModeSetting> current_mode_setting() const;
+    ModeSetting current_mode_setting() const;
     virtual ErrorOr<void> set_y_offset(size_t y) = 0;
     virtual ErrorOr<void> unblank() = 0;
 

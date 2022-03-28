@@ -31,7 +31,7 @@ void DirtyRect::union_rect(size_t x, size_t y, size_t width, size_t height)
 
 NonnullRefPtr<Console> Console::initialize(VirtIODisplayConnector& parent_display_connector)
 {
-    auto current_resolution = MUST(parent_display_connector.current_mode_setting());
+    auto current_resolution = parent_display_connector.current_mode_setting();
     return adopt_ref(*new Console(parent_display_connector, current_resolution));
 }
 
@@ -73,7 +73,7 @@ void Console::enqueue_refresh_timer()
 
 void Console::enable()
 {
-    auto current_resolution = MUST(m_parent_display_connector->current_mode_setting());
+    auto current_resolution = m_parent_display_connector->current_mode_setting();
     GenericFramebufferConsole::enable();
     m_width = current_resolution.horizontal_active;
     m_height = current_resolution.vertical_active;

@@ -13,7 +13,7 @@ constexpr static AK::Time refresh_interval = AK::Time::from_milliseconds(16);
 
 NonnullRefPtr<VMWareFramebufferConsole> VMWareFramebufferConsole::initialize(VMWareDisplayConnector& parent_display_connector)
 {
-    auto current_resolution = MUST(parent_display_connector.current_mode_setting());
+    auto current_resolution = parent_display_connector.current_mode_setting();
     return adopt_ref_if_nonnull(new (nothrow) VMWareFramebufferConsole(parent_display_connector, current_resolution)).release_nonnull();
 }
 
@@ -54,7 +54,7 @@ void VMWareFramebufferConsole::enqueue_refresh_timer()
 
 void VMWareFramebufferConsole::enable()
 {
-    auto current_resolution = MUST(m_parent_display_connector->current_mode_setting());
+    auto current_resolution = m_parent_display_connector->current_mode_setting();
     GenericFramebufferConsole::enable();
     m_width = current_resolution.horizontal_active;
     m_height = current_resolution.vertical_active;
