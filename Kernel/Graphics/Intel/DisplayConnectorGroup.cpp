@@ -232,6 +232,8 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayCon
     connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
     auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.horizontal_active));
     connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
+    if (!connector.m_framebuffer_console.is_null())
+        static_cast<Graphics::GenericFramebufferConsoleImpl*>(connector.m_framebuffer_console.ptr())->set_resolution(actual_mode_setting.horizontal_active, actual_mode_setting.vertical_active, actual_mode_setting.horizontal_stride);
     return {};
 }
 
