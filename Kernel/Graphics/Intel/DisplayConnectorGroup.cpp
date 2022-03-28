@@ -60,29 +60,6 @@ static constexpr PLLMaxSettings G35Limits {
 };
 }
 
-static DisplayConnector::ModeSetting calculate_modesetting_from_edid(EDID::Parser& edid, size_t index)
-{
-    auto details = edid.detailed_timing(index).release_value();
-
-    DisplayConnector::ModeSetting mode;
-    VERIFY(details.pixel_clock_khz());
-    mode.pixel_clock_in_khz = details.pixel_clock_khz();
-
-    // Note: We assume that we always use 32 bit framebuffers.
-    mode.horizontal_stride = details.horizontal_addressable_pixels() * sizeof(u32);
-
-    mode.horizontal_active = details.horizontal_addressable_pixels();
-    mode.horizontal_front_porch_pixels = details.horizontal_front_porch_pixels();
-    mode.horizontal_sync_time_pixels = details.horizontal_sync_pulse_width_pixels();
-    mode.horizontal_blank_pixels = details.horizontal_blanking_pixels();
-
-    mode.vertical_active = details.vertical_addressable_lines();
-    mode.vertical_front_porch_lines = details.vertical_front_porch_lines();
-    mode.vertical_sync_time_lines = details.vertical_sync_pulse_width_lines();
-    mode.vertical_blank_lines = details.vertical_blanking_lines();
-    return mode;
-}
-
 static bool check_pll_settings(IntelGraphics::PLLSettings const& settings, size_t reference_clock, IntelGraphics::PLLMaxSettings const& limits)
 {
     if (settings.n < limits.n.min || settings.n > limits.n.max) {
@@ -214,7 +191,26 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
 ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
-    auto modesetting = calculate_modesetting_from_edid(m_connectors[0].m_edid_parser.value(), 0);
+    if (!m_connectors[0].m_edid_parser.has_value())
+        return Error::from_errno(ENOTSUP);
+    if (!m_connectors[0].m_edid_parser.value().detailed_timing(0).has_value())
+        return Error::from_errno(ENOTSUP);
+    auto details = m_connectors[0].m_edid_parser.value().detailed_timing(0).release_value();
+
+    DisplayConnector::ModeSetting modesetting {
+        // Note: We assume that we always use 32 bit framebuffers.
+        .horizontal_stride = details.horizontal_addressable_pixels() * sizeof(u32),
+        .pixel_clock_in_khz = details.pixel_clock_khz(),
+        .horizontal_active = details.horizontal_addressable_pixels(),
+        .horizontal_front_porch_pixels = details.horizontal_front_porch_pixels(),
+        .horizontal_sync_time_pixels = details.horizontal_sync_pulse_width_pixels(),
+        .horizontal_blank_pixels = details.horizontal_blanking_pixels(),
+        .vertical_active = details.vertical_addressable_lines(),
+        .vertical_front_porch_lines = details.vertical_front_porch_lines(),
+        .vertical_sync_time_lines = details.vertical_sync_pulse_width_lines(),
+        .vertical_blank_lines = details.vertical_blanking_lines(),
+    };
+
     return set_mode_setting(connector, modesetting);
 }
 
