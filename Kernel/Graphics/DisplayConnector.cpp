@@ -139,7 +139,7 @@ ErrorOr<void> DisplayConnector::flush_rectangle(size_t, FBRect const&)
     return Error::from_errno(ENOTSUP);
 }
 
-ErrorOr<DisplayConnector::ModeSetting> DisplayConnector::current_mode_setting() const
+DisplayConnector::ModeSetting DisplayConnector::current_mode_setting() const
 {
     SpinlockLocker locker(m_modeset_lock);
     return m_current_mode_setting;
