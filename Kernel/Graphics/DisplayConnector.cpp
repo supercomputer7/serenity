@@ -177,19 +177,20 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         auto user_head_properties = static_ptr_cast<FBHeadProperties*>(arg);
         FBHeadProperties head_properties {};
         TRY(copy_from_user(&head_properties, user_head_properties));
-
-        SpinlockLocker locker(m_modeset_lock);
-        head_properties.mode_setting.horizontal_stride = m_current_mode_setting.horizontal_stride;
-        head_properties.mode_setting.pixel_clock_in_khz = m_current_mode_setting.pixel_clock_in_khz;
-        head_properties.mode_setting.horizontal_active = m_current_mode_setting.horizontal_active;
-        head_properties.mode_setting.horizontal_front_porch_pixels = m_current_mode_setting.horizontal_front_porch_pixels;
-        head_properties.mode_setting.horizontal_sync_time_pixels = m_current_mode_setting.horizontal_sync_time_pixels;
-        head_properties.mode_setting.horizontal_blank_pixels = m_current_mode_setting.horizontal_blank_pixels;
-        head_properties.mode_setting.vertical_active = m_current_mode_setting.vertical_active;
-        head_properties.mode_setting.vertical_front_porch_lines = m_current_mode_setting.vertical_front_porch_lines;
-        head_properties.mode_setting.vertical_sync_time_lines = m_current_mode_setting.vertical_sync_time_lines;
-        head_properties.mode_setting.vertical_blank_lines = m_current_mode_setting.vertical_blank_lines;
-        head_properties.offset = 0;
+        {
+            SpinlockLocker control_locker(m_control_lock);
+            head_properties.mode_setting.horizontal_stride = m_current_mode_setting.horizontal_stride;
+            head_properties.mode_setting.pixel_clock_in_khz = m_current_mode_setting.pixel_clock_in_khz;
+            head_properties.mode_setting.horizontal_active = m_current_mode_setting.horizontal_active;
+            head_properties.mode_setting.horizontal_front_porch_pixels = m_current_mode_setting.horizontal_front_porch_pixels;
+            head_properties.mode_setting.horizontal_sync_time_pixels = m_current_mode_setting.horizontal_sync_time_pixels;
+            head_properties.mode_setting.horizontal_blank_pixels = m_current_mode_setting.horizontal_blank_pixels;
+            head_properties.mode_setting.vertical_active = m_current_mode_setting.vertical_active;
+            head_properties.mode_setting.vertical_front_porch_lines = m_current_mode_setting.vertical_front_porch_lines;
+            head_properties.mode_setting.vertical_sync_time_lines = m_current_mode_setting.vertical_sync_time_lines;
+            head_properties.mode_setting.vertical_blank_lines = m_current_mode_setting.vertical_blank_lines;
+            head_properties.offset = 0;
+        }
         return copy_to_user(user_head_properties, &head_properties);
     }
     case FB_IOCTL_GET_HEAD_EDID: {
@@ -235,20 +236,22 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
             return Error::from_errno(EINVAL);
         if (head_mode_setting.vertical_blank_lines < 0)
             return Error::from_errno(EINVAL);
+        {
+            SpinlockLocker control_locker(m_control_lock);
+            ModeSetting requested_mode_setting;
+            requested_mode_setting.horizontal_stride = 0;
+            requested_mode_setting.pixel_clock_in_khz = head_mode_setting.pixel_clock_in_khz;
+            requested_mode_setting.horizontal_active = head_mode_setting.horizontal_active;
+            requested_mode_setting.horizontal_front_porch_pixels = head_mode_setting.horizontal_front_porch_pixels;
+            requested_mode_setting.horizontal_sync_time_pixels = head_mode_setting.horizontal_sync_time_pixels;
+            requested_mode_setting.horizontal_blank_pixels = head_mode_setting.horizontal_blank_pixels;
+            requested_mode_setting.vertical_active = head_mode_setting.vertical_active;
+            requested_mode_setting.vertical_front_porch_lines = head_mode_setting.vertical_front_porch_lines;
+            requested_mode_setting.vertical_sync_time_lines = head_mode_setting.vertical_sync_time_lines;
+            requested_mode_setting.vertical_blank_lines = head_mode_setting.vertical_blank_lines;
 
-        ModeSetting requested_mode_setting;
-        requested_mode_setting.horizontal_stride = head_mode_setting.horizontal_stride;
-        requested_mode_setting.pixel_clock_in_khz = head_mode_setting.pixel_clock_in_khz;
-        requested_mode_setting.horizontal_active = head_mode_setting.horizontal_active;
-        requested_mode_setting.horizontal_front_porch_pixels = head_mode_setting.horizontal_front_porch_pixels;
-        requested_mode_setting.horizontal_sync_time_pixels = head_mode_setting.horizontal_sync_time_pixels;
-        requested_mode_setting.horizontal_blank_pixels = head_mode_setting.horizontal_blank_pixels;
-        requested_mode_setting.vertical_active = head_mode_setting.vertical_active;
-        requested_mode_setting.vertical_front_porch_lines = head_mode_setting.vertical_front_porch_lines;
-        requested_mode_setting.vertical_sync_time_lines = head_mode_setting.vertical_sync_time_lines;
-        requested_mode_setting.vertical_blank_lines = head_mode_setting.vertical_blank_lines;
-
-        TRY(set_mode_setting(requested_mode_setting));
+            TRY(set_mode_setting(requested_mode_setting));
+        }
         return {};
     }
 
@@ -264,10 +267,11 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         if (console_mode()) {
             return {};
         }
-        SpinlockLocker locker(m_modeset_lock);
 
         auto user_head_vertical_buffer_offset = static_ptr_cast<FBHeadVerticalOffset const*>(arg);
         auto head_vertical_buffer_offset = TRY(copy_typed_from_user(user_head_vertical_buffer_offset));
+
+        SpinlockLocker locker(m_modeset_lock);
 
         if (head_vertical_buffer_offset.offsetted < 0 || head_vertical_buffer_offset.offsetted > 1)
             return Error::from_errno(EINVAL);
@@ -287,21 +291,23 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         return copy_to_user(user_head_vertical_buffer_offset, &head_vertical_buffer_offset);
     }
     case FB_IOCTL_FLUSH_HEAD_BUFFERS: {
-        SpinlockLocker control_locker(m_control_lock);
-        if (console_mode())
-            return {};
         if (!partial_flush_support())
             return Error::from_errno(ENOTSUP);
+        MutexLocker locker(m_flushing_lock);
         auto user_flush_rects = static_ptr_cast<FBFlushRects const*>(arg);
         auto flush_rects = TRY(copy_typed_from_user(user_flush_rects));
         if (Checked<unsigned>::multiplication_would_overflow(flush_rects.count, sizeof(FBRect)))
             return Error::from_errno(EFAULT);
-        MutexLocker locker(m_flushing_lock);
         if (flush_rects.count > 0) {
             for (unsigned i = 0; i < flush_rects.count; i++) {
                 FBRect user_dirty_rect;
                 TRY(copy_from_user(&user_dirty_rect, &flush_rects.rects[i]));
-                TRY(flush_rectangle(flush_rects.buffer_index, user_dirty_rect));
+                {
+                    SpinlockLocker control_locker(m_control_lock);
+                    if (console_mode())
+                        return {};
+                    TRY(flush_rectangle(flush_rects.buffer_index, user_dirty_rect));
+                }
             }
         }
         return {};
@@ -309,12 +315,12 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
     case FB_IOCTL_FLUSH_HEAD: {
         // FIXME: We silently ignore the request if we are in console mode.
         // WindowServer is not ready yet to handle errors such as EBUSY currently.
+        MutexLocker locker(m_flushing_lock);
         SpinlockLocker control_locker(m_control_lock);
         if (console_mode())
             return {};
         if (!flush_support())
             return Error::from_errno(ENOTSUP);
-        MutexLocker locker(m_flushing_lock);
         TRY(flush_first_surface());
         return {};
     }
