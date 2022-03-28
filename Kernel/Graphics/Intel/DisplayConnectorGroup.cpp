@@ -223,16 +223,15 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayCon
 {
     SpinlockLocker locker(connector.m_modeset_lock);
     VERIFY(const_cast<IntelNativeDisplayConnector*>(&connector) == &m_connectors[0]);
-    if (!set_crt_resolution(mode_setting))
+    DisplayConnector::ModeSetting actual_mode_setting = mode_setting;
+    actual_mode_setting.horizontal_stride = actual_mode_setting.horizontal_active * sizeof(u32);
+    VERIFY(actual_mode_setting.horizontal_stride != 0);
+    if (!set_crt_resolution(actual_mode_setting))
         return Error::from_errno(ENOTSUP);
-    connector.m_current_mode_setting.horizontal_active = mode_setting.horizontal_active;
-    connector.m_current_mode_setting.vertical_active = mode_setting.vertical_active;
-    connector.m_current_mode_setting.horizontal_stride = mode_setting.horizontal_active * 4;
+    connector.m_current_mode_setting = actual_mode_setting;
     connector.m_framebuffer_address = m_mmio_second_region.pci_bar_paddr;
     auto rounded_size = TRY(Memory::page_round_up(connector.m_current_mode_setting.horizontal_stride * connector.m_current_mode_setting.horizontal_active));
     connector.m_framebuffer_region = MUST(MM.allocate_kernel_region(m_mmio_second_region.pci_bar_paddr, rounded_size, "Intel Native Graphics Framebuffer", Memory::Region::Access::ReadWrite));
-
-    connector.m_current_mode_setting = mode_setting;
     return {};
 }
 
