@@ -23,7 +23,19 @@ class IntelNativeDisplayConnector
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
+    enum class Type {
+        Invalid,
+        Analog,
+        DVO,
+        LVDS,
+        TVOut,
+        HDMI,
+        DisplayPort,
+        EmbeddedDisplayPort,
+    };
+
+public:
+    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
 
     void set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const& edid_bytes);
     ErrorOr<void> create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>);
@@ -46,8 +58,8 @@ private:
     // Note: Paravirtualized hardware doesn't require a defined refresh rate for modesetting.
     virtual bool refresh_rate_support() const override { return true; }
 
-    explicit IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
-
+    IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
+    Type const m_type { Type::Analog };
     NonnullRefPtr<IntelDisplayConnectorGroup> m_parent_connector_group;
     RefPtr<Graphics::GenericFramebufferConsole> m_framebuffer_console;
 };
