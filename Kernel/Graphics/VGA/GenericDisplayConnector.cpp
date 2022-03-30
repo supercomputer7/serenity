@@ -80,14 +80,14 @@ VGAGenericDisplayConnector::VGAGenericDisplayConnector(PhysicalAddress framebuff
 void VGAGenericDisplayConnector::enable_console()
 {
     VERIFY(m_control_lock.is_locked());
-    VERIFY(m_framebuffer_console);
-    m_framebuffer_console->enable();
+    if (m_framebuffer_console)
+        m_framebuffer_console->enable();
 }
 void VGAGenericDisplayConnector::disable_console()
 {
     VERIFY(m_control_lock.is_locked());
-    VERIFY(m_framebuffer_console);
-    m_framebuffer_console->disable();
+    if (m_framebuffer_console)
+        m_framebuffer_console->disable();
 }
 
 ErrorOr<size_t> VGAGenericDisplayConnector::write_to_first_surface(u64 offset, UserOrKernelBuffer const& buffer, size_t length)
