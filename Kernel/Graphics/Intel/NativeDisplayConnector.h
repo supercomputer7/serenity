@@ -22,7 +22,19 @@ class IntelNativeDisplayConnector
     friend class DeviceManagement;
 
 public:
-    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&);
+    enum class Type {
+        Invalid,
+        Analog,
+        DVO,
+        LVDS,
+        TVOut,
+        HDMI,
+        DisplayPort,
+        EmbeddedDisplayPort,
+    };
+
+public:
+    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&, Type);
 
     void set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const&);
     ErrorOr<void> create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>, PhysicalAddress framebuffer_address);
@@ -38,8 +50,8 @@ private:
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 
-    explicit IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&);
-
+    IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, Type);
+    const Type m_type { Type::Analog };
     NonnullRefPtr<IntelDisplayConnectorGroup> m_parent_connector_group;
 };
 }

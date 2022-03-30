@@ -10,17 +10,24 @@
 #include <AK/Try.h>
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
 #include <Kernel/Graphics/Intel/Definitions.h>
+#include <Kernel/Graphics/Intel/DisplayPlane.h>
+#include <Kernel/Graphics/Intel/DisplayTranscoder.h>
 #include <Kernel/Graphics/Intel/GMBusConnector.h>
 #include <Kernel/Graphics/Intel/NativeDisplayConnector.h>
+#include <Kernel/Graphics/VGA/PCIGenericAdapter.h>
 #include <Kernel/Memory/TypedMapping.h>
 #include <LibEDID/EDID.h>
 
 namespace Kernel {
 
+class IntelNativeGraphicsAdapter;
 class IntelDisplayConnectorGroup : public RefCounted<IntelDisplayConnectorGroup> {
     friend class IntelNativeGraphicsAdapter;
 
 public:
+    enum class Generation {
+        Gen4,
+    };
     struct MMIORegion {
         enum class BARAssigned {
             BAR0,
@@ -31,21 +38,35 @@ public:
         size_t pci_bar_space_length;
     };
 
+private:
+    TYPEDEF_DISTINCT_ORDERED_ID(size_t, RegisterOffset);
+
 public:
-    static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(MMIORegion const&, MMIORegion const&);
+    // Note: We take a Badge<IntelNativeGraphicsAdapter> and PCIVGAGenericAdapter const& because
+    // it seems wise to not have to worry about parent and child classes to hold "known" references of each other.
+    // Still, the caller of this function will be a IntelNativeGraphicsAdapter, and the reference is to
+    // a IntelNativeGraphicsAdapter object.
+    static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const&, Generation, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
     ErrorOr<void> set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
 private:
-    IntelDisplayConnectorGroup(NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
-    ErrorOr<void> initialize_connectors();
+    IntelDisplayConnectorGroup(PCIVGAGenericAdapter const&, Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
-    void write_to_register(IntelGraphics::RegisterIndex, u32 value) const;
-    u32 read_from_register(IntelGraphics::RegisterIndex) const;
+    void write_to_global_generation_register(IntelGraphics::GlobalGenerationRegister, u32 value) const;
+    u32 read_from_global_generation_register(IntelGraphics::GlobalGenerationRegister) const;
+    void write_to_general_register(RegisterOffset offset, u32 value) const;
+    u32 read_from_general_register(RegisterOffset offset) const;
 
+    // DisplayConnector initialization related methods
+    ErrorOr<void> initialize_connectors();
+    ErrorOr<void> initialize_gen4_connectors();
+
+    // General Modesetting methods
+    ErrorOr<void> set_gen4_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
     bool pipe_a_enabled() const;
     bool pipe_b_enabled() const;
 
@@ -53,16 +74,12 @@ private:
 
     bool set_crt_resolution(DisplayConnector::ModeSetting const&);
 
-    void disable_output();
-    void enable_output(size_t width);
-
     void disable_vga_emulation();
     void enable_vga_plane();
 
     void disable_dac_output();
     void enable_dac_output();
 
-    void disable_all_planes();
     void disable_pipe_a();
     void disable_pipe_b();
     void disable_dpll();
@@ -70,9 +87,7 @@ private:
     void set_dpll_registers(IntelGraphics::PLLSettings const&);
 
     void enable_dpll_without_vga(IntelGraphics::PLLSettings const&, size_t dac_multiplier);
-    void set_display_timings(DisplayConnector::ModeSetting const&);
     void enable_pipe_a();
-    void enable_primary_plane(size_t stride);
 
     bool wait_for_enabled_pipe_a(size_t milliseconds_timeout) const;
     bool wait_for_disabled_pipe_a(size_t milliseconds_timeout) const;
@@ -88,11 +103,16 @@ private:
     // 9 ports (PORT_{A-I}). PORT_TC{1-6} are mapped to PORT_{D-I}.
     Array<RefPtr<IntelNativeDisplayConnector>, 9> m_connectors;
 
+    Array<OwnPtr<IntelDisplayTranscoder>, 5> m_transcoders;
+    Array<OwnPtr<IntelDisplayPlane>, 3> m_planes;
+
     const MMIORegion m_mmio_first_region;
     const MMIORegion m_mmio_second_region;
     MMIORegion const& m_assigned_mmio_registers_region;
 
+    const Generation m_generation;
     NonnullOwnPtr<Memory::Region> m_registers_region;
     NonnullOwnPtr<GMBusConnector> m_gmbus_connector;
+    NonnullRefPtr<PCIVGAGenericAdapter> m_parent_device;
 };
 }

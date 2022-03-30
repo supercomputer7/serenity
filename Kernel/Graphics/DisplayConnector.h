@@ -106,7 +106,7 @@ public:
     void set_display_mode(Badge<GraphicsManagement>, DisplayMode);
 
 protected:
-    void set_edid_bytes(Array<u8, 128> const& edid_bytes);
+    void set_edid_bytes(Array<u8, 128> const& edid_bytes, bool might_be_invalid = false);
 
     // ^File
     virtual bool is_seekable() const override { return true; }
