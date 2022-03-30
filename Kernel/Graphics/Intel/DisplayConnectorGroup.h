@@ -72,7 +72,6 @@ private:
     void enable_dpll_without_vga(IntelGraphics::PLLSettings const&, size_t dac_multiplier);
     void set_display_timings(DisplayConnector::ModeSetting const&);
     void enable_pipe_a();
-    void set_framebuffer_parameters(size_t, size_t);
     void enable_primary_plane(size_t stride);
 
     bool wait_for_enabled_pipe_a(size_t milliseconds_timeout) const;
