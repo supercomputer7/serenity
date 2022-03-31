@@ -5,16 +5,10 @@
  */
 
 #include <Kernel/Arch/x86/IO.h>
-#include <Kernel/Graphics/Intel/DisplayTranscoder.h>
+#include <Kernel/Graphics/Intel/Transcoder/DisplayTranscoder.h>
 #include <Kernel/PhysicalAddress.h>
 
 namespace Kernel {
-
-ErrorOr<NonnullOwnPtr<IntelDisplayTranscoder>> IntelDisplayTranscoder::create_with_physical_address(PhysicalAddress transcoder_registers_start_address)
-{
-    auto registers_mapping = TRY(Memory::map_typed<volatile TranscoderRegisters>(transcoder_registers_start_address, sizeof(TranscoderRegisters), Memory::Region::Access::ReadWrite));
-    return adopt_nonnull_own_or_enomem(new (nothrow) IntelDisplayTranscoder(move(registers_mapping)));
-}
 
 IntelDisplayTranscoder::IntelDisplayTranscoder(Memory::TypedMapping<volatile TranscoderRegisters> registers_mapping)
     : m_transcoder_registers(move(registers_mapping))
