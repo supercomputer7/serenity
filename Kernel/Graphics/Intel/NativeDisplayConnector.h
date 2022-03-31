@@ -33,11 +33,25 @@ public:
         EmbeddedDisplayPort,
     };
 
+    enum class ConnectorIndex : size_t {
+        PortA = 0,
+        PortB = 1,
+        PortC = 2,
+        PortD = 3,
+        PortE = 4,
+        PortF = 5,
+        PortH = 6,
+        PortG = 7,
+        PortI = 8,
+    };
+
 public:
-    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&, Type);
+    static NonnullRefPtr<IntelNativeDisplayConnector> must_create(IntelDisplayConnectorGroup const&, ConnectorIndex connector_index, Type);
 
     void set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const&);
     ErrorOr<void> create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>, PhysicalAddress framebuffer_address);
+
+    ConnectorIndex connector_index() const { return m_connector_index; }
 
 private:
     // ^DisplayConnector
@@ -50,8 +64,9 @@ private:
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 
-    IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, Type);
+    IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, ConnectorIndex connector_index, Type);
     const Type m_type { Type::Analog };
+    const ConnectorIndex m_connector_index { 0 };
     NonnullRefPtr<IntelDisplayConnectorGroup> m_parent_connector_group;
 };
 }

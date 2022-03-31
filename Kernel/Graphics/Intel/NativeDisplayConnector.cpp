@@ -16,9 +16,9 @@
 
 namespace Kernel {
 
-NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(IntelDisplayConnectorGroup const& parent_connector_group, Type type)
+NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type)
 {
-    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(parent_connector_group, type);
+    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(parent_connector_group, connector_index, type);
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     return connector;
@@ -31,9 +31,10 @@ ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(B
     return {};
 }
 
-IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGroup const& parent_connector_group, Type type)
+IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type)
     : VGAGenericDisplayConnector()
     , m_type(type)
+    , m_connector_index(connector_index)
     , m_parent_connector_group(parent_connector_group)
 {
 }
