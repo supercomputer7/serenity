@@ -16,9 +16,9 @@
 
 namespace Kernel {
 
-NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(IntelDisplayConnectorGroup const& parent_connector_group, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
+NonnullRefPtr<IntelNativeDisplayConnector> IntelNativeDisplayConnector::must_create(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
 {
-    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(parent_connector_group, type, framebuffer_address, framebuffer_resource_size);
+    auto device_or_error = DeviceManagement::try_create_device<IntelNativeDisplayConnector>(parent_connector_group, connector_index, type, framebuffer_address, framebuffer_resource_size);
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     return connector;
@@ -41,9 +41,10 @@ ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(B
     return {};
 }
 
-IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGroup const& parent_connector_group, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
+IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
     : DisplayConnector(framebuffer_address, framebuffer_resource_size, true)
     , m_type(type)
+    , m_connector_index(connector_index)
     , m_parent_connector_group(parent_connector_group)
 {
 }
