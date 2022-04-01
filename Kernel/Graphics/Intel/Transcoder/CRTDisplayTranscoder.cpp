@@ -11,17 +11,18 @@
 namespace Kernel {
 
 ErrorOr<NonnullOwnPtr<IntelCRTDisplayTranscoder>> IntelCRTDisplayTranscoder::create_with_physical_addresses(PhysicalAddress transcoder_registers_start_address,
-    PhysicalAddress dpll_registers_start_address, PhysicalAddress dpll_multiplier_register_start_address)
+    PhysicalAddress pipe_registers_start_address, PhysicalAddress dpll_registers_start_address, PhysicalAddress dpll_multiplier_register_start_address)
 {
     auto transcoder_registers_mapping = TRY(Memory::map_typed<volatile TranscoderRegisters>(transcoder_registers_start_address, sizeof(IntelDisplayTranscoder::TranscoderRegisters), Memory::Region::Access::ReadWrite));
+    auto pipe_registers_mapping = TRY(Memory::map_typed<volatile PipeRegisters>(pipe_registers_start_address, sizeof(IntelDisplayTranscoder::PipeRegisters), Memory::Region::Access::ReadWrite));
     auto dpll_registers_mapping = TRY(Memory::map_typed<volatile DPLLRegisters>(dpll_registers_start_address, sizeof(DPLLRegisters), Memory::Region::Access::ReadWrite));
     auto dpll_control_mapping = TRY(Memory::map_typed<volatile DPLLControlRegisters>(dpll_multiplier_register_start_address, sizeof(DPLLControlRegisters), Memory::Region::Access::ReadWrite));
-    return adopt_nonnull_own_or_enomem(new (nothrow) IntelCRTDisplayTranscoder(move(transcoder_registers_mapping), move(dpll_registers_mapping), move(dpll_control_mapping)));
+    return adopt_nonnull_own_or_enomem(new (nothrow) IntelCRTDisplayTranscoder(move(transcoder_registers_mapping), move(pipe_registers_mapping), move(dpll_registers_mapping), move(dpll_control_mapping)));
 }
 
 IntelCRTDisplayTranscoder::IntelCRTDisplayTranscoder(Memory::TypedMapping<volatile TranscoderRegisters> transcoder_registers_mapping,
-    Memory::TypedMapping<volatile DPLLRegisters> dpll_registers_mapping, Memory::TypedMapping<volatile DPLLControlRegisters> dpll_control_registers)
-    : IntelDisplayTranscoder(move(transcoder_registers_mapping))
+    Memory::TypedMapping<volatile PipeRegisters> pipe_registers_mapping, Memory::TypedMapping<volatile DPLLRegisters> dpll_registers_mapping, Memory::TypedMapping<volatile DPLLControlRegisters> dpll_control_registers)
+    : IntelDisplayTranscoder(move(transcoder_registers_mapping), move(pipe_registers_mapping))
     , m_dpll_registers(move(dpll_registers_mapping))
     , m_dpll_control_registers(move(dpll_control_registers))
 {
