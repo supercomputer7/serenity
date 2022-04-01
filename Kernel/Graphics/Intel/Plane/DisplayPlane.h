@@ -38,14 +38,16 @@ public:
 public:
     static ErrorOr<NonnullOwnPtr<IntelDisplayPlane>> create_with_physical_address(PhysicalAddress plane_registers_start_address);
 
-    ErrorOr<void> set_plane_settings(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start, PipeSelect, size_t horizontal_active_pixels_count);
+    virtual ErrorOr<void> set_plane_settings(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start, PipeSelect, size_t horizontal_active_pixels_count) = 0;
     ErrorOr<void> enable(Badge<IntelDisplayConnectorGroup>);
     bool is_enabled(Badge<IntelDisplayConnectorGroup>);
     ErrorOr<void> disable(Badge<IntelDisplayConnectorGroup>);
 
     ShadowRegisters shadow_registers() const;
 
-private:
+    virtual ~IntelDisplayPlane() = default;
+
+protected:
     struct [[gnu::packed]] PlaneRegisters {
         u32 control;
         u32 linear_offset;
@@ -54,7 +56,7 @@ private:
         u32 surface_base;
     };
 
-    explicit IntelDisplayPlane(Memory::TypedMapping<volatile PlaneRegisters> m_plane_registers);
+    explicit IntelDisplayPlane(Memory::TypedMapping<volatile PlaneRegisters> plane_registers_mapping);
     mutable Spinlock m_access_lock;
     ShadowRegisters m_shadow_registers {};
     Memory::TypedMapping<volatile PlaneRegisters> m_plane_registers;
