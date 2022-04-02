@@ -11,20 +11,19 @@
 
 namespace Kernel {
 
-NonnullRefPtr<QEMUDisplayConnector> QEMUDisplayConnector::must_create(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset)
+NonnullRefPtr<QEMUDisplayConnector> QEMUDisplayConnector::must_create(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile> registers_mapping)
 {
-    auto device_or_error = DeviceManagement::try_create_device<QEMUDisplayConnector>(framebuffer_address, move(registers_region), registers_region_offset);
+    auto device_or_error = DeviceManagement::try_create_device<QEMUDisplayConnector>(framebuffer_address, move(registers_mapping));
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console());
     return connector;
 }
 
-QEMUDisplayConnector::QEMUDisplayConnector(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset)
+QEMUDisplayConnector::QEMUDisplayConnector(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile> registers_mapping)
     : BochsDisplayConnector(framebuffer_address)
+    , m_registers(move(registers_mapping))
 {
-    m_registers.region = move(registers_region);
-    m_registers.offset = registers_region_offset;
 }
 
 QEMUDisplayConnector::IndexID QEMUDisplayConnector::index_id() const

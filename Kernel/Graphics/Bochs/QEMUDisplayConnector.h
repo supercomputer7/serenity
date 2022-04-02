@@ -24,12 +24,12 @@ class QEMUDisplayConnector final
 public:
     TYPEDEF_DISTINCT_ORDERED_ID(u16, IndexID);
 
-    static NonnullRefPtr<QEMUDisplayConnector> must_create(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset);
+    static NonnullRefPtr<QEMUDisplayConnector> must_create(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
 
     virtual IndexID index_id() const override;
 
 private:
-    QEMUDisplayConnector(PhysicalAddress framebuffer_address, NonnullOwnPtr<Memory::Region> registers_region, size_t registers_region_offset);
+    QEMUDisplayConnector(PhysicalAddress framebuffer_address, Memory::TypedMapping<BochsDisplayMMIORegisters volatile>);
 
     virtual bool modesetting_capable() const override { return true; }
     virtual bool double_framebuffering_capable() const override { return true; }
