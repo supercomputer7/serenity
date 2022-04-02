@@ -33,8 +33,7 @@ protected:
     explicit BochsDisplayConnector(PhysicalAddress framebuffer_address);
 
 private:
-
-    virtual bool modesetting_capable() const override { return true; }
+    virtual bool modesetting_capable() const override final { return true; }
     virtual bool double_framebuffering_capable() const override { return false; }
     virtual ErrorOr<ByteBuffer> get_edid() const override;
     virtual ErrorOr<void> set_resolution(Resolution const&) override;
@@ -43,16 +42,16 @@ private:
     virtual ErrorOr<void> set_y_offset(size_t y) override;
     virtual ErrorOr<void> unblank() override;
 
-    virtual bool partial_flush_support() const override { return false; }
-    virtual bool flush_support() const override { return false; }
+    virtual bool partial_flush_support() const override final { return false; }
+    virtual bool flush_support() const override final { return false; }
     // Note: Paravirtualized hardware doesn't require a defined refresh rate for modesetting.
-    virtual bool refresh_rate_support() const override { return false; }
+    virtual bool refresh_rate_support() const override final { return false; }
 
     virtual ErrorOr<size_t> write_to_first_surface(u64 offset, UserOrKernelBuffer const&, size_t length) override;
-    virtual ErrorOr<void> flush_first_surface() override;
+    virtual ErrorOr<void> flush_first_surface() override final;
 
-    virtual void enable_console() override;
-    virtual void disable_console() override;
+    virtual void enable_console() override final;
+    virtual void disable_console() override final;
 
 protected:
     Mutex m_modeset_lock;
