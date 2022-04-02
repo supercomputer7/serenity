@@ -76,7 +76,7 @@ set(KERNEL_SOURCES
     GlobalProcessExposed.cpp
     Graphics/Bochs/DisplayConnector.cpp
     Graphics/Bochs/GraphicsAdapter.cpp
-    Graphics/Bochs/VBoxDisplayConnector.cpp
+    Graphics/Bochs/QEMUDisplayConnector.cpp
     Graphics/Console/BootFramebufferConsole.cpp
     Graphics/Console/GenericFramebufferConsole.cpp
     Graphics/Console/ContiguousFramebufferConsole.cpp

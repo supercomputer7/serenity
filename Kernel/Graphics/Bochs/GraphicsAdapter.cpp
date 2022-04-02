@@ -14,7 +14,7 @@
 #include <Kernel/Graphics/Bochs/Definitions.h>
 #include <Kernel/Graphics/Bochs/DisplayConnector.h>
 #include <Kernel/Graphics/Bochs/GraphicsAdapter.h>
-#include <Kernel/Graphics/Bochs/VBoxDisplayConnector.h>
+#include <Kernel/Graphics/Bochs/QEMUDisplayConnector.h>
 #include <Kernel/Graphics/Console/ContiguousFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Memory/TypedMapping.h>
@@ -45,18 +45,18 @@ UNMAP_AFTER_INIT ErrorOr<void> BochsGraphicsAdapter::initialize_adapter(PCI::Dev
     // and doesn't support memory-mapped IO registers.
     if (pci_device_identifier.revision_id().value() == 0x0
         || (pci_device_identifier.hardware_id().vendor_id == 0x80ee && pci_device_identifier.hardware_id().device_id == 0xbeef)) {
-        m_display_connector = VBoxDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0));
+        m_display_connector = BochsDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0));
     } else {
         auto registers_mapping = TRY(Memory::map_typed_writable<BochsDisplayMMIORegisters volatile>(PhysicalAddress(PCI::get_BAR2(pci_device_identifier.address()) & 0xfffffff0)));
         VERIFY(registers_mapping.region);
-        m_display_connector = BochsDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0), registers_mapping.region.release_nonnull(), registers_mapping.offset);
+        m_display_connector = QEMUDisplayConnector::must_create(PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0), registers_mapping.region.release_nonnull(), registers_mapping.offset);
     }
 
     // Note: According to Gerd Hoffmann - "The linux driver simply does
     // the unblank unconditionally. With bochs-display this is not needed but
     // it also has no bad side effect".
     // FIXME: If the error is ENOTIMPL, ignore it for now until we implement
-    // unblank support for VBoxDisplayConnector class too.
+    // unblank support for BochsDisplayConnector class too.
     auto result = m_display_connector->unblank();
     if (result.is_error() && result.error().code() != ENOTIMPL)
         return result;
