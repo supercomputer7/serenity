@@ -25,9 +25,6 @@ class IntelDisplayConnectorGroup : public RefCounted<IntelDisplayConnectorGroup>
     friend class IntelNativeGraphicsAdapter;
 
 public:
-    enum class Generation {
-        Gen4,
-    };
     struct MMIORegion {
         enum class BARAssigned {
             BAR0,
@@ -51,13 +48,13 @@ public:
     // it seems wise to not have to worry about parent and child classes to hold "known" references of each other.
     // Still, the caller of this function will be a IntelNativeGraphicsAdapter, and the reference is to
     // a IntelNativeGraphicsAdapter object.
-    static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const&, Generation, MMIORegion const&, MMIORegion const&);
+    static NonnullRefPtr<IntelDisplayConnectorGroup> must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const&, IntelGraphics::Generation, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
     ErrorOr<void> set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
 private:
-    IntelDisplayConnectorGroup(PCIVGAGenericAdapter const&, Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
+    IntelDisplayConnectorGroup(PCIVGAGenericAdapter const&, IntelGraphics::Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
@@ -105,7 +102,7 @@ private:
     const MMIORegion m_mmio_second_region;
     MMIORegion const& m_assigned_mmio_registers_region;
 
-    const Generation m_generation;
+    const IntelGraphics::Generation m_generation;
     NonnullOwnPtr<Memory::Region> m_registers_region;
     NonnullOwnPtr<GMBusConnector> m_gmbus_connector;
     NonnullRefPtr<PCIVGAGenericAdapter> m_parent_device;

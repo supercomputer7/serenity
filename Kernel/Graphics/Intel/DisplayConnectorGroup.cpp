@@ -123,7 +123,7 @@ Optional<IntelGraphics::PLLSettings> IntelDisplayConnectorGroup::create_pll_sett
     return {};
 }
 
-NonnullRefPtr<IntelDisplayConnectorGroup> IntelDisplayConnectorGroup::must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const& parent_device, Generation generation, MMIORegion const& first_region, MMIORegion const& second_region)
+NonnullRefPtr<IntelDisplayConnectorGroup> IntelDisplayConnectorGroup::must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const& parent_device, IntelGraphics::Generation generation, MMIORegion const& first_region, MMIORegion const& second_region)
 {
     auto registers_region = MUST(MM.allocate_kernel_region(first_region.pci_bar_paddr, first_region.pci_bar_space_length, "Intel Native Graphics Registers", Memory::Region::Access::ReadWrite));
     // Note: 0x5100 is the offset of the start of the GMBus registers
@@ -133,7 +133,7 @@ NonnullRefPtr<IntelDisplayConnectorGroup> IntelDisplayConnectorGroup::must_creat
     return connector_group;
 }
 
-IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(PCIVGAGenericAdapter const& parent_device, Generation generation, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
+IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(PCIVGAGenericAdapter const& parent_device, IntelGraphics::Generation generation, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
     : m_mmio_first_region(first_region)
     , m_mmio_second_region(second_region)
     , m_assigned_mmio_registers_region(m_mmio_first_region)
@@ -180,7 +180,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
 
     // Note: Intel Graphics Generation 4 is pretty ancient beast, and we should not
     // assume we can find a VBT for it. Just initialize the (assumed) CRT connector and be done with it.
-    if (m_generation == Generation::Gen4) {
+    if (m_generation == IntelGraphics::Generation::Gen4) {
         TRY(initialize_gen4_connectors());
     } else {
         VERIFY_NOT_REACHED();
@@ -237,7 +237,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayCon
     DisplayConnector::ModeSetting actual_mode_setting = mode_setting;
     actual_mode_setting.horizontal_stride = actual_mode_setting.horizontal_active * sizeof(u32);
     VERIFY(actual_mode_setting.horizontal_stride != 0);
-    if (m_generation == Generation::Gen4) {
+    if (m_generation == IntelGraphics::Generation::Gen4) {
         TRY(set_gen4_mode_setting(connector, actual_mode_setting));
     } else {
         VERIFY_NOT_REACHED();
