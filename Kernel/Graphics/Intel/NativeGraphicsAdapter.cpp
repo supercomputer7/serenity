@@ -54,10 +54,9 @@ ErrorOr<void> IntelNativeGraphicsAdapter::initialize_adapter()
     PCI::enable_io_space(address);
     PCI::enable_memory_space(address);
 
-    using Generation = IntelDisplayConnectorGroup::Generation;
     switch (m_hardware_id.device_id) {
     case 0x29c2:
-        m_connector_group = IntelDisplayConnectorGroup::must_create({}, Generation::Gen4, first_region, second_region);
+        m_connector_group = IntelDisplayConnectorGroup::must_create({}, IntelGraphics::Generation::Gen4, first_region, second_region);
         return {};
     }
 
