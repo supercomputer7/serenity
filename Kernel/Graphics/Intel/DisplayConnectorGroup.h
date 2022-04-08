@@ -14,6 +14,7 @@
 #include <Kernel/Graphics/Intel/NativeDisplayConnector.h>
 #include <Kernel/Graphics/Intel/Plane/DisplayPlane.h>
 #include <Kernel/Graphics/Intel/Transcoder/DisplayTranscoder.h>
+#include <Kernel/Graphics/Intel/VirtualMemory/AddressSpace.h>
 #include <Kernel/Memory/TypedMapping.h>
 #include <LibEDID/EDID.h>
 
@@ -49,7 +50,7 @@ public:
     ErrorOr<void> set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
 private:
-    IntelDisplayConnectorGroup(IntelGraphics::Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
+    IntelDisplayConnectorGroup(IntelGraphics::Generation generation, NonnullOwnPtr<IntelGraphics::AddressSpace>, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
@@ -99,6 +100,11 @@ private:
 
     const IntelGraphics::Generation m_generation;
     NonnullOwnPtr<Memory::Region> m_registers_region;
+    // Note: Intel graphics Gen4 chipsets seem to not need our code to handle any sort
+    // of virtual memory mappings for DMA and apertures, therefore we could keep this a OwnPtr,
+    // but for the sake of keeping everything in consistent shape, we can just put a "fake"
+    // address space that tells everything is mapped 1:1
+    NonnullOwnPtr<IntelGraphics::AddressSpace> m_address_space;
     NonnullOwnPtr<GMBusConnector> m_gmbus_connector;
 };
 }
