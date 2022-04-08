@@ -21,7 +21,7 @@ IntelG33DisplayPlane::IntelG33DisplayPlane(Memory::TypedMapping<volatile PlaneRe
 {
 }
 
-ErrorOr<void> IntelG33DisplayPlane::set_plane_settings(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start, PipeSelect pipe_select, size_t horizontal_active_pixels_count)
+ErrorOr<void> IntelG33DisplayPlane::set_plane_settings(Badge<IntelDisplayConnectorGroup>, IntelGraphics::GPUVirtualAddress aperture_start, PipeSelect pipe_select, size_t horizontal_active_pixels_count)
 {
     SpinlockLocker locker(m_access_lock);
     VERIFY(((horizontal_active_pixels_count * 4) % 64 == 0));

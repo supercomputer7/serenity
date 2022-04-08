@@ -125,20 +125,30 @@ Optional<IntelGraphics::PLLSettings> IntelDisplayConnectorGroup::create_pll_sett
 
 NonnullRefPtr<IntelDisplayConnectorGroup> IntelDisplayConnectorGroup::must_create(Badge<IntelNativeGraphicsAdapter>, PCIVGAGenericAdapter const& parent_device, IntelGraphics::Generation generation, MMIORegion const& first_region, MMIORegion const& second_region)
 {
+    OwnPtr<IntelGraphics::AddressSpace> address_space;
+    {
+        auto paddr = first_region.pci_bar_paddr;
+        // Note: Half the GTTMADDR (PCI BAR 0) is dedicated to MMIO register space, the second half to Virtual memory PTEs, etc.
+        auto address_space_length = first_region.pci_bar_space_length / 2;
+        auto address_space_mapping = MUST(Memory::map_typed<volatile u32>(paddr.offset(address_space_length), address_space_length, Memory::Region::Access::ReadWrite));
+        address_space = MUST(IntelGraphics::AddressSpace::create(generation, move(address_space_mapping)));
+    }
+
     auto registers_region = MUST(MM.allocate_kernel_region(first_region.pci_bar_paddr, first_region.pci_bar_space_length, "Intel Native Graphics Registers", Memory::Region::Access::ReadWrite));
     // Note: 0x5100 is the offset of the start of the GMBus registers
     auto gmbus_connector = MUST(GMBusConnector::create_with_physical_address(first_region.pci_bar_paddr.offset(0x5100)));
-    auto connector_group = adopt_ref_if_nonnull(new (nothrow) IntelDisplayConnectorGroup(parent_device, generation, move(gmbus_connector), move(registers_region), first_region, second_region)).release_nonnull();
+    auto connector_group = adopt_ref_if_nonnull(new (nothrow) IntelDisplayConnectorGroup(parent_device, generation, address_space.release_nonnull(), move(gmbus_connector), move(registers_region), first_region, second_region)).release_nonnull();
     MUST(connector_group->initialize_connectors());
     return connector_group;
 }
 
-IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(PCIVGAGenericAdapter const& parent_device, IntelGraphics::Generation generation, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
+IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(PCIVGAGenericAdapter const& parent_device, IntelGraphics::Generation generation, NonnullOwnPtr<IntelGraphics::AddressSpace> address_space, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
     : m_mmio_first_region(first_region)
     , m_mmio_second_region(second_region)
     , m_assigned_mmio_registers_region(m_mmio_first_region)
     , m_generation(generation)
     , m_registers_region(move(registers_region))
+    , m_address_space(move(address_space))
     , m_gmbus_connector(move(gmbus_connector))
     , m_parent_device(parent_device)
 {
@@ -350,7 +360,8 @@ bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSettin
 
     VERIFY(!m_transcoders[0]->pipe_enabled({}));
     MUST(m_transcoders[0]->enable_pipe({}));
-    MUST(m_planes[0]->set_plane_settings({}, m_mmio_second_region.pci_bar_paddr, IntelDisplayPlane::PipeSelect::PipeA, mode_setting.horizontal_active));
+    auto gpu_aperture_vaddr = MUST(m_address_space->map_aperture_with_physical_address(m_mmio_second_region.pci_bar_paddr));
+    MUST(m_planes[0]->set_plane_settings({}, gpu_aperture_vaddr, IntelDisplayPlane::PipeSelect::PipeA, mode_setting.horizontal_active));
     MUST(m_planes[0]->enable({}));
     enable_dac_output();
 

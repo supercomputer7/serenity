@@ -11,6 +11,7 @@
 #include <AK/Types.h>
 #include <Kernel/Graphics/DisplayConnector.h>
 #include <Kernel/Graphics/Intel/Definitions.h>
+#include <Kernel/Graphics/Intel/VirtualMemory/GPUVirtualAddress.h>
 #include <Kernel/Locking/Spinlock.h>
 #include <Kernel/Memory/TypedMapping.h>
 
@@ -38,7 +39,7 @@ public:
 public:
     static ErrorOr<NonnullOwnPtr<IntelDisplayPlane>> create_with_physical_address(PhysicalAddress plane_registers_start_address);
 
-    virtual ErrorOr<void> set_plane_settings(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start, PipeSelect, size_t horizontal_active_pixels_count) = 0;
+    virtual ErrorOr<void> set_plane_settings(Badge<IntelDisplayConnectorGroup>, IntelGraphics::GPUVirtualAddress aperture_start, PipeSelect, size_t horizontal_active_pixels_count) = 0;
     ErrorOr<void> enable(Badge<IntelDisplayConnectorGroup>);
     bool is_enabled(Badge<IntelDisplayConnectorGroup>);
     ErrorOr<void> disable(Badge<IntelDisplayConnectorGroup>);

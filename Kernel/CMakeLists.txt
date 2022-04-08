@@ -87,6 +87,7 @@ set(KERNEL_SOURCES
     Graphics/Intel/Plane/DisplayPlane.cpp
     Graphics/Intel/Plane/G33DisplayPlane.cpp
     Graphics/Intel/Transcoder/DisplayTranscoder.cpp
+    Graphics/Intel/VirtualMemory/AddressSpace.cpp
     Graphics/Intel/DisplayConnectorGroup.cpp
     Graphics/Intel/DisplayPortAuxiliaryConnector.cpp
     Graphics/Intel/GMBusConnector.cpp
