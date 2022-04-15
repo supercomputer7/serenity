@@ -11,7 +11,6 @@
 #include <Kernel/Graphics/Console/GenericFramebufferConsole.h>
 #include <Kernel/Graphics/Definitions.h>
 #include <Kernel/Graphics/DisplayConnector.h>
-#include <Kernel/Graphics/Intel/GMBusConnector.h>
 #include <Kernel/Memory/TypedMapping.h>
 
 namespace Kernel {
