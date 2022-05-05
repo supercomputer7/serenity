@@ -9,6 +9,7 @@
 #include <AK/Types.h>
 #include <Kernel/Bus/PCI/Device.h>
 #include <Kernel/Graphics/Definitions.h>
+#include <Kernel/Graphics/Intel/DisplayConnectorGroup.h>
 #include <Kernel/Graphics/Intel/NativeDisplayConnector.h>
 #include <Kernel/PhysicalAddress.h>
 #include <LibEDID/EDID.h>
@@ -29,8 +30,9 @@ public:
 private:
     ErrorOr<void> initialize_adapter();
 
-    explicit IntelNativeGraphicsAdapter(PCI::Address);
+    IntelNativeGraphicsAdapter(PCI::Address, PCI::HardwareID);
 
-    RefPtr<IntelNativeDisplayConnector> m_display_connector;
+    const PCI::HardwareID m_hardware_id;
+    RefPtr<IntelDisplayConnectorGroup> m_connector_group;
 };
 }
