@@ -305,7 +305,7 @@ ErrorOr<void> DisplayConnector::ioctl(OpenFileDescription&, unsigned request, Us
         {
             SpinlockLocker control_locker(m_control_lock);
             ModeSetting requested_mode_setting;
-            requested_mode_setting.horizontal_stride = 0;
+            requested_mode_setting.horizontal_stride = head_mode_setting.horizontal_stride;
             requested_mode_setting.pixel_clock_in_khz = head_mode_setting.pixel_clock_in_khz;
             requested_mode_setting.horizontal_active = head_mode_setting.horizontal_active;
             requested_mode_setting.horizontal_front_porch_pixels = head_mode_setting.horizontal_front_porch_pixels;
