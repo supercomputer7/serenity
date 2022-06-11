@@ -77,6 +77,8 @@ set(KERNEL_SOURCES
     Graphics/Bochs/DisplayConnector.cpp
     Graphics/Bochs/GraphicsAdapter.cpp
     Graphics/Bochs/QEMUDisplayConnector.cpp
+    Graphics/Divergent/DisplayConnector.cpp
+    Graphics/Divergent/GraphicsAdapter.cpp
     Graphics/Console/BootFramebufferConsole.cpp
     Graphics/Console/GenericFramebufferConsole.cpp
     Graphics/Console/ContiguousFramebufferConsole.cpp

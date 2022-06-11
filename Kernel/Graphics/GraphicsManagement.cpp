@@ -10,6 +10,7 @@
 #include <Kernel/Bus/PCI/IDs.h>
 #include <Kernel/CommandLine.h>
 #include <Kernel/Graphics/Bochs/GraphicsAdapter.h>
+#include <Kernel/Graphics/Divergent/GraphicsAdapter.h>
 #include <Kernel/Graphics/Console/BootFramebufferConsole.h>
 #include <Kernel/Graphics/GraphicsManagement.h>
 #include <Kernel/Graphics/Intel/NativeGraphicsAdapter.h>
@@ -166,6 +167,10 @@ UNMAP_AFTER_INIT bool GraphicsManagement::determine_and_initialize_graphics_devi
         case PCI::VendorID::VirtualBox:
             if (device_identifier.hardware_id().device_id == 0xbeef)
                 adapter = BochsGraphicsAdapter::initialize(device_identifier);
+            break;
+        case PCI::VendorID::RedHat:
+            if (device_identifier.hardware_id().device_id == 0x0013)
+                adapter = DivergentGraphicsAdapter::initialize(device_identifier);
             break;
         case PCI::VendorID::Intel:
             adapter = IntelNativeGraphicsAdapter::initialize(device_identifier);
