@@ -34,8 +34,11 @@ public:
 
 private:
     ErrorOr<void> initialize_adapter(PCI::DeviceIdentifier const&);
+    ErrorOr<void> read_edid_and_set_for_connector(size_t connector_index);
 
     DivergentGraphicsAdapter(PCI::DeviceIdentifier const&, Memory::TypedMapping<DivergentDisplayProgrammingInterface volatile>);
+
+    Spinlock m_ddc_lock;
 
     Array<RefPtr<DivergentDisplayConnector>, 8> m_display_connectors;
     Memory::TypedMapping<DivergentDisplayProgrammingInterface volatile> m_registers_mapping;

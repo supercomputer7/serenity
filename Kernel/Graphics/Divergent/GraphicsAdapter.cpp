@@ -59,6 +59,35 @@ ErrorOr<void> DivergentGraphicsAdapter::apply_mode_setting_on_connector(Badge<Di
     return {};
 }
 
+UNMAP_AFTER_INIT ErrorOr<void> DivergentGraphicsAdapter::read_edid_and_set_for_connector(size_t connector_index)
+{
+    VERIFY(m_display_connectors[connector_index]);
+    SpinlockLocker locker(m_ddc_lock);
+    Array<u8, 128> edid;
+    for (size_t byte_index = 0; byte_index < edid.size(); byte_index++) {
+        m_registers_mapping->controller_registers.ddc_byte_index = byte_index;
+        u32 ddc_control = 1 | (connector_index << 8) | (1 << 31);
+        m_registers_mapping->controller_registers.ddc_control = ddc_control;
+
+        auto wait_for_ddc = [this]() -> ErrorOr<void> {
+            size_t retries = 0;
+            while (retries < 20) {
+                auto status = m_registers_mapping->controller_registers.ddc_status;
+                if (!(status & 1))
+                    return {};
+                IO::delay(1000);
+                retries++;
+            }
+            return Error::from_errno(EBUSY);
+        };
+        TRY(wait_for_ddc());
+        u8 edid_data = m_registers_mapping->controller_registers.ddc_data & 0xff;
+        edid[byte_index] = edid_data;
+    }
+    m_display_connectors[connector_index]->set_edid_bytes(edid);
+    return {};
+}
+
 UNMAP_AFTER_INIT ErrorOr<void> DivergentGraphicsAdapter::initialize_adapter(PCI::DeviceIdentifier const& pci_device_identifier)
 {
     auto bar0_space_size = PCI::get_BAR_space_size(pci_device_identifier.address(), 0);
@@ -69,6 +98,7 @@ UNMAP_AFTER_INIT ErrorOr<void> DivergentGraphicsAdapter::initialize_adapter(PCI:
         auto connector_fuse_index = static_cast<DivergentDisplayConnector::ConnectorFuseIndex>(index);
         auto framebuffer_offset = TRY(Memory::page_round_up(index * divergent_display_max_width * sizeof(u32) * divergent_display_max_height));
         m_display_connectors[index] = DivergentDisplayConnector::must_create(*this, connector_fuse_index, PhysicalAddress(PCI::get_BAR0(pci_device_identifier.address()) & 0xfffffff0).offset(framebuffer_offset), bar0_space_size);
+        TRY(read_edid_and_set_for_connector(index));
         TRY(m_display_connectors[index]->set_safe_mode_setting());
     }
     return {};
