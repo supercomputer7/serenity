@@ -12,7 +12,7 @@
 #include <Kernel/Locking/Spinlock.h>
 
 namespace Kernel::Graphics {
-class TextModeConsole final : public VGAConsole {
+class TextModeConsole final : public Console {
 public:
     static NonnullRefPtr<TextModeConsole> initialize();
     virtual size_t chars_per_line() const override { return width(); };
@@ -40,6 +40,7 @@ private:
 
     mutable Spinlock m_vga_lock;
 
+    NonnullOwnPtr<Memory::Region> m_vga_region;
     VirtualAddress m_current_vga_window;
 };
 
