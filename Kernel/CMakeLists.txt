@@ -59,7 +59,6 @@ set(KERNEL_SOURCES
     Devices/MemoryDevice.cpp
     Devices/NullDevice.cpp
     Devices/PCISerialDevice.cpp
-    Devices/PCSpeaker.cpp
     Devices/RandomDevice.cpp
     Devices/SelfTTYDevice.cpp
     Devices/SerialDevice.cpp
@@ -339,6 +338,7 @@ if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
         Arch/x86/common/SmapDisabler.cpp
         Arch/x86/common/Shutdown.cpp
         Arch/x86/common/RTC.cpp
+        Arch/x86/common/PCSpeaker.cpp
 
         Arch/x86/PCI/Controller/HostBridge.cpp
     )
