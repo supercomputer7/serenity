@@ -159,11 +159,8 @@ set(KERNEL_SOURCES
     Firmware/ACPI/Parser.cpp
     Firmware/MultiProcessor/Parser.cpp
     FutexQueue.cpp
-    Interrupts/APIC.cpp
     Interrupts/GenericInterruptHandler.cpp
-    Interrupts/IOAPIC.cpp
     Interrupts/IRQHandler.cpp
-    Interrupts/PIC.cpp
     Interrupts/SharedIRQHandler.cpp
     Interrupts/SpuriousInterruptHandler.cpp
     Interrupts/UnhandledInterruptHandler.cpp
@@ -344,6 +341,10 @@ if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
         Arch/x86/ISABus/HID/PS2KeyboardDevice.cpp
         Arch/x86/ISABus/HID/PS2MouseDevice.cpp
         Arch/x86/ISABus/HID/VMWareMouseDevice.cpp
+
+        Arch/x86/common/Interrupts/APIC.cpp
+        Arch/x86/common/Interrupts/IOAPIC.cpp
+        Arch/x86/common/Interrupts/PIC.cpp
     )
 
     set(KERNEL_SOURCES
