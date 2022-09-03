@@ -66,7 +66,6 @@ set(KERNEL_SOURCES
     Devices/HID/KeyboardDevice.cpp
     Devices/HID/MouseDevice.cpp
     GlobalProcessExposed.cpp
-    Graphics/Bochs/DisplayConnector.cpp
     Graphics/Bochs/GraphicsAdapter.cpp
     Graphics/Bochs/QEMUDisplayConnector.cpp
     Graphics/Console/BootFramebufferConsole.cpp
@@ -336,6 +335,7 @@ if ("${SERENITY_ARCH}" STREQUAL "i686" OR "${SERENITY_ARCH}" STREQUAL "x86_64")
         Arch/x86/PCI/Initializer.cpp
         Arch/x86/PCI/Controller/HostBridge.cpp
 
+        Arch/x86/Hypervisor/BochsDisplayConnector.cpp
         Arch/x86/Hypervisor/VMWareBackdoor.cpp
 
         Arch/x86/ISABus/I8042Controller.cpp
