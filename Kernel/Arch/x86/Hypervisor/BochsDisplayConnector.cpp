@@ -31,9 +31,34 @@ static u16 get_register_with_io(u16 index)
 LockRefPtr<BochsDisplayConnector> BochsDisplayConnector::try_create_for_vga_isa_connector()
 {
     VERIFY(PCI::Access::is_hardware_disabled());
+    // Note: Try to set VBE_DISPI_ID6 on the DISPI_INDEX register to ensure we
+    // reliably know if the Bochs VGA adapter supports telling the framebuffer address
+    // from its own registers.
+    set_register_with_io(0, VBE_DISPI_ID6);
     BochsDisplayConnector::IndexID index_id = get_register_with_io(0);
-    if (index_id != 0xB0C5)
+    if (index_id != 0xB0C5 && index_id != VBE_DISPI_ID6)
         return {};
+
+    PhysicalAddress framebuffer_address;
+
+    if (index_id == VBE_DISPI_ID6) {
+        u16 enable_register = get_register_with_io(to_underlying(BochsDISPIRegisters::ENABLE));
+        set_register_with_io(to_underlying(BochsDISPIRegisters::ENABLE), to_underlying(BochsFramebufferSettings::GetCapabilities));
+        u64 part1 = get_register_with_io(to_underlying(BochsDISPIRegisters::VIDEO_RAM_PHYSICAL_ADDRESS_PART1));
+        u64 part2 = get_register_with_io(to_underlying(BochsDISPIRegisters::VIDEO_RAM_PHYSICAL_ADDRESS_PART2));
+        u64 part3 = get_register_with_io(to_underlying(BochsDISPIRegisters::VIDEO_RAM_PHYSICAL_ADDRESS_PART3));
+        u64 part4 = get_register_with_io(to_underlying(BochsDISPIRegisters::VIDEO_RAM_PHYSICAL_ADDRESS_PART4));
+        set_register_with_io(to_underlying(BochsDISPIRegisters::ENABLE), enable_register);
+        framebuffer_address = PhysicalAddress(part1 | (part2 << 16) | (part3 << 32) | (part4 << 48));
+        dmesgln("Graphics: Bochs ISA VGA compatible adapter indicates framebuffer address at {}", framebuffer_address);
+    } else {
+        // Note: Consider to remove this once QEMU has the sixth extension for a very long period of time....
+        // When removing this subset of code flow, reject anything that does not use the sixth version of Bochs VBE.
+        // Also to consider - if Bochs has isa-vga device of its own, maybe we can still use this hardcoded framebuffer
+        // address in that situation.
+        dmesgln("Graphics: Bochs ISA VGA (revision {:x}) compatible adapter does not indicate framebuffer address, default to 0xE0000000", index_id);
+        framebuffer_address = PhysicalAddress(0xE0000000);
+    }
 
     auto video_ram_64k_chunks_count = get_register_with_io(to_underlying(BochsDISPIRegisters::VIDEO_RAM_64K_CHUNKS_COUNT));
     if (video_ram_64k_chunks_count == 0 || video_ram_64k_chunks_count == 0xffff) {
@@ -43,11 +68,7 @@ LockRefPtr<BochsDisplayConnector> BochsDisplayConnector::try_create_for_vga_isa_
         dmesgln("Graphics: Bochs ISA VGA compatible adapter indicates {} bytes of VRAM", video_ram_64k_chunks_count * (64 * KiB));
     }
 
-    // Note: The default physical address for isa-vga framebuffer in QEMU is 0xE0000000.
-    // Since this is probably hardcoded at other OSes in their guest drivers,
-    // we can assume this is going to stay the same framebuffer physical address for
-    // this device and will not be changed in the future.
-    auto device_or_error = DeviceManagement::try_create_device<BochsDisplayConnector>(PhysicalAddress(0xE0000000), video_ram_64k_chunks_count * (64 * KiB));
+    auto device_or_error = DeviceManagement::try_create_device<BochsDisplayConnector>(framebuffer_address, video_ram_64k_chunks_count * (64 * KiB));
     VERIFY(!device_or_error.is_error());
     auto connector = device_or_error.release_value();
     MUST(connector->create_attached_framebuffer_console());

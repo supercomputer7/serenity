@@ -17,9 +17,11 @@ namespace Kernel {
 #define BOCHS_DISPLAY_BIG_ENDIAN 0xbebebebe
 
 #define VBE_DISPI_ID5 0xB0C5
+#define VBE_DISPI_ID6 0xB0C6
 
 enum class BochsFramebufferSettings {
     Enabled = 0x1,
+    GetCapabilities = 0x2,
     LinearFramebuffer = 0x40,
 };
 
@@ -35,6 +37,10 @@ enum class BochsDISPIRegisters {
     X_OFFSET = 0x8,
     Y_OFFSET = 0x9,
     VIDEO_RAM_64K_CHUNKS_COUNT = 0xA,
+    VIDEO_RAM_PHYSICAL_ADDRESS_PART1 = 0xB,
+    VIDEO_RAM_PHYSICAL_ADDRESS_PART2 = 0xC,
+    VIDEO_RAM_PHYSICAL_ADDRESS_PART3 = 0xD,
+    VIDEO_RAM_PHYSICAL_ADDRESS_PART4 = 0xE,
 };
 
 struct [[gnu::packed]] DISPIInterface {
@@ -49,6 +55,7 @@ struct [[gnu::packed]] DISPIInterface {
     u16 x_offset;
     u16 y_offset;
     u16 vram_64k_chunks_count;
+    u16 framebuffer_physical_address[4];
 };
 
 struct [[gnu::packed]] ExtensionRegisters {
