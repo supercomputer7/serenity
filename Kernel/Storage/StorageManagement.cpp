@@ -25,6 +25,7 @@
 #include <Kernel/Panic.h>
 #include <Kernel/Storage/ATA/AHCI/Controller.h>
 #include <Kernel/Storage/ATA/GenericIDE/Controller.h>
+#include <Kernel/Storage/MMC/SDHCIController.h>
 #include <Kernel/Storage/NVMe/NVMeController.h>
 #include <Kernel/Storage/StorageManagement.h>
 #include <LibPartition/EBRPartitionTable.h>
@@ -72,6 +73,19 @@ void StorageManagement::remove_device(StorageDevice& device)
     m_storage_devices.remove(device);
 }
 
+static bool potential_pci_storage_controller(PCI::DeviceIdentifier const& device_identifier)
+{
+    if (device_identifier.class_code().value() == to_underlying(PCI::ClassID::MassStorage)) {
+        return true;
+    }
+    if (device_identifier.class_code().value() == to_underlying(PCI::ClassID::BaseSystemPeripheral)) {
+        auto subclass_code = static_cast<PCI::BaseSystemPeripheral::SubclassID>(device_identifier.subclass_code().value());
+        if (subclass_code == PCI::BaseSystemPeripheral::SubclassID::SDHostController)
+            return true;
+    }
+    return false;
+}
+
 UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pio, bool nvme_poll)
 {
     VERIFY(m_controllers.is_empty());
@@ -80,10 +94,8 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pi
     if (!kernel_command_line().disable_physical_storage()) {
 
         MUST(PCI::enumerate([&](PCI::DeviceIdentifier const& device_identifier) -> void {
-            if (device_identifier.class_code().value() != to_underlying(PCI::ClassID::MassStorage)) {
+            if (!potential_pci_storage_controller(device_identifier))
                 return;
-            }
-
             {
                 constexpr PCI::HardwareID vmd_device = { 0x8086, 0x9a0b };
                 if (device_identifier.hardware_id() == vmd_device) {
@@ -99,6 +111,13 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool force_pi
                             }
                         }
                     }));
+                }
+            }
+
+            {
+                auto base_system_peripheral_subclass_code = static_cast<PCI::BaseSystemPeripheral::SubclassID>(device_identifier.subclass_code().value());
+                if (base_system_peripheral_subclass_code == PCI::BaseSystemPeripheral::SubclassID::SDHostController) {
+                    m_controllers.append(SDHCIController::must_initialize(device_identifier));
                 }
             }
 

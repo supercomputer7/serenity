@@ -82,6 +82,7 @@ enum class ClassID {
     MassStorage = 0x1,
     Multimedia = 0x4,
     Bridge = 0x6,
+    BaseSystemPeripheral  = 0x8,
 };
 
 namespace MassStorage {
@@ -113,8 +114,15 @@ enum class SubclassID {
 
 }
 
-AK_TYPEDEF_DISTINCT_ORDERED_ID(u8, CapabilityID);
+namespace BaseSystemPeripheral {
 
+enum class SubclassID {
+    SDHostController  = 0x5,
+};
+
+}
+
+AK_TYPEDEF_DISTINCT_ORDERED_ID(u8, CapabilityID);
 namespace Capabilities {
 enum ID {
     Null = 0x0,

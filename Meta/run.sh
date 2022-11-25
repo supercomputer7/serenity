@@ -220,15 +220,19 @@ if [ -z "$SERENITY_QEMU_DISPLAY_DEVICE" ]; then
     fi
 fi
 
-# Check if SERENITY_NVME_ENABLE is unset
-if [ -z ${SERENITY_NVME_ENABLE+x} ]; then
+# Check if SERENITY_STORAGE_TYPE is unset
+if [ -z ${SERENITY_STORAGE_TYPE+x} ]; then
     SERENITY_BOOT_DRIVE="-drive file=${SERENITY_DISK_IMAGE},format=raw,index=0,media=disk,id=disk"
 else
-    if [ "$SERENITY_NVME_ENABLE" -eq 1 ]; then
+    if [ "$SERENITY_STORAGE_TYPE" = "NVMe" ]; then
         SERENITY_BOOT_DRIVE="-drive file=${SERENITY_DISK_IMAGE},format=raw,index=0,media=disk,if=none,id=disk"
         SERENITY_BOOT_DRIVE="$SERENITY_BOOT_DRIVE -device i82801b11-bridge,id=bridge4 -device sdhci-pci,bus=bridge4"
         SERENITY_BOOT_DRIVE="$SERENITY_BOOT_DRIVE -device nvme,serial=deadbeef,drive=disk,bus=bridge4,logical_block_size=4096,physical_block_size=4096"
         SERENITY_KERNEL_CMDLINE="$SERENITY_KERNEL_CMDLINE root=/dev/nvme0n1"
+    elif [ "$SERENITY_STORAGE_TYPE" = "SDHC" ]; then
+        SERENITY_BOOT_DRIVE="-drive file=${SERENITY_DISK_IMAGE},format=raw,index=0,media=disk,if=none,id=disk"
+        SERENITY_BOOT_DRIVE="$SERENITY_BOOT_DRIVE -device i82801b11-bridge,id=bridge4 -device sdhci-pci,id=sdhci,bus=bridge4"
+        SERENITY_BOOT_DRIVE="$SERENITY_BOOT_DRIVE -device sd-card,drive=disk"
     else
         SERENITY_BOOT_DRIVE="-drive file=${SERENITY_DISK_IMAGE},format=raw,index=0,media=disk,id=disk"
     fi

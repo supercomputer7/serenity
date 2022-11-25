@@ -96,6 +96,9 @@ set(KERNEL_SOURCES
     Storage/ATA/ATADevice.cpp
     Storage/ATA/ATADiskDevice.cpp
     Storage/ATA/ATAPort.cpp
+    Storage/MMC/MMCDevice.cpp
+    Storage/MMC/SDHCIController.cpp
+    Storage/MMC/SDMMCQueue.cpp
     Storage/NVMe/NVMeController.cpp
     Storage/NVMe/NVMeNameSpace.cpp
     Storage/NVMe/NVMeInterruptQueue.cpp
