@@ -419,6 +419,9 @@ ErrorOr<void> VirtIOGraphicsAdapter::synchronous_virtio_gpu_command(size_t micro
     VERIFY(m_operation_lock.is_locked());
     VERIFY(microseconds_timeout > 10);
     VERIFY(microseconds_timeout < 100000);
+
+    microseconds_timeout = 10'000'000;
+
     auto& queue = get_queue(CONTROLQ);
     queue.disable_interrupts();
     SpinlockLocker lock(queue.lock());
