@@ -46,7 +46,7 @@ ErrorOr<void> IntelNativeGPUAdapter::initialize_adapter()
     dmesgln_pci(*this, "MMIO @ {}, space size is {:x} bytes", PhysicalAddress(PCI::get_BAR0(device_identifier())), bar0_space_size);
     dmesgln_pci(*this, "framebuffer @ {}", PhysicalAddress(PCI::get_BAR2(device_identifier())));
 
-    using MMIORegion = IntelDisplayConnectorGroup::MMIORegion;
+    using MMIORegion = IntelDisplayController::MMIORegion;
     MMIORegion first_region { MMIORegion::BARAssigned::BAR0, PhysicalAddress(PCI::get_BAR0(device_identifier()) & 0xfffffff0), bar0_space_size };
     MMIORegion second_region { MMIORegion::BARAssigned::BAR2, PhysicalAddress(PCI::get_BAR2(device_identifier()) & 0xfffffff0), bar2_space_size };
 
@@ -56,7 +56,7 @@ ErrorOr<void> IntelNativeGPUAdapter::initialize_adapter()
 
     switch (device_identifier().hardware_id().device_id) {
     case 0x29c2:
-        m_connector_group = TRY(IntelDisplayConnectorGroup::try_create({}, IntelGPU::Generation::Gen4, first_region, second_region));
+        m_connector_group = TRY(IntelDisplayController::try_create({}, IntelGPU::Generation::Gen4, first_region, second_region));
         return {};
     default:
         return Error::from_errno(ENODEV);

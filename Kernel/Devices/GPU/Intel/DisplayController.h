@@ -21,7 +21,7 @@
 namespace Kernel {
 
 class IntelNativeGPUAdapter;
-class IntelDisplayConnectorGroup : public RefCounted<IntelDisplayConnectorGroup> {
+class IntelDisplayController : public RefCounted<IntelDisplayController> {
     friend class IntelNativeGPUAdapter;
 
 public:
@@ -44,13 +44,13 @@ private:
     };
 
 public:
-    static ErrorOr<NonnullLockRefPtr<IntelDisplayConnectorGroup>> try_create(Badge<IntelNativeGPUAdapter>, IntelGPU::Generation, MMIORegion const&, MMIORegion const&);
+    static ErrorOr<NonnullLockRefPtr<IntelDisplayController>> try_create(Badge<IntelNativeGPUAdapter>, IntelGPU::Generation, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&);
     ErrorOr<void> set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 
 private:
-    IntelDisplayConnectorGroup(IntelGPU::Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
+    IntelDisplayController(IntelGPU::Generation generation, NonnullOwnPtr<GMBusConnector>, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const&, MMIORegion const&);
 
     ErrorOr<void> set_mode_setting(IntelNativeDisplayConnector&, DisplayConnector::ModeSetting const&);
 

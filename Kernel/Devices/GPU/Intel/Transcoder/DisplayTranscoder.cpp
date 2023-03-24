@@ -22,7 +22,7 @@ IntelDisplayTranscoder::ShadowRegisters IntelDisplayTranscoder::current_register
     return m_shadow_registers;
 }
 
-ErrorOr<void> IntelDisplayTranscoder::set_mode_setting_timings(Badge<IntelDisplayConnectorGroup>, DisplayConnector::ModeSetting const& mode_setting)
+ErrorOr<void> IntelDisplayTranscoder::set_mode_setting_timings(Badge<IntelDisplayController>, DisplayConnector::ModeSetting const& mode_setting)
 {
     SpinlockLocker locker(m_access_lock);
 
@@ -56,7 +56,7 @@ ErrorOr<void> IntelDisplayTranscoder::set_mode_setting_timings(Badge<IntelDispla
     return {};
 }
 
-ErrorOr<void> IntelDisplayTranscoder::disable_pipe(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelDisplayTranscoder::disable_pipe(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     m_pipe_registers->pipe_configuration = 0;
@@ -73,7 +73,7 @@ ErrorOr<void> IntelDisplayTranscoder::disable_pipe(Badge<IntelDisplayConnectorGr
     return Error::from_errno(EBUSY);
 }
 
-ErrorOr<void> IntelDisplayTranscoder::enable_pipe(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelDisplayTranscoder::enable_pipe(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     u32 value = m_pipe_registers->pipe_configuration;
@@ -101,7 +101,7 @@ ErrorOr<void> IntelDisplayTranscoder::enable_pipe(Badge<IntelDisplayConnectorGro
     // FIXME: Seems like my video card is buggy and doesn't set the enabled bit (bit 30)!!
     return {};
 }
-bool IntelDisplayTranscoder::pipe_enabled(Badge<IntelDisplayConnectorGroup>) const
+bool IntelDisplayTranscoder::pipe_enabled(Badge<IntelDisplayController>) const
 {
     SpinlockLocker locker(m_access_lock);
     u32 value = m_pipe_registers->pipe_configuration;

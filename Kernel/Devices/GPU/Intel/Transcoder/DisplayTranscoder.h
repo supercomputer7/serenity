@@ -16,7 +16,7 @@
 
 namespace Kernel {
 
-class IntelDisplayConnectorGroup;
+class IntelDisplayController;
 class IntelDisplayTranscoder {
 public:
     // Note: This is used to "cache" all the registers we wrote to, because
@@ -51,14 +51,14 @@ public:
         u32 pipe_conf;
     };
 
-    ErrorOr<void> set_mode_setting_timings(Badge<IntelDisplayConnectorGroup>, DisplayConnector::ModeSetting const&);
-    virtual ErrorOr<void> set_dpll_settings(Badge<IntelDisplayConnectorGroup>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier) = 0;
-    virtual ErrorOr<void> enable_dpll_without_vga(Badge<IntelDisplayConnectorGroup>) = 0;
-    virtual ErrorOr<void> disable_dpll(Badge<IntelDisplayConnectorGroup>) = 0;
+    ErrorOr<void> set_mode_setting_timings(Badge<IntelDisplayController>, DisplayConnector::ModeSetting const&);
+    virtual ErrorOr<void> set_dpll_settings(Badge<IntelDisplayController>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier) = 0;
+    virtual ErrorOr<void> enable_dpll_without_vga(Badge<IntelDisplayController>) = 0;
+    virtual ErrorOr<void> disable_dpll(Badge<IntelDisplayController>) = 0;
 
-    ErrorOr<void> disable_pipe(Badge<IntelDisplayConnectorGroup>);
-    ErrorOr<void> enable_pipe(Badge<IntelDisplayConnectorGroup>);
-    bool pipe_enabled(Badge<IntelDisplayConnectorGroup>) const;
+    ErrorOr<void> disable_pipe(Badge<IntelDisplayController>);
+    ErrorOr<void> enable_pipe(Badge<IntelDisplayController>);
+    bool pipe_enabled(Badge<IntelDisplayController>) const;
 
     ShadowRegisters current_registers_state() const;
 

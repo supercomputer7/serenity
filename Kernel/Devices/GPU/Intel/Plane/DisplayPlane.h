@@ -16,7 +16,7 @@
 
 namespace Kernel {
 
-class IntelDisplayConnectorGroup;
+class IntelDisplayController;
 class IntelDisplayPlane {
 public:
     enum class PipeSelect {
@@ -38,15 +38,15 @@ public:
 public:
     static ErrorOr<NonnullOwnPtr<IntelDisplayPlane>> create_with_physical_address(PhysicalAddress plane_registers_start_address);
 
-    ErrorOr<void> set_horizontal_active_pixels_count(Badge<IntelDisplayConnectorGroup>, size_t horizontal_active_pixels_count);
-    ErrorOr<void> set_vertical_active_pixels_count(Badge<IntelDisplayConnectorGroup>, size_t vertical_active_pixels_count);
-    ErrorOr<void> set_horizontal_stride(Badge<IntelDisplayConnectorGroup>, size_t horizontal_stride);
-    ErrorOr<void> set_aperture_base(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start);
-    ErrorOr<void> set_pipe(Badge<IntelDisplayConnectorGroup>, PipeSelect);
+    ErrorOr<void> set_horizontal_active_pixels_count(Badge<IntelDisplayController>, size_t horizontal_active_pixels_count);
+    ErrorOr<void> set_vertical_active_pixels_count(Badge<IntelDisplayController>, size_t vertical_active_pixels_count);
+    ErrorOr<void> set_horizontal_stride(Badge<IntelDisplayController>, size_t horizontal_stride);
+    ErrorOr<void> set_aperture_base(Badge<IntelDisplayController>, PhysicalAddress aperture_start);
+    ErrorOr<void> set_pipe(Badge<IntelDisplayController>, PipeSelect);
 
-    virtual ErrorOr<void> enable(Badge<IntelDisplayConnectorGroup>) = 0;
-    bool is_enabled(Badge<IntelDisplayConnectorGroup>);
-    ErrorOr<void> disable(Badge<IntelDisplayConnectorGroup>);
+    virtual ErrorOr<void> enable(Badge<IntelDisplayController>) = 0;
+    bool is_enabled(Badge<IntelDisplayController>);
+    ErrorOr<void> disable(Badge<IntelDisplayController>);
 
     ShadowRegisters shadow_registers() const;
 

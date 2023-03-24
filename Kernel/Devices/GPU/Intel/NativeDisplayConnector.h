@@ -16,10 +16,10 @@
 
 namespace Kernel {
 
-class IntelDisplayConnectorGroup;
+class IntelDisplayController;
 class IntelNativeDisplayConnector final
     : public DisplayConnector {
-    friend class IntelDisplayConnectorGroup;
+    friend class IntelDisplayController;
     friend class DeviceManagement;
 
 public:
@@ -46,10 +46,10 @@ public:
         PortI = 8,
     };
 
-    static ErrorOr<NonnullLockRefPtr<IntelNativeDisplayConnector>> try_create_with_display_connector_group(IntelDisplayConnectorGroup const&, ConnectorIndex, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
+    static ErrorOr<NonnullLockRefPtr<IntelNativeDisplayConnector>> try_create_with_display_connector_group(IntelDisplayController const&, ConnectorIndex, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
 
-    void set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const& edid_bytes);
-    ErrorOr<void> create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>);
+    void set_edid_bytes(Badge<IntelDisplayController>, Array<u8, 128> const& edid_bytes);
+    ErrorOr<void> create_attached_framebuffer_console(Badge<IntelDisplayController>);
 
     ConnectorIndex connector_index() const { return m_connector_index; }
 
@@ -71,10 +71,10 @@ private:
     // Note: Paravirtualized hardware doesn't require a defined refresh rate for modesetting.
     virtual bool refresh_rate_support() const override { return true; }
 
-    IntelNativeDisplayConnector(IntelDisplayConnectorGroup const&, ConnectorIndex connector_index, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
+    IntelNativeDisplayConnector(IntelDisplayController const&, ConnectorIndex connector_index, Type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size);
     Type const m_type { Type::Analog };
     ConnectorIndex const m_connector_index { 0 };
-    NonnullLockRefPtr<IntelDisplayConnectorGroup> m_parent_connector_group;
+    NonnullLockRefPtr<IntelDisplayController> m_parent_connector_group;
     LockRefPtr<GPU::GenericFramebufferConsole> m_framebuffer_console;
 };
 }

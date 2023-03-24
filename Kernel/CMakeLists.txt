@@ -85,7 +85,7 @@ set(KERNEL_SOURCES
     Devices/GPU/Intel/Transcoder/AnalogDisplayTranscoder.cpp
     Devices/GPU/Intel/Transcoder/DisplayTranscoder.cpp
     Devices/GPU/Intel/Transcoder/PLL.cpp
-    Devices/GPU/Intel/DisplayConnectorGroup.cpp
+    Devices/GPU/Intel/DisplayController.cpp
     Devices/GPU/Intel/NativeDisplayConnector.cpp
     Devices/GPU/Intel/NativeAdapter.cpp
     Devices/GPU/VMWare/Console.cpp

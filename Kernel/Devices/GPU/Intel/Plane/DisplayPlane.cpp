@@ -20,44 +20,44 @@ IntelDisplayPlane::ShadowRegisters IntelDisplayPlane::shadow_registers() const
     return m_shadow_registers;
 }
 
-ErrorOr<void> IntelDisplayPlane::set_horizontal_active_pixels_count(Badge<IntelDisplayConnectorGroup>, size_t horizontal_active_pixels_count)
+ErrorOr<void> IntelDisplayPlane::set_horizontal_active_pixels_count(Badge<IntelDisplayController>, size_t horizontal_active_pixels_count)
 {
     SpinlockLocker locker(m_access_lock);
     m_horizontal_active_pixels_count = horizontal_active_pixels_count;
     return {};
 }
-ErrorOr<void> IntelDisplayPlane::set_vertical_active_pixels_count(Badge<IntelDisplayConnectorGroup>, size_t vertical_active_pixels_count)
+ErrorOr<void> IntelDisplayPlane::set_vertical_active_pixels_count(Badge<IntelDisplayController>, size_t vertical_active_pixels_count)
 {
     SpinlockLocker locker(m_access_lock);
     m_vertical_active_pixels_count = vertical_active_pixels_count;
     return {};
 }
-ErrorOr<void> IntelDisplayPlane::set_horizontal_stride(Badge<IntelDisplayConnectorGroup>, size_t horizontal_stride)
+ErrorOr<void> IntelDisplayPlane::set_horizontal_stride(Badge<IntelDisplayController>, size_t horizontal_stride)
 {
     SpinlockLocker locker(m_access_lock);
     m_horizontal_stride = horizontal_stride;
     return {};
 }
-ErrorOr<void> IntelDisplayPlane::set_aperture_base(Badge<IntelDisplayConnectorGroup>, PhysicalAddress aperture_start)
+ErrorOr<void> IntelDisplayPlane::set_aperture_base(Badge<IntelDisplayController>, PhysicalAddress aperture_start)
 {
     SpinlockLocker locker(m_access_lock);
     m_aperture_start.set(aperture_start.get());
     return {};
 }
-ErrorOr<void> IntelDisplayPlane::set_pipe(Badge<IntelDisplayConnectorGroup>, PipeSelect pipe_select)
+ErrorOr<void> IntelDisplayPlane::set_pipe(Badge<IntelDisplayController>, PipeSelect pipe_select)
 {
     SpinlockLocker locker(m_access_lock);
     m_pipe_select = pipe_select;
     return {};
 }
 
-bool IntelDisplayPlane::is_enabled(Badge<IntelDisplayConnectorGroup>)
+bool IntelDisplayPlane::is_enabled(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     return m_shadow_registers.control & (1 << 31);
 }
 
-ErrorOr<void> IntelDisplayPlane::disable(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelDisplayPlane::disable(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     // Note: We use the shadow register so we don't have the already set

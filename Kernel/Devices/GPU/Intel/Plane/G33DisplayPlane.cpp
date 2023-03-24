@@ -20,7 +20,7 @@ IntelG33DisplayPlane::IntelG33DisplayPlane(Memory::TypedMapping<PlaneRegisters v
 {
 }
 
-ErrorOr<void> IntelG33DisplayPlane::enable(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelG33DisplayPlane::enable(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     VERIFY(((m_horizontal_active_pixels_count * 4) % 64 == 0));

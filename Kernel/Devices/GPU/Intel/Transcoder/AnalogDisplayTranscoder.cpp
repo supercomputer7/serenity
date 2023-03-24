@@ -28,7 +28,7 @@ IntelAnalogDisplayTranscoder::IntelAnalogDisplayTranscoder(Memory::TypedMapping<
 {
 }
 
-ErrorOr<void> IntelAnalogDisplayTranscoder::set_dpll_settings(Badge<IntelDisplayConnectorGroup>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier)
+ErrorOr<void> IntelAnalogDisplayTranscoder::set_dpll_settings(Badge<IntelDisplayController>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier)
 {
     SpinlockLocker locker(m_access_lock);
     u32 value = (settings.m2 - 2) | ((settings.m1 - 2) << 8) | ((settings.n - 2) << 16);
@@ -44,7 +44,7 @@ ErrorOr<void> IntelAnalogDisplayTranscoder::set_dpll_settings(Badge<IntelDisplay
     return {};
 }
 
-ErrorOr<void> IntelAnalogDisplayTranscoder::enable_dpll_without_vga(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelAnalogDisplayTranscoder::enable_dpll_without_vga(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     // Explanation for Gen4 DPLL control bits:
@@ -78,7 +78,7 @@ ErrorOr<void> IntelAnalogDisplayTranscoder::enable_dpll_without_vga(Badge<IntelD
     return Error::from_errno(EBUSY);
 }
 
-ErrorOr<void> IntelAnalogDisplayTranscoder::disable_dpll(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelAnalogDisplayTranscoder::disable_dpll(Badge<IntelDisplayController>)
 {
     SpinlockLocker locker(m_access_lock);
     m_dpll_control_registers->control = 0;

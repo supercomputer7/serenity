@@ -13,15 +13,15 @@
 
 namespace Kernel {
 
-class IntelDisplayConnectorGroup;
+class IntelDisplayController;
 class IntelAnalogDisplayTranscoder final : public IntelDisplayTranscoder {
 public:
     static ErrorOr<NonnullOwnPtr<IntelAnalogDisplayTranscoder>> create_with_physical_addresses(PhysicalAddress transcoder_registers_start_address,
         PhysicalAddress pipe_registers_start_address, PhysicalAddress dpll_registers_start_address, PhysicalAddress dpll_control_registers_start_address);
 
-    virtual ErrorOr<void> set_dpll_settings(Badge<IntelDisplayConnectorGroup>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier) override;
-    virtual ErrorOr<void> enable_dpll_without_vga(Badge<IntelDisplayConnectorGroup>) override;
-    virtual ErrorOr<void> disable_dpll(Badge<IntelDisplayConnectorGroup>) override;
+    virtual ErrorOr<void> set_dpll_settings(Badge<IntelDisplayController>, IntelGPU::PLLSettings const& settings, size_t dac_multiplier) override;
+    virtual ErrorOr<void> enable_dpll_without_vga(Badge<IntelDisplayController>) override;
+    virtual ErrorOr<void> disable_dpll(Badge<IntelDisplayController>) override;
 
 private:
     struct [[gnu::packed]] DPLLRegisters {

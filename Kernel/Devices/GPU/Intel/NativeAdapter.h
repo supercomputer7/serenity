@@ -9,7 +9,7 @@
 #include <AK/Types.h>
 #include <Kernel/Bus/PCI/Device.h>
 #include <Kernel/Devices/GPU/Definitions.h>
-#include <Kernel/Devices/GPU/Intel/DisplayConnectorGroup.h>
+#include <Kernel/Devices/GPU/Intel/DisplayController.h>
 #include <Kernel/Devices/GPU/Intel/NativeDisplayConnector.h>
 #include <Kernel/PhysicalAddress.h>
 #include <LibEDID/EDID.h>
@@ -33,6 +33,6 @@ private:
 
     explicit IntelNativeGPUAdapter(PCI::DeviceIdentifier const&);
 
-    LockRefPtr<IntelDisplayConnectorGroup> m_connector_group;
+    LockRefPtr<IntelDisplayController> m_connector_group;
 };
 }

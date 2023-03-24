@@ -9,7 +9,7 @@
 #include <Kernel/Debug.h>
 #include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Devices/GPU/Console/ContiguousFramebufferConsole.h>
-#include <Kernel/Devices/GPU/Intel/DisplayConnectorGroup.h>
+#include <Kernel/Devices/GPU/Intel/DisplayController.h>
 #include <Kernel/Devices/GPU/Intel/Plane/G33DisplayPlane.h>
 #include <Kernel/Devices/GPU/Intel/Transcoder/AnalogDisplayTranscoder.h>
 #include <Kernel/Devices/GPU/Intel/Transcoder/PLL.h>
@@ -19,17 +19,17 @@
 
 namespace Kernel {
 
-ErrorOr<NonnullLockRefPtr<IntelDisplayConnectorGroup>> IntelDisplayConnectorGroup::try_create(Badge<IntelNativeGPUAdapter>, IntelGPU::Generation generation, MMIORegion const& first_region, MMIORegion const& second_region)
+ErrorOr<NonnullLockRefPtr<IntelDisplayController>> IntelDisplayController::try_create(Badge<IntelNativeGPUAdapter>, IntelGPU::Generation generation, MMIORegion const& first_region, MMIORegion const& second_region)
 {
     auto registers_region = TRY(MM.allocate_kernel_region(first_region.pci_bar_paddr, first_region.pci_bar_space_length, "Intel Native GPU Registers"sv, Memory::Region::Access::ReadWrite));
     // NOTE: 0x5100 is the offset of the start of the GMBus registers
     auto gmbus_connector = TRY(GMBusConnector::create_with_physical_address(first_region.pci_bar_paddr.offset(0x5100)));
-    auto connector_group = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) IntelDisplayConnectorGroup(generation, move(gmbus_connector), move(registers_region), first_region, second_region)));
+    auto connector_group = TRY(adopt_nonnull_lock_ref_or_enomem(new (nothrow) IntelDisplayController(generation, move(gmbus_connector), move(registers_region), first_region, second_region)));
     TRY(connector_group->initialize_connectors());
     return connector_group;
 }
 
-IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(IntelGPU::Generation generation, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
+IntelDisplayController::IntelDisplayController(IntelGPU::Generation generation, NonnullOwnPtr<GMBusConnector> gmbus_connector, NonnullOwnPtr<Memory::Region> registers_region, MMIORegion const& first_region, MMIORegion const& second_region)
     : m_mmio_first_region(first_region)
     , m_mmio_second_region(second_region)
     , m_assigned_mmio_registers_region(m_mmio_first_region)
@@ -39,7 +39,7 @@ IntelDisplayConnectorGroup::IntelDisplayConnectorGroup(IntelGPU::Generation gene
 {
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::initialize_gen4_connectors()
+ErrorOr<void> IntelDisplayController::initialize_gen4_connectors()
 {
     // NOTE: Just assume we will need one Gen4 "transcoder"
     // NOTE: Main block of registers starting at HorizontalTotalA register (0x60000)
@@ -64,7 +64,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_gen4_connectors()
     return {};
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
+ErrorOr<void> IntelDisplayController::initialize_connectors()
 {
 
     // NOTE: Intel GPU Generation 4 is pretty ancient beast, and we should not
@@ -86,7 +86,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::initialize_connectors()
     return {};
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
+ErrorOr<void> IntelDisplayController::set_safe_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector)
 {
     VERIFY(connector.m_modeset_lock.is_locked());
     if (!connector.m_edid_parser.has_value())
@@ -114,12 +114,12 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_safe_mode_setting(Badge<IntelNativ
     return set_mode_setting(connector, modesetting);
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
+ErrorOr<void> IntelDisplayController::set_mode_setting(Badge<IntelNativeDisplayConnector>, IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
     return set_mode_setting(connector, mode_setting);
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
+ErrorOr<void> IntelDisplayController::set_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
     VERIFY(connector.m_modeset_lock.is_locked());
 
@@ -141,7 +141,7 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_mode_setting(IntelNativeDisplayCon
     return {};
 }
 
-ErrorOr<void> IntelDisplayConnectorGroup::set_gen4_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
+ErrorOr<void> IntelDisplayController::set_gen4_mode_setting(IntelNativeDisplayConnector& connector, DisplayConnector::ModeSetting const& mode_setting)
 {
     VERIFY(connector.m_modeset_lock.is_locked());
     SpinlockLocker control_lock(m_control_lock);
@@ -151,13 +151,13 @@ ErrorOr<void> IntelDisplayConnectorGroup::set_gen4_mode_setting(IntelNativeDispl
     return {};
 }
 
-void IntelDisplayConnectorGroup::enable_vga_plane()
+void IntelDisplayController::enable_vga_plane()
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());
 }
 
-StringView IntelDisplayConnectorGroup::convert_analog_output_register_to_string(AnalogOutputRegisterOffset index) const
+StringView IntelDisplayController::convert_analog_output_register_to_string(AnalogOutputRegisterOffset index) const
 {
     switch (index) {
     case AnalogOutputRegisterOffset::AnalogDisplayPort:
@@ -169,14 +169,14 @@ StringView IntelDisplayConnectorGroup::convert_analog_output_register_to_string(
     }
 }
 
-void IntelDisplayConnectorGroup::write_to_general_register(RegisterOffset offset, u32 value)
+void IntelDisplayController::write_to_general_register(RegisterOffset offset, u32 value)
 {
     VERIFY(m_control_lock.is_locked());
     SpinlockLocker lock(m_registers_lock);
     auto* reg = (u32 volatile*)m_registers_region->vaddr().offset(offset.value()).as_ptr();
     *reg = value;
 }
-u32 IntelDisplayConnectorGroup::read_from_general_register(RegisterOffset offset) const
+u32 IntelDisplayController::read_from_general_register(RegisterOffset offset) const
 {
     VERIFY(m_control_lock.is_locked());
     SpinlockLocker lock(m_registers_lock);
@@ -185,13 +185,13 @@ u32 IntelDisplayConnectorGroup::read_from_general_register(RegisterOffset offset
     return value;
 }
 
-void IntelDisplayConnectorGroup::write_to_analog_output_register(AnalogOutputRegisterOffset index, u32 value)
+void IntelDisplayController::write_to_analog_output_register(AnalogOutputRegisterOffset index, u32 value)
 {
     dbgln_if(INTEL_GPU_DEBUG, "Intel GPU Display Connector:: Write to {} value of {:x}", convert_analog_output_register_to_string(index), value);
     write_to_general_register(to_underlying(index), value);
 }
 
-u32 IntelDisplayConnectorGroup::read_from_analog_output_register(AnalogOutputRegisterOffset index) const
+u32 IntelDisplayController::read_from_analog_output_register(AnalogOutputRegisterOffset index) const
 {
     u32 value = read_from_general_register(to_underlying(index));
     dbgln_if(INTEL_GPU_DEBUG, "Intel GPU Display Connector: Read from {} value of {:x}", convert_analog_output_register_to_string(index), value);
@@ -211,7 +211,7 @@ static size_t compute_dac_multiplier(size_t pixel_clock_in_khz)
     }
 }
 
-bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSetting const& mode_setting)
+bool IntelDisplayController::set_crt_resolution(DisplayConnector::ModeSetting const& mode_setting)
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());
@@ -253,21 +253,21 @@ bool IntelDisplayConnectorGroup::set_crt_resolution(DisplayConnector::ModeSettin
     return true;
 }
 
-void IntelDisplayConnectorGroup::disable_dac_output()
+void IntelDisplayController::disable_dac_output()
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());
     write_to_analog_output_register(AnalogOutputRegisterOffset::AnalogDisplayPort, 0b11 << 10);
 }
 
-void IntelDisplayConnectorGroup::enable_dac_output()
+void IntelDisplayController::enable_dac_output()
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());
     write_to_analog_output_register(AnalogOutputRegisterOffset::AnalogDisplayPort, (1 << 31));
 }
 
-void IntelDisplayConnectorGroup::disable_vga_emulation()
+void IntelDisplayController::disable_vga_emulation()
 {
     VERIFY(m_control_lock.is_locked());
     VERIFY(m_modeset_lock.is_locked());

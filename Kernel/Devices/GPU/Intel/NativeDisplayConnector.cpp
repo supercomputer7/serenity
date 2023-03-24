@@ -9,19 +9,19 @@
 #include <Kernel/Debug.h>
 #include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Devices/GPU/Console/ContiguousFramebufferConsole.h>
-#include <Kernel/Devices/GPU/Intel/DisplayConnectorGroup.h>
+#include <Kernel/Devices/GPU/Intel/DisplayController.h>
 #include <Kernel/Devices/GPU/Intel/NativeDisplayConnector.h>
 #include <Kernel/Devices/GPU/Management.h>
 #include <Kernel/Memory/Region.h>
 
 namespace Kernel {
 
-ErrorOr<NonnullLockRefPtr<IntelNativeDisplayConnector>> IntelNativeDisplayConnector::try_create_with_display_connector_group(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
+ErrorOr<NonnullLockRefPtr<IntelNativeDisplayConnector>> IntelNativeDisplayConnector::try_create_with_display_connector_group(IntelDisplayController const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
 {
     return TRY(DeviceManagement::try_create_device<IntelNativeDisplayConnector>(parent_connector_group, connector_index, type, framebuffer_address, framebuffer_resource_size));
 }
 
-ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(Badge<IntelDisplayConnectorGroup>)
+ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(Badge<IntelDisplayController>)
 {
     size_t width = 0;
     size_t height = 0;
@@ -38,7 +38,7 @@ ErrorOr<void> IntelNativeDisplayConnector::create_attached_framebuffer_console(B
     return {};
 }
 
-IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGroup const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
+IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayController const& parent_connector_group, ConnectorIndex connector_index, Type type, PhysicalAddress framebuffer_address, size_t framebuffer_resource_size)
     : DisplayConnector(framebuffer_address, framebuffer_resource_size, true)
     , m_type(type)
     , m_connector_index(connector_index)
@@ -46,7 +46,7 @@ IntelNativeDisplayConnector::IntelNativeDisplayConnector(IntelDisplayConnectorGr
 {
 }
 
-void IntelNativeDisplayConnector::set_edid_bytes(Badge<IntelDisplayConnectorGroup>, Array<u8, 128> const& raw_bytes)
+void IntelNativeDisplayConnector::set_edid_bytes(Badge<IntelDisplayController>, Array<u8, 128> const& raw_bytes)
 {
     // Note: The provided EDID might be invalid (because there's no attached monitor)
     // Therefore, set might_be_invalid to true to indicate that.
