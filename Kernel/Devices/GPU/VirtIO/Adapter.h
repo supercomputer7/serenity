@@ -10,7 +10,7 @@
 #include <AK/DistinctNumeric.h>
 #include <Kernel/Bus/VirtIO/Device.h>
 #include <Kernel/Bus/VirtIO/Queue.h>
-#include <Kernel/Devices/GPU/GenericGPUAdapter.h>
+#include <Kernel/Devices/GPU/Device.h>
 #include <Kernel/Devices/GPU/VirtIO/Protocol.h>
 
 namespace Kernel {
@@ -31,14 +31,14 @@ namespace Kernel {
 class VirtIODisplayConnector;
 class VirtIOGPU3DDevice;
 class VirtIOGPUAdapter final
-    : public GenericGPUAdapter
+    : public GPUDevice
     , public VirtIO::Device {
     friend class VirtIODisplayConnector;
     friend class VirtIOGPU3DDevice;
 
 public:
     static ErrorOr<bool> probe(PCI::DeviceIdentifier const&);
-    static ErrorOr<NonnullLockRefPtr<GenericGPUAdapter>> create(PCI::DeviceIdentifier const&);
+    static ErrorOr<NonnullLockRefPtr<GPUDevice>> create(PCI::DeviceIdentifier const&);
 
     virtual void initialize() override;
 

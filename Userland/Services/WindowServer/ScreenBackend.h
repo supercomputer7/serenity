@@ -34,9 +34,9 @@ public:
 
     virtual ErrorOr<void> flush_framebuffer() = 0;
 
-    virtual ErrorOr<void> set_head_mode_setting(GPUHeadModeSetting) = 0;
+    virtual ErrorOr<void> set_head_mode_setting(GPUConnectorModeSetting) = 0;
     virtual ErrorOr<void> set_safe_head_mode_setting() = 0;
-    virtual ErrorOr<GPUHeadModeSetting> get_head_mode_setting() = 0;
+    virtual ErrorOr<GPUConnectorModeSetting> get_head_mode_setting() = 0;
 
     bool m_can_device_flush_buffers { true };
     bool m_can_device_flush_entire_framebuffer { true };

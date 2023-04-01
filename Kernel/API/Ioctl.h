@@ -18,8 +18,12 @@ struct winsize {
     unsigned short ws_ypixel;
 };
 
+struct GPUDeviceProperties {
+    int connectors_count;
+    int dma_capable;
+};
+
 struct GPUConnectorProperties {
-    unsigned char multihead_support;
     unsigned char doublebuffer_support;
     unsigned char flushing_support;
     unsigned char partial_flushing_support;
@@ -27,7 +31,8 @@ struct GPUConnectorProperties {
     unsigned max_buffer_bytes;
 };
 
-struct GPUHeadModeSetting {
+struct GPUConnectorModeSetting {
+    int connector_index;
     int horizontal_stride;
     int pixel_clock_in_khz;
     int horizontal_active;

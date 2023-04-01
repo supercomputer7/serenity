@@ -27,7 +27,7 @@ ErrorOr<bool> VirtIOGPUAdapter::probe(PCI::DeviceIdentifier const& device_identi
     return device_identifier.hardware_id().vendor_id == PCI::VendorID::VirtIO;
 }
 
-ErrorOr<NonnullLockRefPtr<GenericGPUAdapter>> VirtIOGPUAdapter::create(PCI::DeviceIdentifier const& device_identifier)
+ErrorOr<NonnullLockRefPtr<GPUDevice>> VirtIOGPUAdapter::create(PCI::DeviceIdentifier const& device_identifier)
 {
     // Setup memory transfer region
     auto scratch_space_region = TRY(MM.allocate_contiguous_kernel_region(

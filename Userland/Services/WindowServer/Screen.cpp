@@ -325,8 +325,8 @@ bool Screen::set_resolution(bool initial)
 
     ErrorOr<void> return_value = Error::from_errno(EINVAL);
     {
-        GPUHeadModeSetting requested_mode_setting;
-        memset(&requested_mode_setting, 0, sizeof(GPUHeadModeSetting));
+        GPUConnectorModeSetting requested_mode_setting;
+        memset(&requested_mode_setting, 0, sizeof(GPUConnectorModeSetting));
         requested_mode_setting.horizontal_stride = info.resolution.width() * 4;
         requested_mode_setting.pixel_clock_in_khz = 0;
         requested_mode_setting.horizontal_active = info.resolution.width();

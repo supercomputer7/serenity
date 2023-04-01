@@ -61,7 +61,7 @@ ErrorOr<void> HardwareScreenBackend::set_safe_head_mode_setting()
     return {};
 }
 
-ErrorOr<void> HardwareScreenBackend::set_head_mode_setting(GPUHeadModeSetting mode_setting)
+ErrorOr<void> HardwareScreenBackend::set_head_mode_setting(GPUConnectorModeSetting mode_setting)
 {
     size_t size_in_bytes = 0;
     if (m_can_set_head_buffer) {
@@ -73,7 +73,7 @@ ErrorOr<void> HardwareScreenBackend::set_head_mode_setting(GPUHeadModeSetting mo
     if (m_max_size_in_bytes < size_in_bytes)
         return Error::from_errno(EOVERFLOW);
 
-    GPUHeadModeSetting requested_mode_setting = mode_setting;
+    GPUConnectorModeSetting requested_mode_setting = mode_setting;
     auto rc = gpu_connector_set_head_mode_setting(m_display_connector_fd, &requested_mode_setting);
     if (rc != 0) {
         dbgln("Failed to set backend mode setting: falling back to safe resolution");
@@ -99,8 +99,8 @@ ErrorOr<void> HardwareScreenBackend::unmap_framebuffer()
 
 ErrorOr<void> HardwareScreenBackend::map_framebuffer()
 {
-    GPUHeadModeSetting mode_setting {};
-    memset(&mode_setting, 0, sizeof(GPUHeadModeSetting));
+    GPUConnectorModeSetting mode_setting {};
+    memset(&mode_setting, 0, sizeof(GPUConnectorModeSetting));
     int rc = gpu_connector_get_head_mode_setting(m_display_connector_fd, &mode_setting);
     if (rc != 0) {
         return Error::from_syscall("gpu_connector_get_head_mode_setting"sv, rc);
@@ -129,10 +129,10 @@ ErrorOr<void> HardwareScreenBackend::map_framebuffer()
     return {};
 }
 
-ErrorOr<GPUHeadModeSetting> HardwareScreenBackend::get_head_mode_setting()
+ErrorOr<GPUConnectorModeSetting> HardwareScreenBackend::get_head_mode_setting()
 {
-    GPUHeadModeSetting mode_setting {};
-    memset(&mode_setting, 0, sizeof(GPUHeadModeSetting));
+    GPUConnectorModeSetting mode_setting {};
+    memset(&mode_setting, 0, sizeof(GPUConnectorModeSetting));
     int rc = gpu_connector_get_head_mode_setting(m_display_connector_fd, &mode_setting);
     if (rc != 0) {
         return Error::from_syscall("gpu_connector_get_head_mode_setting"sv, rc);

@@ -86,12 +86,9 @@ set(KERNEL_SOURCES
     Devices/GPU/Intel/Transcoder/DisplayTranscoder.cpp
     Devices/GPU/Intel/Transcoder/PLL.cpp
     Devices/GPU/Intel/DisplayController.cpp
-    Devices/GPU/Intel/NativeDisplayConnector.cpp
     Devices/GPU/Intel/NativeAdapter.cpp
     Devices/GPU/VMWare/Console.cpp
     Devices/GPU/VMWare/Adapter.cpp
-    Devices/GPU/VMWare/DisplayConnector.cpp
-    Devices/GPU/VirtIO/DisplayConnector.cpp
     Devices/GPU/VirtIO/Console.cpp
     Devices/GPU/VirtIO/GPU3DDevice.cpp
     Devices/GPU/VirtIO/Adapter.cpp
@@ -367,7 +364,6 @@ if ("${SERENITY_ARCH}" STREQUAL "x86_64")
         Arch/x86_64/DebugOutput.cpp
         Arch/x86_64/Delay.cpp
 
-        Arch/x86_64/Hypervisor/BochsDisplayConnector.cpp
         Arch/x86_64/Hypervisor/VMWareBackdoor.cpp
 
         Arch/x86_64/CurrentTime.cpp

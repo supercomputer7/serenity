@@ -91,7 +91,7 @@ static ErrorOr<void> determine_system_mode()
     dbgln("Read system_mode: {}", g_system_mode);
 
     struct stat file_state;
-    int rc = lstat("/dev/gpu/connector0", &file_state);
+    int rc = lstat("/dev/gpu/card0", &file_state);
     if (rc != 0 && g_system_mode == "graphical") {
         dbgln("WARNING: No device nodes at /dev/gpu/ directory. This is probably a sign of disabled graphics functionality.");
         dbgln("To cope with this, I'll turn off graphical mode.");
@@ -217,7 +217,7 @@ static ErrorOr<void> populate_devtmpfs_devices_based_on_devctl()
             break;
         }
         case 226: {
-            auto name = TRY(String::formatted("/dev/gpu/connector{}", minor_number));
+            auto name = TRY(String::formatted("/dev/gpu/card{}", minor_number));
             TRY(create_devtmpfs_char_device(name.bytes_as_string_view(), 0666, 226, minor_number));
             break;
         }

@@ -86,7 +86,7 @@ ErrorOr<int> serenity_main(Main::Arguments)
             Core::DirIterator di("/dev/gpu", Core::DirIterator::SkipParentAndBaseDir);
             while (di.has_next()) {
                 auto path = di.next_path();
-                if (!path.starts_with("connector"sv))
+                if (!path.starts_with("card"sv))
                     continue;
                 auto full_path = DeprecatedString::formatted("/dev/gpu/{}", path);
                 if (!FileSystem::is_device(full_path))

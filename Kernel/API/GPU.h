@@ -70,7 +70,7 @@ ALWAYS_INLINE int fb_set_head_vertical_offset_buffer(int fd, GPUHeadVerticalOffs
     return ioctl(fd, GPU_IOCTL_SET_HEAD_VERTICAL_OFFSET_BUFFER, vertical_offset);
 }
 
-ALWAYS_INLINE int gpu_connector_set_head_mode_setting(int fd, GPUHeadModeSetting* mode_setting)
+ALWAYS_INLINE int gpu_connector_set_head_mode_setting(int fd, GPUConnectorModeSetting* mode_setting)
 {
     return ioctl(fd, GPU_IOCTL_SET_HEAD_MODE_SETTING, mode_setting);
 }
@@ -80,9 +80,9 @@ ALWAYS_INLINE int gpu_connector_set_safe_head_mode_setting(int fd)
     return ioctl(fd, GPU_IOCTL_SET_SAFE_HEAD_MODE_SETTING, nullptr);
 }
 
-ALWAYS_INLINE int gpu_connector_get_head_mode_setting(int fd, GPUHeadModeSetting* mode_setting)
+ALWAYS_INLINE int gpu_connector_get_head_mode_setting(int fd, GPUConnectorModeSetting* mode_setting)
 {
-    GPUHeadModeSetting head_mode_setting;
+    GPUConnectorModeSetting head_mode_setting;
     if (auto rc = ioctl(fd, GPU_IOCTL_GET_HEAD_MODE_SETTING, &head_mode_setting); rc < 0)
         return rc;
     mode_setting->horizontal_stride = head_mode_setting.horizontal_stride;

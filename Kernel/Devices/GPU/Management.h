@@ -14,9 +14,9 @@
 #endif
 #include <Kernel/Bus/PCI/Definitions.h>
 #include <Kernel/Devices/GPU/Console/Console.h>
+#include <Kernel/Devices/GPU/Device.h>
 #include <Kernel/Devices/GPU/DisplayConnector.h>
 #include <Kernel/Devices/GPU/Generic/DisplayConnector.h>
-#include <Kernel/Devices/GPU/GenericGPUAdapter.h>
 #include <Kernel/Devices/GPU/VirtIO/Adapter.h>
 #include <Kernel/Library/NonnullLockRefPtr.h>
 #include <Kernel/Memory/Region.h>
@@ -28,7 +28,7 @@ class GPUManagement {
 public:
     static GPUManagement& the();
     static bool is_initialized();
-    bool initialize();
+    void initialize();
 
     unsigned allocate_minor_device_number() { return m_current_minor_number++; };
     GPUManagement();
@@ -53,17 +53,11 @@ private:
 
     void initialize_preset_resolution_generic_display_connector();
 
-    Vector<NonnullLockRefPtr<GenericGPUAdapter>> m_gpu_devices;
     LockRefPtr<GPU::Console> m_console;
-
-    // Note: This is only used when booting with kernel commandline that includes "gpu_subsystem_mode=limited"
-    LockRefPtr<GenericDisplayConnector> m_preset_resolution_generic_display_connector;
-
-    LockRefPtr<DisplayConnector> m_platform_board_specific_display_connector;
 
     unsigned m_current_minor_number { 0 };
 
-    SpinlockProtected<IntrusiveList<&DisplayConnector::m_list_node>, LockRank::None> m_display_connector_nodes {};
+    SpinlockProtected<IntrusiveList<&GPUDevice::m_list_node>, LockRank::None> m_gpu_device_nodes {};
 #if ARCH(X86_64)
     OwnPtr<VGAIOArbiter> m_vga_arbiter;
 #endif

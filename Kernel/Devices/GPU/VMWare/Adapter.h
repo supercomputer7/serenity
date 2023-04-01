@@ -8,7 +8,7 @@
 
 #include <AK/Types.h>
 #include <Kernel/Bus/PCI/Device.h>
-#include <Kernel/Devices/GPU/GenericGPUAdapter.h>
+#include <Kernel/Devices/GPU/Device.h>
 #include <Kernel/Devices/GPU/VMWare/Definitions.h>
 #include <Kernel/IOWindow.h>
 #include <Kernel/Locking/Spinlock.h>
@@ -21,13 +21,13 @@ class GPUManagement;
 
 class VMWareDisplayConnector;
 class VMWareGPUAdapter final
-    : public GenericGPUAdapter
+    : public GPUDevice
     , public PCI::Device {
     friend class GPUManagement;
 
 public:
     static ErrorOr<bool> probe(PCI::DeviceIdentifier const&);
-    static ErrorOr<NonnullLockRefPtr<GenericGPUAdapter>> create(PCI::DeviceIdentifier const&);
+    static ErrorOr<NonnullLockRefPtr<GPUDevice>> create(PCI::DeviceIdentifier const&);
     virtual ~VMWareGPUAdapter() = default;
 
     virtual StringView device_name() const override { return "VMWareGPUAdapter"sv; }
@@ -52,7 +52,6 @@ private:
     VMWareGPUAdapter(PCI::DeviceIdentifier const&, NonnullOwnPtr<IOWindow> registers_io_window);
 
     Memory::TypedMapping<VMWareDisplayFIFORegisters volatile> m_fifo_registers;
-    LockRefPtr<VMWareDisplayConnector> m_display_connector;
     mutable NonnullOwnPtr<IOWindow> m_registers_io_window;
     mutable Spinlock<LockRank::None> m_io_access_lock {};
     mutable RecursiveSpinlock<LockRank::None> m_operation_lock {};

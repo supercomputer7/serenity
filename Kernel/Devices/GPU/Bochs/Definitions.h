@@ -37,32 +37,4 @@ enum class BochsDISPIRegisters {
     VIDEO_RAM_64K_CHUNKS_COUNT = 0xA,
 };
 
-struct [[gnu::packed]] DISPIInterface {
-    u16 index_id;
-    u16 xres;
-    u16 yres;
-    u16 bpp;
-    u16 enable;
-    u16 bank;
-    u16 virt_width;
-    u16 virt_height;
-    u16 x_offset;
-    u16 y_offset;
-    u16 vram_64k_chunks_count;
-};
-
-struct [[gnu::packed]] ExtensionRegisters {
-    u32 region_size;
-    u32 framebuffer_byteorder;
-};
-
-struct [[gnu::packed]] BochsDisplayMMIORegisters {
-    u8 edid_data[0x400];
-    u16 vga_ioports[0x10];
-    u8 reserved[0xE0];
-    DISPIInterface bochs_regs;
-    u8 reserved2[0x100 - sizeof(DISPIInterface)];
-    ExtensionRegisters extension_regs;
-};
-
 }

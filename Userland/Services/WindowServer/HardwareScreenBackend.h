@@ -33,8 +33,8 @@ public:
 
     virtual ErrorOr<void> set_safe_head_mode_setting() override;
 
-    virtual ErrorOr<void> set_head_mode_setting(GPUHeadModeSetting) override;
-    virtual ErrorOr<GPUHeadModeSetting> get_head_mode_setting() override;
+    virtual ErrorOr<void> set_head_mode_setting(GPUConnectorModeSetting) override;
+    virtual ErrorOr<GPUConnectorModeSetting> get_head_mode_setting() override;
 
     DeprecatedString m_device {};
     int m_display_connector_fd { -1 };

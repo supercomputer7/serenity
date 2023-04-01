@@ -122,7 +122,7 @@ static inline bool is_display_controller_pci_device(PCI::DeviceIdentifier const&
 
 struct PCIGPUDriverInitializer {
     ErrorOr<bool> (*probe)(PCI::DeviceIdentifier const&) = nullptr;
-    ErrorOr<NonnullLockRefPtr<GenericGPUAdapter>> (*create)(PCI::DeviceIdentifier const&) = nullptr;
+    ErrorOr<NonnullLockRefPtr<GPUDevice>> (*create)(PCI::DeviceIdentifier const&) = nullptr;
 };
 
 static constexpr PCIGPUDriverInitializer s_initializers[] = {
@@ -163,7 +163,7 @@ UNMAP_AFTER_INIT void GPUManagement::initialize_preset_resolution_generic_displa
         multiboot_framebuffer_pitch);
 }
 
-UNMAP_AFTER_INIT bool GPUManagement::initialize()
+UNMAP_AFTER_INIT void GPUManagement::initialize()
 {
 
     /* Explanation on the flow here:
@@ -197,7 +197,7 @@ UNMAP_AFTER_INIT bool GPUManagement::initialize()
     auto gpu_subsystem_mode = kernel_command_line().gpu_subsystem_mode();
     if (gpu_subsystem_mode == CommandLine::GPUSubsystemMode::Disabled) {
         VERIFY(!m_console);
-        return true;
+        return;
     }
 
     // Note: Don't try to initialize an ISA Bochs VGA adapter if PCI hardware is
@@ -206,26 +206,26 @@ UNMAP_AFTER_INIT bool GPUManagement::initialize()
     // for the framebuffer.
     if (PCI::Access::is_hardware_disabled() && !(gpu_subsystem_mode == CommandLine::GPUSubsystemMode::Limited && !multiboot_framebuffer_addr.is_null() && multiboot_framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_RGB)) {
 #if ARCH(X86_64)
-        auto vga_isa_bochs_display_connector = BochsDisplayConnector::try_create_for_vga_isa_connector();
-        if (vga_isa_bochs_display_connector) {
-            dmesgln("GPU: Using a Bochs ISA VGA compatible adapter");
-            MUST(vga_isa_bochs_display_connector->set_safe_mode_setting());
-            m_platform_board_specific_display_connector = vga_isa_bochs_display_connector;
-            dmesgln("GPU: Invoking manual blanking with VGA ISA ports");
-            m_vga_arbiter->unblank_screen({});
-            return true;
-        }
+        auto vga_isa_bochs_adapter = TRY(BochsGPUAdapter::try_create_for_plain_vga_isa({}));
+        dmesgln("GPU: Using a Bochs ISA VGA compatible adapter");
+        MUST(vga_isa_bochs_adapter->set_safe_mode_setting());
+        dmesgln("GPU: Invoking manual blanking with VGA ISA ports");
+        m_vga_arbiter->unblank_screen({});
+        m_gpu_device_nodes.with([&](auto& list) {
+            list.append(vga_isa_bochs_adapter);
+        });
+        return;
 #endif
     }
 
     if (gpu_subsystem_mode == CommandLine::GPUSubsystemMode::Limited && !multiboot_framebuffer_addr.is_null() && multiboot_framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_RGB) {
         initialize_preset_resolution_generic_display_connector();
-        return true;
+        return;
     }
 
     if (PCI::Access::is_disabled()) {
         dmesgln("GPU: Using an assumed-to-exist ISA VGA compatible generic adapter");
-        return true;
+        return;
     }
 
     MUST(PCI::enumerate([&](PCI::DeviceIdentifier const& device_identifier) {
@@ -247,14 +247,7 @@ UNMAP_AFTER_INIT bool GPUManagement::initialize()
     // and is not useful for us.
     if (m_gpu_devices.is_empty() && !multiboot_framebuffer_addr.is_null() && multiboot_framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_RGB) {
         initialize_preset_resolution_generic_display_connector();
-        return true;
     }
-
-    if (m_gpu_devices.is_empty()) {
-        dbgln("No graphics adapter was initialized.");
-        return false;
-    }
-    return true;
 }
 
 void GPUManagement::set_console(GPU::Console& console)

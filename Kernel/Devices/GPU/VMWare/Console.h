@@ -25,7 +25,6 @@ private:
     virtual u8* framebuffer_data() override;
 
     VMWareFramebufferConsole(VMWareDisplayConnector const& parent_display_connector, DisplayConnector::ModeSetting current_resolution);
-    LockRefPtr<VMWareDisplayConnector> m_parent_display_connector;
     bool m_dirty { false };
 };
 
