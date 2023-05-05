@@ -106,6 +106,7 @@ set(KERNEL_SOURCES
     Devices/GPU/VirtIO/Console.cpp
     Devices/GPU/VirtIO/GPU3DDevice.cpp
     Devices/GPU/VirtIO/GraphicsAdapter.cpp
+    Devices/HID/USB/MouseDevice.cpp
     Devices/Storage/ATA/AHCI/Controller.cpp
     Devices/Storage/ATA/AHCI/Port.cpp
     Devices/Storage/ATA/AHCI/InterruptHandler.cpp

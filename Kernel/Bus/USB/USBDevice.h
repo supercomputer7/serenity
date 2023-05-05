@@ -58,6 +58,8 @@ public:
     ErrorOr<size_t> control_transfer(u8 request_type, u8 request, u16 value, u16 index, u16 length, void* data);
 
     Vector<USBConfiguration> const& configurations() const { return m_configurations; }
+    Pipe* interrupt_pipe() { return m_interrupt_in_pipe.ptr(); }
+    void set_interrupt_in_pipe(Badge<USBConfiguration>, NonnullOwnPtr<Pipe>);
 
     void set_driver(Driver& driver) { m_driver = driver; }
     void detach()
@@ -84,6 +86,7 @@ protected:
 
     NonnullLockRefPtr<USBController> m_controller;
     NonnullOwnPtr<ControlPipe> m_default_pipe; // Default communication pipe (endpoint0) used during enumeration
+    OwnPtr<Pipe> m_interrupt_in_pipe;
 
     LockRefPtr<Driver> m_driver;
 
