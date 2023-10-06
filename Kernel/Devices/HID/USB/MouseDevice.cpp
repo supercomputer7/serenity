@@ -10,7 +10,7 @@
 #include <Kernel/Bus/USB/USBTransfer.h>
 #include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Devices/HID/USB/MouseDevice.h>
-#include <Kernel/KString.h>
+#include <Kernel/Library/KString.h>
 
 namespace Kernel {
 

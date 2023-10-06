@@ -13,8 +13,8 @@
 #include <Kernel/API/MousePacket.h>
 #include <Kernel/Bus/USB/USBDevice.h>
 #include <Kernel/Devices/HID/MouseDevice.h>
-#include <Kernel/KString.h>
-#include <Kernel/Random.h>
+#include <Kernel/Library/KString.h>
+#include <Kernel/Security/Random.h>
 
 namespace Kernel {
 
