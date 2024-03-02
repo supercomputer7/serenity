@@ -38,6 +38,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/Net/E1000e.cpp
     Bus/PCI/Drivers/Net/RTL8168.cpp
     Bus/PCI/Drivers/Serial/8250.cpp
+    Bus/PCI/Drivers/Storage/SATA/AHCI.cpp
     Bus/PCI/Drivers/Storage/NVMe/NVMe.cpp
     Bus/PCI/Drivers/Storage/NVMe/VolumeManagementDevice.cpp
     Bus/PCI/Access.cpp
@@ -110,6 +111,11 @@ set(KERNEL_SOURCES
     Devices/GPU/Management.cpp
     Devices/Loop/LoopDevice.cpp
     Devices/Serial/PCI/Serial8250Device.cpp
+    Devices/Storage/AHCI/ATADevice.cpp
+    Devices/Storage/AHCI/ATADiskDevice.cpp
+    Devices/Storage/AHCI/Controller.cpp
+    Devices/Storage/AHCI/InterruptHandler.cpp
+    Devices/Storage/AHCI/Port.cpp
     Devices/Storage/NVMe/NVMeController.cpp
     Devices/Storage/NVMe/NVMeNameSpace.cpp
     Devices/Storage/NVMe/NVMeInterruptQueue.cpp
