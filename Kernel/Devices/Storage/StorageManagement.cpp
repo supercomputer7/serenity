@@ -19,9 +19,7 @@
 #include <Kernel/Bus/PCI/Controller/VolumeManagementDevice.h>
 #include <Kernel/Devices/BlockDevice.h>
 #include <Kernel/Devices/DeviceManagement.h>
-#include <Kernel/Devices/Storage/AHCI/Controller.h>
 #include <Kernel/Devices/Storage/NVMe/NVMeController.h>
-#include <Kernel/Devices/Storage/SD/PCISDHostController.h>
 #include <Kernel/Devices/Storage/SD/SDHostController.h>
 #include <Kernel/Devices/Storage/StorageManagement.h>
 #include <Kernel/Devices/Storage/VirtIO/VirtIOBlockController.h>
@@ -95,29 +93,10 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool nvme_pol
     VERIFY(m_controllers.is_empty());
 
     if (!kernel_command_line().disable_physical_storage()) {
-        // NOTE: Search for VMD devices before actually searching for storage controllers
-        // because the VMD device is only a bridge to such (NVMe) controllers.
-        MUST(PCI::enumerate([&](PCI::DeviceIdentifier const& device_identifier) -> void {
-            constexpr PCI::HardwareID vmd_device = { 0x8086, 0x9a0b };
-            if (device_identifier.hardware_id() == vmd_device) {
-                auto controller = PCI::VolumeManagementDevice::must_create(device_identifier);
-                MUST(PCI::Access::the().add_host_controller_and_scan_for_devices(move(controller)));
-            }
-        }));
-
-        RefPtr<VirtIOBlockController> virtio_controller;
-
         auto const& handle_mass_storage_device = [&](PCI::DeviceIdentifier const& device_identifier) {
             using SubclassID = PCI::MassStorage::SubclassID;
 
             auto subclass_code = static_cast<SubclassID>(device_identifier.subclass_code().value());
-            if (subclass_code == SubclassID::SATAController
-                && device_identifier.prog_if() == PCI::MassStorage::SATAProgIF::AHCI) {
-                if (auto ahci_controller_or_error = AHCIController::initialize(device_identifier); !ahci_controller_or_error.is_error())
-                    m_controllers.append(ahci_controller_or_error.value());
-                else
-                    dmesgln("Unable to initialize AHCI controller: {}", ahci_controller_or_error.error());
-            }
             if (subclass_code == SubclassID::NVMeController) {
                 auto controller = NVMeController::try_initialize(device_identifier, nvme_poll);
                 if (controller.is_error()) {
@@ -126,39 +105,12 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool nvme_pol
                     m_controllers.append(controller.release_value());
                 }
             }
-            if (VirtIOBlockController::is_handled(device_identifier)) {
-                if (virtio_controller.is_null()) {
-                    auto controller = make_ref_counted<VirtIOBlockController>();
-                    m_controllers.append(controller);
-                    virtio_controller = controller;
-                }
-                if (auto res = virtio_controller->add_device(device_identifier); res.is_error()) {
-                    dmesgln("Unable to initialize VirtIO block device: {}", res.error());
-                }
-            }
-        };
-
-        auto const& handle_base_device = [&](PCI::DeviceIdentifier const& device_identifier) {
-            using SubclassID = PCI::Base::SubclassID;
-
-            auto subclass_code = static_cast<SubclassID>(device_identifier.subclass_code().value());
-            if (subclass_code == SubclassID::SDHostController) {
-
-                auto sdhc_or_error = PCISDHostController::try_initialize(device_identifier);
-                if (sdhc_or_error.is_error()) {
-                    dmesgln("PCI: Failed to initialize SD Host Controller ({} - {}): {}", device_identifier.address(), device_identifier.hardware_id(), sdhc_or_error.error());
-                } else {
-                    m_controllers.append(sdhc_or_error.release_value());
-                }
-            }
         };
 
         MUST(PCI::enumerate([&](PCI::DeviceIdentifier const& device_identifier) -> void {
             auto class_code = device_identifier.class_code();
             if (class_code == PCI::ClassID::MassStorage) {
                 handle_mass_storage_device(device_identifier);
-            } else if (class_code == PCI::ClassID::Base) {
-                handle_base_device(device_identifier);
             }
         }));
     }
