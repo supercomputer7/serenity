@@ -37,6 +37,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/Net/E1000.cpp
     Bus/PCI/Drivers/Net/E1000e.cpp
     Bus/PCI/Drivers/Net/RTL8168.cpp
+    Bus/PCI/Drivers/RNG/VirtIO.cpp
     Bus/PCI/Drivers/Serial/8250.cpp
     Bus/PCI/Drivers/Storage/SATA/AHCI.cpp
     Bus/PCI/Drivers/Storage/NVMe/NVMe.cpp
@@ -281,6 +282,7 @@ set(KERNEL_SOURCES
     Net/Socket.cpp
     Net/TCPSocket.cpp
     Net/UDPSocket.cpp
+    Security/Random/VirtIO/RNG.cpp
     Security/AddressSanitizer.cpp
     Security/Credentials.cpp
     Security/Random.cpp
