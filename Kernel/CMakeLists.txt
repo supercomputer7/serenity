@@ -31,6 +31,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/Audio/AC97.cpp
     Bus/PCI/Drivers/Audio/IntelHDA.cpp
     Bus/PCI/Drivers/GPU/BochsDisplay.cpp
+    Bus/PCI/Drivers/GPU/Intel.cpp
     Bus/PCI/Drivers/GPU/3dfx.cpp
     Bus/PCI/Drivers/Net/E1000.cpp
     Bus/PCI/Drivers/Net/E1000e.cpp
@@ -89,6 +90,15 @@ set(KERNEL_SOURCES
     Devices/GPU/Console/BootFramebufferConsole.cpp
     Devices/GPU/Console/GenericFramebufferConsole.cpp
     Devices/GPU/Console/ContiguousFramebufferConsole.cpp
+    Devices/GPU/Intel/Auxiliary/GMBusConnector.cpp
+    Devices/GPU/Intel/Plane/DisplayPlane.cpp
+    Devices/GPU/Intel/Plane/G33DisplayPlane.cpp
+    Devices/GPU/Intel/Transcoder/AnalogDisplayTranscoder.cpp
+    Devices/GPU/Intel/Transcoder/DisplayTranscoder.cpp
+    Devices/GPU/Intel/Transcoder/PLL.cpp
+    Devices/GPU/Intel/DisplayConnectorGroup.cpp
+    Devices/GPU/Intel/NativeDisplayConnector.cpp
+    Devices/GPU/Intel/NativeGraphicsAdapter.cpp
     Devices/GPU/DisplayConnector.cpp
     Devices/GPU/Generic/DisplayConnector.cpp
     Devices/GPU/Management.cpp
