@@ -41,6 +41,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/RNG/VirtIO.cpp
     Bus/PCI/Drivers/Serial/8250.cpp
     Bus/PCI/Drivers/Storage/SATA/AHCI.cpp
+    Bus/PCI/Drivers/Serial/VirtIOConsole.cpp
     Bus/PCI/Drivers/Storage/NVMe/NVMe.cpp
     Bus/PCI/Drivers/Storage/NVMe/VolumeManagementDevice.cpp
     Bus/PCI/Drivers/Storage/SD/SDHCI.cpp
@@ -126,6 +127,8 @@ set(KERNEL_SOURCES
     Devices/Storage/AHCI/Controller.cpp
     Devices/Storage/AHCI/InterruptHandler.cpp
     Devices/Storage/AHCI/Port.cpp
+    Devices/Serial/VirtIO/Console.cpp
+    Devices/Serial/VirtIO/ConsolePort.cpp
     Devices/Storage/NVMe/NVMeController.cpp
     Devices/Storage/NVMe/NVMeNameSpace.cpp
     Devices/Storage/NVMe/NVMeInterruptQueue.cpp
