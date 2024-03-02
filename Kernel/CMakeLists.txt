@@ -41,6 +41,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/Storage/SATA/AHCI.cpp
     Bus/PCI/Drivers/Storage/NVMe/NVMe.cpp
     Bus/PCI/Drivers/Storage/NVMe/VolumeManagementDevice.cpp
+    Bus/PCI/Drivers/Storage/SD/SDHCI.cpp
     Bus/PCI/Access.cpp
     Bus/PCI/Bus.cpp
     Bus/PCI/Capability.cpp
@@ -121,6 +122,7 @@ set(KERNEL_SOURCES
     Devices/Storage/NVMe/NVMeInterruptQueue.cpp
     Devices/Storage/NVMe/NVMePollQueue.cpp
     Devices/Storage/NVMe/NVMeQueue.cpp
+    Devices/Storage/SD/PCISDHostController.cpp
     Devices/Storage/SD/SDHostController.cpp
     Devices/Storage/SD/SDMemoryCard.cpp
     Devices/Storage/USB/BulkSCSIInterface.cpp
