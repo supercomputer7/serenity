@@ -59,7 +59,6 @@ set(KERNEL_SOURCES
     Devices/Device.cpp
     Devices/DeviceManagement.cpp
     Devices/FUSEDevice.cpp
-    Devices/PCISerialDevice.cpp
     Devices/SerialDevice.cpp
     Devices/HID/KeyboardDevice.cpp
     Devices/HID/Management.cpp
