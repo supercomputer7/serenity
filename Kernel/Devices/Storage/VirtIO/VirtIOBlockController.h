@@ -21,10 +21,6 @@ public:
     static bool is_handled(PCI::DeviceIdentifier const& device_identifier);
     ErrorOr<void> add_device(PCI::DeviceIdentifier const& device_identifier);
 
-    // ^StorageController
-    virtual LockRefPtr<StorageDevice> device(u32 index) const override;
-    virtual size_t devices_count() const override { return m_devices.size(); }
-
 protected:
     virtual void complete_current_request(AsyncDeviceRequest::RequestResult) override;
 

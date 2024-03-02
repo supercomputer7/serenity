@@ -40,11 +40,6 @@ ErrorOr<void> VirtIOBlockController::add_device(PCI::DeviceIdentifier const& dev
     return {};
 }
 
-LockRefPtr<StorageDevice> VirtIOBlockController::device(u32 index) const
-{
-    return m_devices[index];
-}
-
 void VirtIOBlockController::complete_current_request(AsyncDeviceRequest::RequestResult)
 {
     VERIFY_NOT_REACHED();
