@@ -128,6 +128,8 @@ public:
     // FIXME: Maybe use badges here?
     void set_capabilities(Vector<Capability>);
 
+    Optional<Bus&> parent_bus();
+
 private:
     u8 config_space_read8_locked(PCI::RegisterOffset field);
     u16 config_space_read16_locked(PCI::RegisterOffset field);
@@ -152,6 +154,13 @@ private:
     // For host bridge devices, we set it in the construction in the HostController
     // constructor and never again afterwards.
     Optional<HostController&> m_host_controller {};
+
+    // NOTE: This class member doesn't need any locking because we immediately
+    // set it after construction (and never change it again) for all PCI devices
+    // except for host bridges.
+    // For host bridge devices, we usually don't set this, as most PCI host bridges
+    // don't have a "parent" PCI bus.
+    Optional<Bus&> m_parent_bus {};
 
     Vector<Capability> m_capabilities;
     IntrusiveListNode<PCI::Device, NonnullRefPtr<PCI::Device>> m_bus_list_node;

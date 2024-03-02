@@ -154,6 +154,7 @@ ErrorOr<void> HostController::enumerate_function(Bus& bus, DeviceNumber device, 
 
     TRY(enumerate_capabilities_for_function(bus, enumerable_device));
     bus.attach_child_device(enumerable_device);
+    enumerable_device->m_parent_bus = bus;
     m_attached_devices.with([enumerable_device](auto& list) {
         list.append(*enumerable_device);
     });

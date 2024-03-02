@@ -43,6 +43,11 @@ Device::Device(EnumerableDeviceIdentifier const& identifier)
     m_interrupt_range.m_irq_count = 1;
 }
 
+Optional<Bus&> Device::parent_bus()
+{
+    return m_parent_bus;
+}
+
 void Device::set_capabilities(Vector<Capability> capabilities)
 {
     VERIFY(m_capabilities.is_empty());
