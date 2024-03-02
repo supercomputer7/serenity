@@ -40,8 +40,6 @@ set(KERNEL_SOURCES
     Bus/USB/USBManagement.cpp
     Bus/USB/USBPipe.cpp
     Bus/USB/USBTransfer.cpp
-    Bus/VirtIO/Transport/PCIe/InterruptHandler.cpp
-    Bus/VirtIO/Transport/PCIe/TransportLink.cpp
     Bus/VirtIO/Transport/Entity.cpp
     Bus/VirtIO/Transport/InterruptHandler.cpp
     Bus/VirtIO/Device.cpp
@@ -66,7 +64,6 @@ set(KERNEL_SOURCES
     Devices/HID/PS2/KeyboardDevice.cpp
     Devices/HID/PS2/MouseDevice.cpp
     Devices/HID/USB/MouseDevice.cpp
-    Devices/HID/VirtIO/Input.cpp
     Devices/Generic/ConsoleDevice.cpp
     Devices/Generic/DeviceControlDevice.cpp
     Devices/Generic/FullDevice.cpp
@@ -85,8 +82,6 @@ set(KERNEL_SOURCES
     Devices/GPU/Generic/DisplayConnector.cpp
     Devices/GPU/Management.cpp
     Devices/Loop/LoopDevice.cpp
-    Devices/Serial/VirtIO/Console.cpp
-    Devices/Serial/VirtIO/ConsolePort.cpp
     Devices/Storage/NVMe/NVMeController.cpp
     Devices/Storage/NVMe/NVMeNameSpace.cpp
     Devices/Storage/NVMe/NVMeInterruptQueue.cpp
@@ -95,8 +90,6 @@ set(KERNEL_SOURCES
     Devices/Storage/SD/SDHostController.cpp
     Devices/Storage/SD/SDMemoryCard.cpp
     Devices/Storage/USB/BulkSCSIInterface.cpp
-    Devices/Storage/VirtIO/VirtIOBlockController.cpp
-    Devices/Storage/VirtIO/VirtIOBlockDevice.cpp
     Devices/Storage/StorageController.cpp
     Devices/Storage/StorageDevice.cpp
     Devices/Storage/StorageManagement.cpp
@@ -243,7 +236,6 @@ set(KERNEL_SOURCES
     Net/Socket.cpp
     Net/TCPSocket.cpp
     Net/UDPSocket.cpp
-    Security/Random/VirtIO/RNG.cpp
     Security/AddressSanitizer.cpp
     Security/Credentials.cpp
     Security/Random.cpp
