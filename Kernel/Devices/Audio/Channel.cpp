@@ -7,6 +7,8 @@
 #include <Kernel/API/Ioctl.h>
 #include <Kernel/API/MajorNumberAllocation.h>
 #include <Kernel/Devices/Audio/Management.h>
+#include <Kernel/Devices/Audio/Channel.h>
+#include <Kernel/Devices/Audio/Controller.h>
 #include <Kernel/Devices/DeviceManagement.h>
 #include <Kernel/Devices/Generic/RandomDevice.h>
 #include <Kernel/Sections.h>
@@ -14,7 +16,9 @@
 
 namespace Kernel {
 
-UNMAP_AFTER_INIT ErrorOr<NonnullRefPtr<AudioChannel>> AudioChannel::create(AudioController const& controller, size_t channel_index)
+static Atomic<u32> s_device_minor_number;
+
+ErrorOr<NonnullRefPtr<AudioChannel>> AudioChannel::create(AudioController const& controller, size_t channel_index)
 {
     auto channel = TRY(DeviceManagement::try_create_device<AudioChannel>(controller, channel_index));
 
@@ -28,7 +32,7 @@ UNMAP_AFTER_INIT ErrorOr<NonnullRefPtr<AudioChannel>> AudioChannel::create(Audio
 }
 
 AudioChannel::AudioChannel(AudioController const& controller, size_t channel_index)
-    : CharacterDevice(MajorAllocation::CharacterDeviceFamily::Audio, AudioManagement::the().generate_storage_minor_number())
+    : CharacterDevice(MajorAllocation::CharacterDeviceFamily::Audio, ++s_device_minor_number)
     , m_controller(controller)
     , m_channel_index(channel_index)
 {

@@ -14,7 +14,6 @@
 #endif
 #include <Kernel/API/DeviceFileTypes.h>
 #include <Kernel/Boot/CommandLine.h>
-#include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/PCI/Controller/VolumeManagementDevice.h>
 #include <Kernel/Devices/BlockDevice.h>
@@ -76,34 +75,6 @@ u32 StorageManagement::generate_relative_sd_controller_id(Badge<SDHostController
     auto controller_id = s_relative_sd_controller_id.load();
     s_relative_sd_controller_id++;
     return controller_id;
-}
-
-UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool nvme_poll)
-{
-    VERIFY(m_controllers.is_empty());
-
-    if (!kernel_command_line().disable_physical_storage()) {
-        auto const& handle_mass_storage_device = [&](PCI::DeviceIdentifier const& device_identifier) {
-            using SubclassID = PCI::MassStorage::SubclassID;
-
-            auto subclass_code = static_cast<SubclassID>(device_identifier.subclass_code().value());
-            if (subclass_code == SubclassID::NVMeController) {
-                auto controller = NVMeController::try_initialize(device_identifier, nvme_poll);
-                if (controller.is_error()) {
-                    dmesgln("Unable to initialize NVMe controller: {}", controller.error());
-                } else {
-                    m_controllers.append(controller.release_value());
-                }
-            }
-        };
-
-        MUST(PCI::enumerate([&](PCI::DeviceIdentifier const& device_identifier) -> void {
-            auto class_code = device_identifier.class_code();
-            if (class_code == PCI::ClassID::MassStorage) {
-                handle_mass_storage_device(device_identifier);
-            }
-        }));
-    }
 }
 
 UNMAP_AFTER_INIT void StorageManagement::dump_storage_devices_and_partitions() const
@@ -475,12 +446,9 @@ NonnullRefPtr<FileSystem> StorageManagement::root_filesystem() const
     return file_system;
 }
 
-UNMAP_AFTER_INIT void StorageManagement::initialize(bool poll)
+UNMAP_AFTER_INIT void StorageManagement::initialize()
 {
     VERIFY(s_storage_device_minor_number == 0);
-    if (!PCI::Access::is_disabled()) {
-        enumerate_pci_controllers(poll);
-    }
 
 #if ARCH(AARCH64)
     auto& rpi_sdhc = RPi::SDHostController::the();

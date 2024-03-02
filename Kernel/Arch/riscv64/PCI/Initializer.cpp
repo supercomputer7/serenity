@@ -7,17 +7,12 @@
 #include <AK/SetOnce.h>
 #include <Kernel/Arch/CPU.h>
 #include <Kernel/Boot/CommandLine.h>
-#include <Kernel/Bus/PCI/API.h>
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/PCI/Controller/MemoryBackedHostBridge.h>
-#include <Kernel/Bus/PCI/Initializer.h>
 #include <Kernel/FileSystem/SysFS/Subsystems/Bus/PCI/BusDirectory.h>
 #include <Userland/Libraries/LibDeviceTree/DeviceTree.h>
 
 namespace Kernel::PCI {
-
-SetOnce g_pci_access_io_probe_failed;
-SetOnce g_pci_access_is_disabled_from_commandline;
 
 void initialize()
 {

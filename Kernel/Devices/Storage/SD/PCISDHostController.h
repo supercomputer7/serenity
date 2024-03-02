@@ -36,7 +36,7 @@ private:
     SlotInformationRegister read_slot_information() const
     {
         SpinlockLocker locker(device_identifier().operation_lock());
-        return bit_cast<SlotInformationRegister>(PCI::Access::the().read8_field(device_identifier(), 0x40));
+        //return bit_cast<SlotInformationRegister>(PCI::Access::read8_field(device_identifier(), 0x40));
     }
 
     Memory::TypedMapping<SD::HostControlRegisterMap volatile> m_registers;

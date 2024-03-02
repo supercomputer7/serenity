@@ -28,10 +28,14 @@ set(KERNEL_SOURCES
     Bus/PCI/Controller/HostController.cpp
     Bus/PCI/Controller/MemoryBackedHostBridge.cpp
     Bus/PCI/Controller/VolumeManagementDevice.cpp
+    Bus/PCI/Drivers/Audio/IntelHDA.cpp
+    Bus/PCI/Drivers/GPU/BochsDisplay.cpp
+    Bus/PCI/Drivers/Net/E1000.cpp
+    Bus/PCI/Drivers/Storage/NVMe/NVMe.cpp
     Bus/PCI/Access.cpp
-    Bus/PCI/API.cpp
+    Bus/PCI/Bus.cpp
+    Bus/PCI/Capability.cpp
     Bus/PCI/Device.cpp
-    Bus/PCI/DeviceIdentifier.cpp
     Bus/USB/Drivers/HID/MouseDriver.cpp
     Bus/USB/Drivers/MassStorage/MassStorageDriver.cpp
     Bus/USB/USBConfiguration.cpp
@@ -52,7 +56,6 @@ set(KERNEL_SOURCES
     Devices/Audio/IntelHDA/Format.cpp
     Devices/Audio/IntelHDA/InterruptHandler.cpp
     Devices/Audio/IntelHDA/Stream.cpp
-    Devices/Audio/Management.cpp
     Devices/BlockDevice.cpp
     Devices/CharacterDevice.cpp
     Devices/Device.cpp

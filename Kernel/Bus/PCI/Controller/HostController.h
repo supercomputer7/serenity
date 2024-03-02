@@ -6,72 +6,28 @@
 
 #pragma once
 
+#include <AK/AtomicRefCounted.h>
 #include <AK/Bitmap.h>
 #include <AK/HashMap.h>
 #include <AK/Vector.h>
+#include <Kernel/Bus/PCI/Bus.h>
 #include <Kernel/Bus/PCI/Definitions.h>
+#include <Kernel/Bus/PCI/Device.h>
 #include <Kernel/Locking/Spinlock.h>
 
 namespace Kernel::PCI {
 
-AK_TYPEDEF_DISTINCT_ORDERED_ID(u8, BusNumber);
-AK_TYPEDEF_DISTINCT_ORDERED_ID(u8, DeviceNumber);
-AK_TYPEDEF_DISTINCT_ORDERED_ID(u8, FunctionNumber);
+class HostController
+    : public AtomicRefCounted<HostController>
+    , public LockWeakable<HostController> {
+    friend class Access;
 
-struct PCIInterruptSpecifier {
-    u8 interrupt_pin { 0 };
-    FunctionNumber function { 0 };
-    DeviceNumber device { 0 };
-    BusNumber bus { 0 };
-
-    bool operator==(PCIInterruptSpecifier const& other) const
-    {
-        return bus == other.bus && device == other.device && function == other.function && interrupt_pin == other.interrupt_pin;
-    }
-    PCIInterruptSpecifier operator&(PCIInterruptSpecifier other) const
-    {
-        return PCIInterruptSpecifier {
-            .interrupt_pin = static_cast<u8>(interrupt_pin & other.interrupt_pin),
-            .function = function.value() & other.function.value(),
-            .device = device.value() & other.device.value(),
-            .bus = bus.value() & other.bus.value(),
-        };
-    }
-
-    PCIInterruptSpecifier& operator&=(PCIInterruptSpecifier const& other)
-    {
-        *this = *this & other;
-        return *this;
-    }
-};
-
-}
-namespace AK {
-template<>
-struct Traits<Kernel::PCI::PCIInterruptSpecifier> : public DefaultTraits<Kernel::PCI::PCIInterruptSpecifier> {
-    static unsigned hash(Kernel::PCI::PCIInterruptSpecifier value)
-    {
-        return int_hash(value.bus.value() << 24 | value.device.value() << 16 | value.function.value() << 8 | value.interrupt_pin);
-    }
-};
-
-}
-namespace Kernel::PCI {
-
-struct PCIConfiguration {
-    FlatPtr mmio_32bit_base { 0 };
-    FlatPtr mmio_32bit_end { 0 };
-    FlatPtr mmio_64bit_base { 0 };
-    FlatPtr mmio_64bit_end { 0 };
-    // The keys contains the bus, device & function at the same offsets as OpenFirmware PCI addresses,
-    // with the least significant 8 bits being the interrupt pin.
-    HashMap<PCIInterruptSpecifier, u64> masked_interrupt_mapping;
-    PCIInterruptSpecifier interrupt_mask;
-};
-
-class HostController {
 public:
     virtual ~HostController() = default;
+
+    ErrorOr<void> enumerate_all_devices(Badge<Access>);
+
+    u32 domain_number() const { return m_domain.domain_number(); }
 
     void write8_field(BusNumber, DeviceNumber, FunctionNumber, u32 field, u8 value);
     void write16_field(BusNumber, DeviceNumber, FunctionNumber, u32 field, u16 value);
@@ -81,25 +37,24 @@ public:
     u16 read16_field(BusNumber, DeviceNumber, FunctionNumber, u32 field);
     u32 read32_field(BusNumber, DeviceNumber, FunctionNumber, u32 field);
 
-    u32 domain_number() const { return m_domain.domain_number(); }
-
-    void enumerate_attached_devices(Function<void(EnumerableDeviceIdentifier const&)> callback, Function<void(EnumerableDeviceIdentifier const&)> post_bridge_callback = nullptr);
-    void configure_attached_devices(PCIConfiguration&);
-
 private:
-    void enumerate_bus(Function<void(EnumerableDeviceIdentifier const&)> const& callback, Function<void(EnumerableDeviceIdentifier const&)>& post_bridge_callback, BusNumber, bool recursive_search_into_bridges);
-    void enumerate_functions(Function<void(EnumerableDeviceIdentifier const&)> const& callback, Function<void(EnumerableDeviceIdentifier const&)>& post_bridge_callback, BusNumber, DeviceNumber, FunctionNumber, bool recursive_search_into_bridges);
-    void enumerate_device(Function<void(EnumerableDeviceIdentifier const&)> const& callback, Function<void(EnumerableDeviceIdentifier const&)>& post_bridge_callback, BusNumber bus, DeviceNumber device, bool recursive_search_into_bridges);
+    using DevicesList = SpinlockProtected<IntrusiveList<&Device::m_host_controller_list_node>, LockRank::None>;
 
-    void write8_field(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field, u8 value);
-    void write16_field(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field, u16 value);
-    void write32_field(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field, u32 value);
+    ErrorOr<void> enumerate_bus(Bus&, bool recursive);
+    ErrorOr<void> enumerate_function(Bus&, DeviceNumber, FunctionNumber, bool recursive);
+    ErrorOr<void> enumerate_device(Bus&, DeviceNumber, bool recursive);
 
-    u8 read8_field(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field);
-    u16 read16_field(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field);
+    void fill_device_resources(PCI::Device& device);
+    PCI::Resource determine_device_resource_address_and_length(PCI::Device& device, u8 field);
 
-    Optional<u8> get_capabilities_pointer_for_function(BusNumber, DeviceNumber, FunctionNumber);
-    Vector<Capability> get_capabilities_for_function(BusNumber, DeviceNumber, FunctionNumber);
+    u8 read8_field_locked(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field);
+    u16 read16_field_locked(BusNumber, DeviceNumber, FunctionNumber, RegisterOffset field);
+
+    Optional<u8> get_capabilities_pointer_for_function(Bus&, DeviceNumber, FunctionNumber);
+
+    void enumerate_msi_capabilities_for_function(Bus&, PCI::Device&, Vector<PCI::Capability> const&);
+
+    size_t calculate_bar_resource_space_size(Bus& bus, DeviceNumber device, FunctionNumber function, size_t resource_index);
 
 protected:
     virtual void write8_field_locked(BusNumber, DeviceNumber, FunctionNumber, u32 field, u8 value) = 0;
@@ -110,14 +65,17 @@ protected:
     virtual u16 read16_field_locked(BusNumber, DeviceNumber, FunctionNumber, u32 field) = 0;
     virtual u32 read32_field_locked(BusNumber, DeviceNumber, FunctionNumber, u32 field) = 0;
 
-    explicit HostController(PCI::Domain const& domain);
+    explicit HostController(PCI::Domain const& domain, NonnullRefPtr<Bus> root_bus);
 
-    const PCI::Domain m_domain;
+    ErrorOr<void> enumerate_capabilities_for_function(Bus&, PCI::Device&);
+
+    PCI::Domain const m_domain;
+    NonnullRefPtr<Bus> const m_root_bus;
 
     Spinlock<LockRank::None> m_access_lock;
 
 private:
+    DevicesList m_attached_devices;
     Bitmap m_enumerated_buses;
 };
-
 }

@@ -25,7 +25,7 @@ class StorageManagement {
 
 public:
     StorageManagement();
-    void initialize(bool nvme_poll);
+    void initialize();
     static StorageManagement& the();
 
     bool determine_boot_device(StringView boot_argument);
@@ -48,7 +48,6 @@ public:
     void detach_device(StorageDevice&);
 
 private:
-    void enumerate_pci_controllers(bool nvme_poll);
     void determine_boot_device_with_partition_uuid();
 
     static void enumerate_device_holder_partitions(void* holder);

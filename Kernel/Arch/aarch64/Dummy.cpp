@@ -9,7 +9,6 @@
 
 #include <AK/SetOnce.h>
 #include <Kernel/Arch/Delay.h>
-#include <Kernel/Bus/PCI/Initializer.h>
 #include <Kernel/Sections.h>
 #include <Kernel/Tasks/Process.h>
 #include <Kernel/kstdio.h>
