@@ -9,9 +9,6 @@
 #include <AK/Singleton.h>
 #include <AK/StringView.h>
 #include <AK/UUID.h>
-#if ARCH(AARCH64)
-#    include <Kernel/Arch/aarch64/RPi/SDHostController.h>
-#endif
 #include <Kernel/API/DeviceFileTypes.h>
 #include <Kernel/Boot/CommandLine.h>
 #include <Kernel/Bus/PCI/Access.h>
@@ -448,16 +445,6 @@ NonnullRefPtr<FileSystem> StorageManagement::root_filesystem() const
 
 UNMAP_AFTER_INIT void StorageManagement::initialize()
 {
-    VERIFY(s_storage_device_minor_number == 0);
-
-#if ARCH(AARCH64)
-    auto& rpi_sdhc = RPi::SDHostController::the();
-    if (auto maybe_error = rpi_sdhc.initialize(); maybe_error.is_error()) {
-        dmesgln("Unable to initialize RaspberryPi's SD Host Controller: {}", maybe_error.error());
-    } else {
-        m_controllers.append(rpi_sdhc);
-    }
-#endif
 }
 
 StorageManagement& StorageManagement::the()
