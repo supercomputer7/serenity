@@ -48,6 +48,7 @@ set(KERNEL_SOURCES
     Bus/PCI/Drivers/Storage/SD/SDHCI.cpp
     Bus/PCI/Drivers/USB/EHCI.cpp
     Bus/PCI/Drivers/USB/UHCI.cpp
+    Bus/PCI/Drivers/USB/XHCI.cpp
     Bus/PCI/Access.cpp
     Bus/PCI/Bus.cpp
     Bus/PCI/Capability.cpp
