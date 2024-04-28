@@ -8,6 +8,7 @@
 #include <AK/CharacterTypes.h>
 #include <AK/GenericLexer.h>
 #include <AK/Optional.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibMain/Main.h>
 #include <ctype.h>
@@ -94,9 +95,9 @@ static ErrorOr<ByteString> build_set(StringView specification)
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool complement_flag = false;
-    bool delete_flag = false;
-    bool squeeze_flag = false;
+    SetOnce complement_flag;
+    SetOnce delete_flag;
+    SetOnce squeeze_flag;
     StringView from_chars;
     StringView to_chars;
 

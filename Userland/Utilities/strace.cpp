@@ -8,6 +8,7 @@
 #include <AK/Format.h>
 #include <AK/HashTable.h>
 #include <AK/IPv4Address.h>
+#include <AK/SetOnce.h>
 #include <AK/StdLibExtras.h>
 #include <AK/Types.h>
 #include <Kernel/API/SyscallString.h>
@@ -286,28 +287,28 @@ struct Formatter<BitflagDerivative> : StandardFormatter {
 
     ErrorOr<void> format(FormatBuilder& format_builder, BitflagDerivative const& value)
     {
-        bool had_any_output = false;
+        SetOnce had_any_output;
         int remaining = value.flagset;
 
         for (BitflagOption const& option : BitflagDerivative::options) {
             if ((remaining & option.value) != option.value)
                 continue;
             remaining &= ~option.value;
-            if (had_any_output)
+            if (had_any_output.was_set())
                 TRY(format_builder.put_literal(" | "sv));
             TRY(format_builder.put_literal(option.name));
-            had_any_output = true;
+            had_any_output.set();
         }
 
         if (remaining != 0) {
             // No more BitflagOptions are available. Any remaining flags are unrecognized.
-            if (had_any_output)
+            if (had_any_output.was_set())
                 TRY(format_builder.put_literal(" | "sv));
             format_builder.builder().appendff("{:#x} (?)", static_cast<unsigned>(remaining));
-            had_any_output = true;
+            had_any_output.set();
         }
 
-        if (!had_any_output) {
+        if (!had_any_output.was_set()) {
             if constexpr (requires { BitflagDerivative::default_; })
                 TRY(format_builder.put_literal(BitflagDerivative::default_));
             else

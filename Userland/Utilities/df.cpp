@@ -7,6 +7,7 @@
 #include <AK/JsonArray.h>
 #include <AK/JsonObject.h>
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibMain/Main.h>
@@ -25,9 +26,9 @@ struct FileSystem {
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool flag_human_readable = false;
-    bool flag_human_readable_si = false;
-    bool flag_inode_info = false;
+    SetOnce flag_human_readable;
+    SetOnce flag_human_readable_si;
+    SetOnce flag_inode_info;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Display free disk space of each partition.");

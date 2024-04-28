@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
 #include <LibCore/System.h>
@@ -15,7 +16,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath exec"));
 
-    bool ignore_env = false;
+    SetOnce ignore_env;
     StringView split_string {};
     Vector<ByteString> values_to_set;
     Vector<ByteString> values_to_unset;

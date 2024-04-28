@@ -7,6 +7,7 @@
 #include <AK/ByteString.h>
 #include <AK/JsonObject.h>
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -19,7 +20,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil(nullptr, nullptr));
 
     StringView pid;
-    static bool extended = false;
+    SetOnce extended;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(extended, "Extended output", nullptr, 'x');

@@ -6,6 +6,7 @@
  */
 
 #include <AK/ScopeGuard.h>
+#include <AK/SetOnce.h>
 #include <LibCore/Account.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/GetPassword.h>
@@ -27,9 +28,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil("/etc", "rwc"));
     TRY(Core::System::unveil(nullptr, nullptr));
 
-    bool del = false;
-    bool lock = false;
-    bool unlock = false;
+    SetOnce del;
+    SetOnce lock;
+    SetOnce unlock;
     StringView username {};
 
     auto args_parser = Core::ArgsParser();

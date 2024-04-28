@@ -6,6 +6,7 @@
 
 #include <AK/ByteString.h>
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <AK/StringView.h>
 #include <LibCore/ArgsParser.h>
@@ -84,7 +85,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     ByteString path {};
     Optional<size_t> recursive_iteration_max;
-    bool force_without_valid_interpreter = false;
+    SetOnce force_without_valid_interpreter;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(recursive_iteration_max, "Max library resolving recursion", "max-recursion", 'r', "max recursion-level");

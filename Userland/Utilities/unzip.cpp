@@ -7,6 +7,7 @@
 #include <AK/Assertions.h>
 #include <AK/DOSPackedTime.h>
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <AK/StringUtils.h>
 #include <LibArchive/Zip.h>
 #include <LibCompress/Deflate.h>
@@ -104,8 +105,8 @@ static bool unpack_zip_member(Archive::ZipMember zip_member, bool quiet)
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     StringView zip_file_path;
-    bool quiet { false };
-    bool list_files { false };
+    SetOnce quiet;
+    SetOnce list_files;
     StringView output_directory_path;
     Vector<StringView> file_filters;
 

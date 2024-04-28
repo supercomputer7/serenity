@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibConfig/Client.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/EventLoop.h>
@@ -16,7 +17,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     StringView group;
     StringView key;
     StringView value_to_write;
-    bool remove = false;
+    SetOnce remove;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Show or modify values in the configuration files through ConfigServer.");

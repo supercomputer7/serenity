@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibLine/Editor.h>
@@ -525,11 +526,11 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     // FIXME: Make these into StringViews once we stop using fopen below.
     ByteString filename = "-";
     ByteString prompt = "?f%f :.(line %l)?e (END):.";
-    bool dont_switch_buffer = false;
-    bool quit_at_eof = false;
-    bool quit_if_one_screen = false;
-    bool emulate_more = false;
-    bool show_line_numbers = false;
+    SetOnce dont_switch_buffer;
+    SetOnce quit_at_eof;
+    SetOnce quit_if_one_screen;
+    SetOnce emulate_more;
+    SetOnce show_line_numbers;
 
     if (LexicalPath::basename(arguments.strings[0]) == "more"sv)
         emulate_more = true;

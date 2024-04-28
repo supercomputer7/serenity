@@ -6,6 +6,7 @@
  */
 
 #include <AK/Function.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibMain/Main.h>
 #include <LibVideo/Containers/Matroska/Reader.h>
@@ -25,8 +26,8 @@
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     StringView filename;
-    bool blocks = false;
-    bool cues = false;
+    SetOnce blocks;
+    SetOnce cues;
     u64 track_number = 0;
 
     Core::ArgsParser args_parser;

@@ -9,6 +9,7 @@
 #include <AK/ByteString.h>
 #include <AK/LexicalPath.h>
 #include <AK/ScopeGuard.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
@@ -121,21 +122,27 @@ ErrorOr<int> serenity_main(Main::Arguments args)
 
     Vector<ByteString> files;
 
-    bool recursive = (program_name == "rgrep"sv);
-    bool use_ere = (program_name == "egrep"sv);
-    bool fixed_strings = (program_name == "fgrep"sv);
+    SetOnce recursive;
+    if (program_name == "rgrep"sv)
+        recursive.set();
+    SetOnce use_ere;
+    if (program_name == "egrep"sv)
+        use_ere.set();
+    SetOnce fixed_strings;
+    if (program_name == "fgrep"sv)
+        fixed_strings.set();
     Vector<ByteString> patterns;
     StringView pattern_file;
     BinaryFileMode binary_mode { BinaryFileMode::Binary };
-    bool case_insensitive = false;
-    bool line_numbers = false;
-    bool invert_match = false;
-    bool quiet_mode = false;
-    bool suppress_errors = false;
+    SetOnce case_insensitive;
+    SetOnce line_numbers;
+    SetOnce invert_match;
+    SetOnce quiet_mode;
+    SetOnce suppress_errors;
     bool is_a_tty = isatty(STDOUT_FILENO) == 1;
     bool colored_output = is_a_tty;
     bool disable_hyperlinks = !is_a_tty;
-    bool count_lines = false;
+    SetOnce count_lines;
 
     size_t matched_line_count = 0;
 

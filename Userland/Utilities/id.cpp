@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/StringUtils.h>
 #include <LibCore/Account.h>
 #include <LibCore/ArgsParser.h>
@@ -17,10 +18,10 @@
 
 static int print_id_objects(Core::Account const&);
 
-static bool flag_print_uid = false;
-static bool flag_print_gid = false;
-static bool flag_print_name = false;
-static bool flag_print_gid_all = false;
+static SetOnce flag_print_uid;
+static SetOnce flag_print_gid;
+static SetOnce flag_print_name;
+static SetOnce flag_print_gid_all;
 static ByteString user_str;
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)

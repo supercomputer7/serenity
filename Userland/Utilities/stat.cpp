@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DateTime.h>
 #include <LibCore/System.h>
@@ -90,7 +91,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
 
-    bool should_follow_links = false;
+    SetOnce should_follow_links;
     Vector<StringView> files;
 
     auto args_parser = Core::ArgsParser();
@@ -98,14 +99,14 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     args_parser.add_positional_argument(files, "File(s) to stat", "file", Core::ArgsParser::Required::Yes);
     args_parser.parse(arguments);
 
-    bool had_error = false;
+    SetOnce had_error;
     for (auto& file : files) {
-        auto r = stat(file, should_follow_links);
+        auto r = stat(file, should_follow_links.was_set());
         if (r.is_error()) {
-            had_error = true;
+            had_error.set();
             warnln("stat: cannot stat '{}': {}", file, strerror(r.error().code()));
         }
     }
 
-    return had_error;
+    return had_error.was_set();
 }

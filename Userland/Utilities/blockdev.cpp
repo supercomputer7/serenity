@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -26,8 +27,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView device;
 
-    bool flag_get_disk_size = false;
-    bool flag_get_block_size = false;
+    SetOnce flag_get_disk_size;
+    SetOnce flag_get_block_size;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Call block device ioctls");

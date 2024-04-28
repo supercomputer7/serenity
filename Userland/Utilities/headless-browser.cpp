@@ -16,6 +16,7 @@
 #include <AK/LexicalPath.h>
 #include <AK/NonnullOwnPtr.h>
 #include <AK/Platform.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <AK/Vector.h>
 #include <Ladybird/Types.h>
@@ -666,11 +667,11 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     StringView raw_url;
     auto resources_folder = "/res"sv;
     StringView web_driver_ipc_path;
-    bool dump_failed_ref_tests = false;
-    bool dump_layout_tree = false;
-    bool dump_text = false;
-    bool dump_gc_graph = false;
-    bool is_layout_test_mode = false;
+    SetOnce dump_failed_ref_tests;
+    SetOnce dump_layout_tree;
+    SetOnce dump_text;
+    SetOnce dump_gc_graph;
+    SetOnce is_layout_test_mode;
     StringView test_root_path;
     ByteString test_glob;
     Vector<ByteString> certificates;

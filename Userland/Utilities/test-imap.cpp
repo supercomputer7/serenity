@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/EventLoop.h>
 #include <LibCore/GetPassword.h>
@@ -20,7 +21,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     ByteString host;
     int port;
-    bool tls { false };
+    SetOnce tls;
 
     ByteString username;
     Core::SecretString password;

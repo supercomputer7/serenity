@@ -7,6 +7,7 @@
 
 #include <AK/ByteString.h>
 #include <AK/Format.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/Environment.h>
 #include <LibCore/System.h>
@@ -50,9 +51,9 @@ static void spawn_command(Span<StringView> command, ByteBuffer const& data, char
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool print_type = false;
-    bool no_newline = false;
-    bool watch = false;
+    SetOnce print_type;
+    SetOnce no_newline;
+    SetOnce watch;
     Vector<StringView> watch_command;
 
     Core::ArgsParser args_parser;

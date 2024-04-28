@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/Account.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -42,13 +43,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil("/etc", "rwc"));
 
     uid_t uid = 0;
-    bool append_extra_gids = false;
+    SetOnce append_extra_gids;
     Optional<gid_t> gid;
-    bool lock = false;
-    bool remove_extra_gids = false;
-    bool unlock = false;
+    SetOnce lock;
+    SetOnce remove_extra_gids;
+    SetOnce unlock;
     StringView new_home_directory;
-    bool move_home = false;
+    SetOnce move_home;
     StringView shell;
     StringView gecos;
     StringView username;

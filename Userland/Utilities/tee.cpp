@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -88,8 +89,8 @@ static void int_handler(int)
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool append = false;
-    bool ignore_interrupts = false;
+    SetOnce append;
+    SetOnce ignore_interrupts;
     Vector<StringView> paths;
 
     Core::ArgsParser args_parser;

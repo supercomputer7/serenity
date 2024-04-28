@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
@@ -17,10 +18,10 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath cpath"));
 
-    bool recursive = false;
-    bool force = false;
-    bool verbose = false;
-    bool no_preserve_root = false;
+    SetOnce recursive;
+    SetOnce force;
+    SetOnce verbose;
+    SetOnce no_preserve_root;
     Vector<StringView> paths;
 
     Core::ArgsParser args_parser;

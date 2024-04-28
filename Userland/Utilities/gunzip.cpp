@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCompress/Gzip.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -15,8 +16,8 @@
 ErrorOr<int> serenity_main(Main::Arguments args)
 {
     Vector<StringView> filenames;
-    bool keep_input_files { false };
-    bool write_to_stdout { false };
+    SetOnce keep_input_files;
+    SetOnce write_to_stdout;
 
     Core::ArgsParser args_parser;
     // NOTE: If the user run this program via the /bin/zcat symlink,

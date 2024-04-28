@@ -8,6 +8,7 @@
 #include <AK/CharacterTypes.h>
 #include <AK/CheckedFormatString.h>
 #include <AK/GenericLexer.h>
+#include <AK/SetOnce.h>
 #include <AK/Time.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -198,9 +199,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     auto& atime = times[0];
     auto& mtime = times[1];
 
-    bool update_atime = false;
-    bool update_mtime = false;
-    bool no_create_file = false;
+    SetOnce update_atime;
+    SetOnce update_mtime;
+    SetOnce no_create_file;
 
     ByteString input_datetime = "";
     ByteString input_time = "";

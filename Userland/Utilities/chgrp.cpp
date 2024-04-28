@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -15,7 +16,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView gid_arg;
     Vector<StringView> paths;
-    bool dont_follow_symlinks = false;
+    SetOnce dont_follow_symlinks;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Change the owning group for files or directories.");

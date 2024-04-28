@@ -7,6 +7,7 @@
 
 #include <AK/ByteBuffer.h>
 #include <AK/HashTable.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/EventLoop.h>
 #include <LibCore/Socket.h>
@@ -46,11 +47,11 @@ static size_t get_maximum_tcp_buffer_size(size_t input_buf_size)
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool should_listen = false;
-    bool verbose = false;
-    bool should_close = false;
-    bool udp_mode = false;
-    bool numeric_mode = false;
+    SetOnce should_listen;
+    SetOnce verbose;
+    SetOnce should_close;
+    SetOnce udp_mode;
+    SetOnce numeric_mode;
     ByteString target;
     u16 port = 0;
     u16 local_port = 0;

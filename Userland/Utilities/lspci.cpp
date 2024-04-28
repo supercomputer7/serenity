@@ -9,6 +9,7 @@
 #include <AK/Hex.h>
 #include <AK/JsonArray.h>
 #include <AK/JsonObject.h>
+#include <AK/SetOnce.h>
 #include <AK/StringUtils.h>
 #include <AK/StringView.h>
 #include <LibCore/ArgsParser.h>
@@ -18,8 +19,8 @@
 #include <LibMain/Main.h>
 #include <LibPCIDB/Database.h>
 
-static bool flag_show_numerical = false;
-static bool flag_verbose = false;
+static SetOnce flag_show_numerical;
+static SetOnce flag_verbose;
 
 static constexpr StringView format_numerical = "{:04x}:{:02x}:{:02x}.{} {}: {}:{} (rev {:02x})"sv;
 static constexpr StringView format_textual = "{:04x}:{:02x}:{:02x}.{} {}: {} {} (rev {:02x})"sv;

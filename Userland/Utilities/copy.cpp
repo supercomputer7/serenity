@@ -6,6 +6,7 @@
 
 #include <AK/Assertions.h>
 #include <AK/ByteBuffer.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <AK/StringBuilder.h>
 #include <LibCore/ArgsParser.h>
@@ -25,7 +26,7 @@ static ErrorOr<Options> parse_options(Main::Arguments arguments)
 {
     auto type = "text/plain"sv;
     Vector<StringView> text;
-    bool clear = false;
+    SetOnce clear;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Copy text from stdin or the command-line to the clipboard.");

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/StdLibExtras.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -22,8 +23,8 @@ ErrorOr<int> serenity_main(Main::Arguments args)
 
     int line_count = -1;
     int byte_count = -1;
-    bool never_print_filenames = false;
-    bool always_print_filenames = false;
+    SetOnce never_print_filenames;
+    SetOnce always_print_filenames;
     Vector<ByteString> files;
 
     Core::ArgsParser args_parser;

@@ -10,6 +10,7 @@
 #include <AK/JsonArray.h>
 #include <AK/JsonObject.h>
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/ProcessStatisticsReader.h>
@@ -25,14 +26,14 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath unix"));
 
-    bool flag_all = false;
-    bool flag_list = false;
-    bool flag_tcp = false;
-    bool flag_udp = false;
-    bool flag_numeric = false;
-    bool flag_program = false;
-    bool flag_wide = false;
-    bool flag_extend = false;
+    SetOnce flag_all;
+    SetOnce flag_list;
+    SetOnce flag_tcp;
+    SetOnce flag_udp;
+    SetOnce flag_numeric;
+    SetOnce flag_program;
+    SetOnce flag_wide;
+    SetOnce flag_extend;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Display network connections");

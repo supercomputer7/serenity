@@ -7,6 +7,7 @@
 
 #include <AK/JsonObject.h>
 #include <AK/JsonValue.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <AK/Time.h>
 #include <LibCore/Account.h>
@@ -45,7 +46,7 @@ ErrorOr<int> serenity_main(Main::Arguments args)
     TRY(Core::System::unveil("/sys/kernel/processes", "r"));
     TRY(Core::System::unveil(nullptr, nullptr));
 
-    bool hide_header = false;
+    SetOnce hide_header;
     StringView username_to_filter_by;
 
     Core::ArgsParser args_parser;

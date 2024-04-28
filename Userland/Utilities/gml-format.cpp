@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -39,7 +40,7 @@ ErrorOr<int> serenity_main(Main::Arguments args)
 {
     TRY(Core::System::pledge("stdio rpath wpath cpath"));
 
-    bool inplace = false;
+    SetOnce inplace;
     Vector<ByteString> files;
 
     Core::ArgsParser args_parser;

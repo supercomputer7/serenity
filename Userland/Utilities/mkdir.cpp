@@ -8,6 +8,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/FilePermissionsMask.h>
@@ -18,8 +19,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio cpath rpath"));
 
-    bool create_parents = false;
-    bool verbose = false;
+    SetOnce create_parents;
+    SetOnce verbose;
     StringView mode_string;
     Vector<StringView> directories;
 

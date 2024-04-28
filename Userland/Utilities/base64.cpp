@@ -5,6 +5,7 @@
  */
 
 #include <AK/Base64.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/MappedFile.h>
@@ -27,7 +28,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
 
-    bool decode = false;
+    SetOnce decode;
     Optional<size_t> maybe_column;
     StringView filepath = {};
 

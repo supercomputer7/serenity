@@ -5,6 +5,7 @@
  */
 
 #include <AK/Function.h>
+#include <AK/SetOnce.h>
 #include <AK/StringView.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
@@ -12,8 +13,8 @@
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
 
-static bool flag_show_unix_posix_file_type = false;
-static bool flag_show_total_count = false;
+static SetOnce flag_show_unix_posix_file_type;
+static SetOnce flag_show_total_count;
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {

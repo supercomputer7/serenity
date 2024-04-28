@@ -8,6 +8,7 @@
 #include <AK/ByteBuffer.h>
 #include <AK/ByteString.h>
 #include <AK/ScopeGuard.h>
+#include <AK/SetOnce.h>
 #include <AK/Types.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
@@ -49,7 +50,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     i64 time_per_benchmark_sec = 10;
     Vector<size_t> file_sizes;
     Vector<size_t> block_sizes;
-    bool allow_cache = false;
+    SetOnce allow_cache;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(allow_cache, "Allow using disk cache", "cache", 'c');

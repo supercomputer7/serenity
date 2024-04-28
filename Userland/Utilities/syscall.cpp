@@ -8,6 +8,7 @@
 #include <AK/Assertions.h>
 #include <AK/Debug.h>
 #include <AK/Iterator.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <Kernel/API/SyscallString.h>
 #include <LibCore/ArgsParser.h>
@@ -39,8 +40,8 @@ struct AK::Formatter<Syscall::Function> : Formatter<StringView> {
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool output_buffer = false;
-    bool list_syscalls = false;
+    SetOnce output_buffer;
+    SetOnce list_syscalls;
     Arguments syscall_arguments;
 
     Core::ArgsParser args_parser;

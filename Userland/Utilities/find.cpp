@@ -9,6 +9,7 @@
 #include <AK/LexicalPath.h>
 #include <AK/NonnullOwnPtr.h>
 #include <AK/OwnPtr.h>
+#include <AK/SetOnce.h>
 #include <AK/Time.h>
 #include <AK/Vector.h>
 #include <LibCore/DirIterator.h>
@@ -29,10 +30,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool g_follow_symlinks = false;
-bool g_there_was_an_error = false;
-bool g_have_seen_action_command = false;
-bool g_print_hyperlinks = false;
+SetOnce g_follow_symlinks;
+SetOnce g_there_was_an_error;
+SetOnce g_have_seen_action_command;
+SetOnce g_print_hyperlinks;
 Optional<u32> g_max_depth = {};
 Optional<u32> g_min_depth = {};
 

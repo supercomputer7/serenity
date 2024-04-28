@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 
@@ -12,8 +13,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio cpath rpath"));
 
-    bool force = false;
-    bool symbolic = false;
+    SetOnce force;
+    SetOnce symbolic;
     StringView target;
     StringView path;
 

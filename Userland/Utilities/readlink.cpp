@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibFileSystem/FileSystem.h>
@@ -13,7 +14,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
 
-    bool no_newline = false;
+    SetOnce no_newline;
     Vector<StringView> paths;
 
     Core::ArgsParser args_parser;

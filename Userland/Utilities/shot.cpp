@@ -8,6 +8,7 @@
 
 #include <AK/Format.h>
 #include <AK/Optional.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DateTime.h>
 #include <LibCore/Process.h>
@@ -93,10 +94,10 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     Core::ArgsParser args_parser;
 
     ByteString output_path;
-    bool output_to_clipboard = false;
+    SetOnce output_to_clipboard;
     unsigned delay = 0;
-    bool select_region = false;
-    bool edit_image = false;
+    SetOnce select_region;
+    SetOnce edit_image;
     int screen = -1;
 
     args_parser.add_positional_argument(output_path, "Output filename", "output", Core::ArgsParser::Required::No);

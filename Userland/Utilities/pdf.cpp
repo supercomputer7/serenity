@@ -6,6 +6,7 @@
 
 #include <AK/JsonObject.h>
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/MappedFile.h>
@@ -184,17 +185,17 @@ static PDF::PDFErrorOr<int> pdf_main(Main::Arguments arguments)
     StringView in_path;
     args_parser.add_positional_argument(in_path, "Path to input image file", "FILE");
 
-    bool debugging_stats = false;
+    SetOnce debugging_stats;
     args_parser.add_option(debugging_stats, "Print stats for debugging", "debugging-stats", {});
 
-    bool dump_contents = false;
+    SetOnce dump_contents;
     args_parser.add_option(dump_contents, "Dump page contents", "dump-contents", {});
 
-    bool dump_outline = false;
+    SetOnce dump_outline;
     args_parser.add_option(dump_outline, "Dump document outline", "dump-outline", {});
 
     // FIXME: Currently only honored for --debugging-stats, should be honored for no-arg output too.
-    bool json = false;
+    SetOnce json;
     args_parser.add_option(json, "Print output as json", "json", {});
 
     u32 page_number = 1;

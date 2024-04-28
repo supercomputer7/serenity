@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -19,8 +20,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     Core::ArgsParser parser;
 
-    bool unified = false;
-    bool context = false;
+    SetOnce unified;
+    SetOnce context;
 
     Optional<size_t> unified_format_context;
     Optional<size_t> context_format_context;

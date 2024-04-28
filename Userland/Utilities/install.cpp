@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/Directory.h>
@@ -17,7 +18,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath wpath cpath fattr"));
 
-    bool create_leading_dest_components = false;
+    SetOnce create_leading_dest_components;
     StringView mode = "0755"sv;
     Vector<StringView> sources;
     StringView destination;

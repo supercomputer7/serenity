@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/ConfigFile.h>
 #include <LibCore/Environment.h>
@@ -322,11 +323,11 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 #else
         false;
 #endif
-    bool print_json = false;
-    bool print_all_output = false;
-    bool run_benchmarks = false;
-    bool run_skipped_tests = false;
-    bool unlink_coredumps = false;
+    SetOnce print_json;
+    SetOnce print_all_output;
+    SetOnce run_benchmarks;
+    SetOnce run_skipped_tests;
+    SetOnce unlink_coredumps;
     StringView specified_test_root;
     ByteString test_glob;
     ByteString exclude_pattern;

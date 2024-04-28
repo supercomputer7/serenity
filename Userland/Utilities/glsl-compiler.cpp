@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibGLSL/Parser.h>
@@ -13,7 +14,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     Core::ArgsParser args_parser;
     String path;
-    bool print_tokens = false;
+    SetOnce print_tokens;
     args_parser.add_option(print_tokens, "Print Tokens", "tokens", 't');
     args_parser.add_positional_argument(path, "Input file", "input-file", Core::ArgsParser::Required::Yes);
     args_parser.parse(arguments);

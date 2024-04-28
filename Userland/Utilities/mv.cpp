@@ -6,6 +6,7 @@
 
 #include <AK/ByteString.h>
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibFileSystem/FileSystem.h>
@@ -19,9 +20,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath wpath cpath fattr"));
 
-    bool force = false;
-    bool no_clobber = false;
-    bool verbose = false;
+    SetOnce force;
+    bool no_clobber;
+    SetOnce verbose;
 
     Vector<ByteString> paths;
 

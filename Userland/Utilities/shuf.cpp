@@ -6,6 +6,7 @@
  */
 
 #include <AK/Random.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -19,8 +20,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     Core::ArgsParser args_parser;
     StringView path;
     Optional<size_t> head_count;
-    bool is_zero_terminated = false;
-    bool allow_repeats = false;
+    SetOnce is_zero_terminated;
+    SetOnce allow_repeats;
 
     args_parser.add_positional_argument(path, "File", "file", Core::ArgsParser::Required::No);
     args_parser.add_option(head_count, "Output at most \"count\" lines", "head-count", 'n', "count");

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -24,8 +25,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     Core::ArgsParser parser;
     StringView filename1;
     StringView filename2;
-    bool verbose = false;
-    bool silent = false;
+    SetOnce verbose;
+    SetOnce silent;
 
     parser.set_general_help("Compare two files, and report the first byte that does not match. Returns 0 if files are identical, or 1 if they differ.");
     parser.add_positional_argument(filename1, "First file to compare", "file1", Core::ArgsParser::Required::Yes);

@@ -7,6 +7,7 @@
  */
 
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DateTime.h>
 #include <LibCore/File.h>
@@ -17,8 +18,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
 
-    bool pretty_output = false;
-    bool output_since = false;
+    SetOnce pretty_output;
+    SetOnce output_since;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(pretty_output, "Output only the uptime, in human-readable format", "pretty", 'p');

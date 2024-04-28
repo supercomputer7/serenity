@@ -9,6 +9,7 @@
 #include <AK/Assertions.h>
 #include <AK/Endian.h>
 #include <AK/Random.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -96,9 +97,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio inet unix settime wpath rpath"));
 
-    bool adjust_time = false;
-    bool set_time = false;
-    bool verbose = false;
+    SetOnce adjust_time;
+    SetOnce set_time;
+    SetOnce verbose;
     // FIXME: Change to serenityos.pool.ntp.org once https://manage.ntppool.org/manage/vendor/zone?a=km5a8h&id=vz-14154g is approved.
     // Other NTP servers:
     // - time.nist.gov

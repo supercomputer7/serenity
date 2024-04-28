@@ -5,6 +5,7 @@
  */
 
 #include <AK/Function.h>
+#include <AK/SetOnce.h>
 #include <AK/StdLibExtras.h>
 #include <AK/StringBuilder.h>
 #include <LibCore/ArgsParser.h>
@@ -43,10 +44,10 @@ ErrorOr<int> serenity_main(Main::Arguments main_arguments)
     TRY(Core::System::pledge("stdio rpath proc exec"));
 
     StringView placeholder;
-    bool split_with_nulls = false;
+    SetOnce split_with_nulls;
     ByteString specified_delimiter = "\n"sv;
     Vector<ByteString> arguments;
-    bool verbose = false;
+    SetOnce verbose;
     ByteString file_to_read = "-"sv;
     int max_lines_for_one_command = 0;
     int max_bytes_for_one_command = ARG_MAX;
@@ -158,7 +159,7 @@ ErrorOr<int> serenity_main(Main::Arguments main_arguments)
 
 bool read_items(FILE* fp, char entry_separator, Function<Decision(StringView)> callback)
 {
-    bool fail = false;
+    SetOnce fail;
 
     for (;;) {
         char* item = nullptr;
@@ -170,7 +171,7 @@ bool read_items(FILE* fp, char entry_separator, Function<Decision(StringView)> c
             // getdelim() will return -1 and set errno to 0 on EOF.
             if (errno != 0) {
                 perror("getdelim");
-                fail = true;
+                fail.set();
             }
             free(item);
             break;

@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/Variant.h>
 #include <AK/Vector.h>
 #include <LibAudio/ConnectionToManagerServer.h>
@@ -31,7 +32,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView command;
     Vector<StringView> command_arguments;
-    bool human_mode = false;
+    SetOnce human_mode;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Send control signals to the audio server and hardware.");

@@ -6,6 +6,7 @@
 
 #include <AK/LexicalPath.h>
 #include <AK/Queue.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibFileSystem/FileSystem.h>
@@ -506,7 +507,7 @@ static void do_run_tests(XML::Document& document)
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     StringView filename;
-    bool run_tests { false };
+    SetOnce run_tests;
 
     Core::ArgsParser parser;
     parser.set_general_help("Parse and dump XML files");

@@ -11,6 +11,7 @@
 #include <AK/LexicalPath.h>
 #include <AK/MaybeOwned.h>
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/EventLoop.h>
@@ -149,9 +150,9 @@ private:
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     StringView url_str;
-    bool save_at_provided_name = false;
-    bool should_follow_url = false;
-    bool verbose_output = false;
+    SetOnce save_at_provided_name;
+    SetOnce should_follow_url;
+    SetOnce verbose_output;
     StringView data;
     StringView proxy_spec;
     ByteString method = "GET";

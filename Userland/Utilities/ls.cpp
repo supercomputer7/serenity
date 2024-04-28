@@ -9,6 +9,7 @@
 #include <AK/HashMap.h>
 #include <AK/NumberFormat.h>
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <AK/Utf8View.h>
 #include <AK/Vector.h>
@@ -68,24 +69,24 @@ static bool print_names(char const* path, size_t longest_name, Vector<FileMetada
 static bool filemetadata_comparator(FileMetadata& a, FileMetadata& b);
 
 static IndicatorStyle flag_indicator_style = IndicatorStyle::None;
-static bool flag_colorize = false;
-static bool flag_long = false;
-static bool flag_show_dotfiles = false;
-static bool flag_show_almost_all_dotfiles = false;
-static bool flag_ignore_backups = false;
-static bool flag_list_directories_only = false;
-static bool flag_show_inode = false;
-static bool flag_show_raw_inode = false;
-static bool flag_print_numeric = false;
-static bool flag_hide_group = false;
-static bool flag_hide_owner = false;
-static bool flag_human_readable = false;
-static bool flag_human_readable_si = false;
+static SetOnce flag_colorize;
+static SetOnce flag_long;
+static SetOnce flag_show_dotfiles;
+static SetOnce flag_show_almost_all_dotfiles;
+static SetOnce flag_ignore_backups;
+static SetOnce flag_list_directories_only;
+static SetOnce flag_show_inode;
+static SetOnce flag_show_raw_inode;
+static SetOnce flag_print_numeric;
+static SetOnce flag_hide_group;
+static SetOnce flag_hide_owner;
+static SetOnce flag_human_readable;
+static SetOnce flag_human_readable_si;
 static FieldToSortBy flag_sort_by { FieldToSortBy::Name };
-static bool flag_reverse_sort = false;
-static bool flag_disable_hyperlinks = false;
-static bool flag_recursive = false;
-static bool flag_force_newline = false;
+static SetOnce flag_reverse_sort;
+static SetOnce flag_disable_hyperlinks;
+static SetOnce flag_recursive;
+static SetOnce flag_force_newline;
 
 static size_t terminal_rows = 0;
 static size_t terminal_columns = 0;

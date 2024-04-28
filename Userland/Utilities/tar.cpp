@@ -8,6 +8,7 @@
 #include <AK/ByteString.h>
 #include <AK/HashMap.h>
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <AK/Span.h>
 #include <AK/Vector.h>
 #include <LibArchive/TarStream.h>
@@ -29,16 +30,16 @@ constexpr size_t buffer_size = 4096;
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool create = false;
-    bool extract = false;
-    bool list = false;
-    bool verbose = false;
-    bool gzip = false;
-    bool lzma = false;
-    bool xz = false;
-    bool no_auto_compress = false;
+    SetOnce create;
+    SetOnce extract;
+    SetOnce list;
+    SetOnce verbose;
+    SetOnce gzip;
+    SetOnce lzma;
+    SetOnce xz;
+    SetOnce no_auto_compress;
     StringView archive_file;
-    bool dereference;
+    SetOnce dereference;
     StringView directory;
     Vector<ByteString> paths;
 

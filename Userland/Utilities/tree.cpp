@@ -8,6 +8,7 @@
 #include <AK/ByteString.h>
 #include <AK/LexicalPath.h>
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
@@ -20,8 +21,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-static bool flag_show_hidden_files = false;
-static bool flag_show_only_directories = false;
+static SetOnce flag_show_hidden_files;
+static SetOnce flag_show_only_directories;
 static int max_depth = INT_MAX;
 
 static int g_directories_seen = 0;

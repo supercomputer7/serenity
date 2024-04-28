@@ -16,6 +16,7 @@
 #include <AK/HashTable.h>
 #include <AK/LexicalPath.h>
 #include <AK/RecursionDecision.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -290,8 +291,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     Core::ArgsParser args_parser;
     Vector<StringView> file_paths;
-    bool output_link_graph { false };
-    bool verbose_output { false };
+    SetOnce output_link_graph;
+    SetOnce verbose_output;
     StringView base_path = "/"sv;
     args_parser.add_positional_argument(file_paths, "Path to markdown files to read and parse", "paths", Core::ArgsParser::Required::Yes);
     args_parser.add_option(base_path, "System base path (default: \"/\")", "base", 'b', "path");

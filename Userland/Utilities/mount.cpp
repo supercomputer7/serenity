@@ -7,6 +7,7 @@
 #include <AK/JsonArray.h>
 #include <AK/JsonObject.h>
 #include <AK/JsonValue.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
@@ -223,7 +224,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     StringView mountpoint;
     StringView fs_type;
     StringView options;
-    bool should_mount_all = false;
+    SetOnce should_mount_all;
 
     Core::ArgsParser args_parser;
     args_parser.add_positional_argument(source, "Source path", "source", Core::ArgsParser::Required::No);

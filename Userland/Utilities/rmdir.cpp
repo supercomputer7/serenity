@@ -6,6 +6,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -15,8 +16,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio cpath"));
 
-    bool remove_parents = false;
-    bool verbose = false;
+    SetOnce remove_parents;
+    SetOnce verbose;
     Vector<StringView> paths;
 
     Core::ArgsParser args_parser;

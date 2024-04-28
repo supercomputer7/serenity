@@ -5,6 +5,7 @@
  */
 
 #include <AK/ByteString.h>
+#include <AK/SetOnce.h>
 #include <AK/StringUtils.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
@@ -88,7 +89,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView arg_offset;
     StringView arg_length;
-    bool use_read_instead_of_mmap = false;
+    SetOnce use_read_instead_of_mmap;
     Core::ArgsParser args;
     args.add_positional_argument(arg_offset, "Physical Address (Offset)", "offset", Core::ArgsParser::Required::Yes);
     args.add_positional_argument(arg_length, "Length of that region", "length", Core::ArgsParser::Required::Yes);

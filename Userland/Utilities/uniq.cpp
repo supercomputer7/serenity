@@ -6,6 +6,7 @@
 
 #include <AK/CharacterTypes.h>
 #include <AK/RefPtr.h>
+#include <AK/SetOnce.h>
 #include <AK/StringView.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -54,10 +55,10 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView inpath;
     StringView outpath;
-    bool duplicates_only = false;
-    bool unique_only = false;
-    bool ignore_case = false;
-    bool print_count = false;
+    SetOnce duplicates_only;
+    SetOnce unique_only;
+    SetOnce ignore_case;
+    SetOnce print_count;
     unsigned skip_chars = 0;
     unsigned skip_fields = 0;
 

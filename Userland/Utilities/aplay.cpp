@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/Types.h>
 #include <LibAudio/ConnectionToServer.h>
 #include <LibAudio/Loader.h>
@@ -23,8 +24,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio rpath sendfd unix thread proc"));
 
     StringView path {};
-    bool should_loop = false;
-    bool show_sample_progress = false;
+    SetOnce should_loop;
+    SetOnce show_sample_progress;
 
     Core::ArgsParser args_parser;
     args_parser.add_positional_argument(path, "Path to audio file", "path");

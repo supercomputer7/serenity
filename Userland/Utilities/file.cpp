@@ -5,6 +5,7 @@
  */
 
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <AK/Vector.h>
 #include <LibArchive/Zip.h>
@@ -186,8 +187,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio rpath"));
 
     Vector<StringView> paths;
-    bool flag_mime_only = false;
-    bool flag_brief_mode = false;
+    SetOnce flag_mime_only;
+    SetOnce flag_brief_mode;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Determine type of files");

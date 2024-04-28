@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/Account.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/GetPassword.h>
@@ -17,7 +18,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     Vector<StringView> command;
     Core::ArgsParser args_parser;
     uid_t as_user_uid = 0;
-    bool preserve_env = false;
+    SetOnce preserve_env;
     args_parser.set_stop_on_first_non_option(true);
     args_parser.add_option(as_user_uid, "User to execute as", nullptr, 'u', "UID");
     args_parser.add_option(preserve_env, "Preserve user environment when running command", "preserve-env", 'E');

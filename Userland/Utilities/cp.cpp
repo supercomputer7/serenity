@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibFileSystem/FileSystem.h>
@@ -16,11 +17,11 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath wpath cpath fattr chown"));
 
-    bool link = false;
+    SetOnce link;
     auto preserve = FileSystem::PreserveMode::Nothing;
-    bool recursion_allowed = false;
-    bool verbose = false;
-    bool interactive = false;
+    SetOnce recursion_allowed;
+    SetOnce verbose;
+    SetOnce interactive;
     Vector<StringView> sources;
     ByteString destination;
 

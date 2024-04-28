@@ -9,6 +9,7 @@
 #include <AK/JsonArray.h>
 #include <AK/JsonObject.h>
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
 #include <LibCore/File.h>
@@ -20,8 +21,8 @@
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool print_verbose = false;
-    bool flag_show_numerical = false;
+    SetOnce print_verbose;
+    SetOnce flag_show_numerical;
     Core::ArgsParser args;
     args.set_general_help("List USB devices.");
     args.add_option(print_verbose, "Print all device descriptors", "verbose", 'v');

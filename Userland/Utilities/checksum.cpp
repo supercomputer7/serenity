@@ -5,6 +5,7 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -38,7 +39,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     auto hash_name = program_name.substring_view(0, program_name.length() - 3).to_byte_string().to_uppercase();
     auto paths_help_string = ByteString::formatted("File(s) to print {} checksum of", hash_name);
 
-    bool verify_from_paths = false;
+    SetOnce verify_from_paths;
     Vector<StringView> paths;
 
     Core::ArgsParser args_parser;

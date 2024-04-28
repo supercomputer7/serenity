@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
 #include <LibCore/File.h>
@@ -96,7 +97,7 @@ static int handle_show_all()
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool show_all = false;
+    SetOnce show_all;
     Vector<StringView> variables;
 
     Core::ArgsParser args_parser;

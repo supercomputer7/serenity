@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -41,7 +42,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     }
 
     Array<u8, PAGE_SIZE> buffer;
-    bool fail = false;
+    SetOnce fail;
     Function<Data(Core::File*, StringView path)> build_checksum_data_using_file;
     if (algorithm == "cksum") {
         build_checksum_data_using_file = [&buffer, &arguments, &fail](Core::File* file, StringView path) {
@@ -51,7 +52,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 auto data_or_error = file->read_some(buffer);
                 if (data_or_error.is_error()) {
                     warnln("{}: Failed to read {}: {}", arguments.strings[0], path, data_or_error.error());
-                    fail = true;
+                    fail.set();
                     continue;
                 }
                 file_size += data_or_error.value().size();
@@ -67,7 +68,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 auto data_or_error = file->read_some(buffer);
                 if (data_or_error.is_error()) {
                     warnln("{}: Failed to read {}: {}", arguments.strings[0], path, data_or_error.error());
-                    fail = true;
+                    fail.set();
                     continue;
                 }
                 file_size += data_or_error.value().size();
@@ -83,7 +84,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 auto data_or_error = file->read_some(buffer);
                 if (data_or_error.is_error()) {
                     warnln("{}: Failed to read {}: {}", arguments.strings[0], path, data_or_error.error());
-                    fail = true;
+                    fail.set();
                     continue;
                 }
                 file_size += data_or_error.value().size();
@@ -120,7 +121,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         auto filepath = (path == "-"sv) ? "/dev/stdin"sv : path;
         if (file_or_error.is_error()) {
             warnln("{}: {}: {}", arguments.strings[0], filepath, file_or_error.error());
-            fail = true;
+            fail.set();
             continue;
         }
 

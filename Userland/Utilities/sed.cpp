@@ -11,6 +11,7 @@
 #include <AK/GenericLexer.h>
 #include <AK/LexicalPath.h>
 #include <AK/Optional.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <AK/Variant.h>
 #include <AK/Vector.h>
@@ -894,8 +895,8 @@ ErrorOr<int> serenity_main(Main::Arguments args)
 {
     TRY(Core::System::pledge("stdio cpath rpath wpath fattr chown"));
 
-    bool suppress_default_output = false;
-    bool edit_in_place = false;
+    SetOnce suppress_default_output;
+    SetOnce edit_in_place;
     Core::ArgsParser arg_parser;
     Script script;
     Vector<StringView> pos_args;

@@ -6,6 +6,7 @@
 
 #include <AK/CharacterTypes.h>
 #include <AK/GenericLexer.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -102,8 +103,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio"));
 
     Vector<ByteString> text;
-    bool no_trailing_newline = false;
-    bool should_interpret_backslash_escapes = false;
+    SetOnce no_trailing_newline;
+    SetOnce should_interpret_backslash_escapes;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(no_trailing_newline, "Do not output a trailing newline", nullptr, 'n');

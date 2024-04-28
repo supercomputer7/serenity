@@ -5,6 +5,7 @@
  */
 
 #include <AK/Format.h>
+#include <AK/SetOnce.h>
 #include <AK/Utf8View.h>
 #include <LibCore/ArgsParser.h>
 #include <LibGfx/Font/OpenType/Font.h>
@@ -134,11 +135,11 @@ private:
     u32 m_indent_level { 1 };
 };
 
-static bool s_disassembly_attempted = false;
+static SetOnce s_disassembly_attempted = false;
 
 static void print_disassembly(StringView name, Optional<ReadonlyBytes> program, bool enable_highlighting, u32 code_point = 0)
 {
-    s_disassembly_attempted = true;
+    s_disassembly_attempted.set();
     if (!program.has_value()) {
         out(name, code_point);
         outln(": not found");
@@ -157,9 +158,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     Core::ArgsParser args_parser;
 
     StringView font_path;
-    bool no_color = false;
-    bool dump_font_program = false;
-    bool dump_prep_program = false;
+    SetOnce no_color;
+    SetOnce dump_font_program;
+    SetOnce dump_prep_program;
     StringView text;
     args_parser.add_positional_argument(font_path, "Path to font", "FILE");
     args_parser.add_option(dump_font_program, "Disassemble font program (fpgm table)", "disasm-fpgm", 'f');
@@ -190,7 +191,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         }
     }
 
-    if (!s_disassembly_attempted) {
+    if (!s_disassembly_attempted.was_set()) {
         args_parser.print_usage(stderr, arguments.strings[0]);
         return 1;
     }

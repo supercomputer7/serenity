@@ -6,6 +6,7 @@
 
 #include <AK/ByteString.h>
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <AK/StdLibExtras.h>
 #include <AK/String.h>
 #include <AK/Vector.h>
@@ -182,7 +183,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     ByteString character_list = "";
     ByteString fields_list = "";
     ByteString delimiter = "\t";
-    bool only_print_delimited_lines = false;
+    SetOnce only_print_delimited_lines;
 
     Vector<StringView> files;
 

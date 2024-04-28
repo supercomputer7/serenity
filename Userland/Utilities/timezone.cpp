@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/StringView.h>
 #include <AK/Try.h>
 #include <LibCore/ArgsParser.h>
@@ -18,7 +19,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil(nullptr, nullptr));
 
     StringView time_zone;
-    bool list_time_zones = false;
+    SetOnce list_time_zones;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(list_time_zones, "List all available time zones", "list-time-zones", 'l');

@@ -6,12 +6,13 @@
  */
 
 #include <AK/LexicalPath.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibMain/Main.h>
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool null_terminated = false;
+    SetOnce null_terminated;
     Vector<ByteString> paths;
     Core::ArgsParser args_parser;
     args_parser.add_option(null_terminated, "End each output line with \\0, rather than \\n", "zero", 'z');

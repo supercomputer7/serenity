@@ -7,6 +7,7 @@
 
 #include <AK/Array.h>
 #include <AK/CharacterTypes.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -28,7 +29,7 @@ ErrorOr<int> serenity_main(Main::Arguments args)
 
     Core::ArgsParser args_parser;
     StringView path;
-    bool verbose = false;
+    SetOnce verbose;
     Optional<size_t> max_bytes;
     Optional<size_t> seek_to;
 

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
@@ -22,9 +23,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView spec;
     Vector<StringView> paths;
-    bool no_dereference = false;
-    bool recursive = false;
-    bool follow_symlinks = false;
+    SetOnce no_dereference;
+    SetOnce recursive;
+    SetOnce follow_symlinks;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Change the ownership of a file or directory.");

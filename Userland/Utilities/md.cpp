@@ -5,6 +5,7 @@
  */
 
 #include <AK/ByteString.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -18,7 +19,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio rpath tty"));
 
     StringView filename;
-    bool html = false;
+    SetOnce html;
     int view_width = 0;
 
     Core::ArgsParser args_parser;

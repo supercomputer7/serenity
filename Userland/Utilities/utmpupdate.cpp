@@ -8,6 +8,7 @@
 #include <AK/ByteBuffer.h>
 #include <AK/JsonObject.h>
 #include <AK/JsonValue.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DateTime.h>
 #include <LibCore/File.h>
@@ -22,8 +23,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil(nullptr, nullptr));
 
     pid_t pid = 0;
-    bool flag_create = false;
-    bool flag_delete = false;
+    SetOnce flag_create;
+    SetOnce flag_delete;
     StringView tty_name;
     StringView from;
 

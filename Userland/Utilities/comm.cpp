@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
 #include <LibCore/System.h>
@@ -24,13 +25,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     ByteString file1_path;
     ByteString file2_path;
-    bool suppress_col1 { false };
-    bool suppress_col2 { false };
-    bool suppress_col3 { false };
-    bool case_insensitive { false };
-    bool color { false };
-    bool no_color { false };
-    bool print_total { false };
+    SetOnce suppress_col1;
+    SetOnce suppress_col2;
+    SetOnce suppress_col3;
+    SetOnce case_insensitive;
+    SetOnce color;
+    SetOnce no_color;
+    SetOnce print_total;
 
     Core::ArgsParser args_parser;
     args_parser.set_general_help("Compare two sorted files line by line");

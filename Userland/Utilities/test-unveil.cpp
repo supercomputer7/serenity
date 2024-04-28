@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -14,7 +15,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     Vector<StringView> paths_to_test;
     StringView permissions = "r"sv;
-    bool should_sleep = false;
+    SetOnce should_sleep;
 
     Core::ArgsParser parser;
     parser.add_option(permissions, "Apply these permissions going forward", "permissions", 'p', "unveil-permissions");

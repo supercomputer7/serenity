@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibMain/Main.h>
 #include <string.h>
@@ -17,8 +18,8 @@ Array<StringView, EMAXERRNO + 1> s_errno_names = {
 
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
-    bool list = false;
-    bool search = false;
+    SetOnce list;
+    SetOnce search;
     StringView keyword;
 
     Core::ArgsParser args_parser;

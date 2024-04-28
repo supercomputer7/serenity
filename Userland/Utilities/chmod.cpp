@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
@@ -19,7 +20,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     StringView mode;
     Vector<StringView> paths;
-    bool recursive = false;
+    SetOnce recursive;
 
     Core::ArgsParser args_parser;
     args_parser.add_option(recursive, "Change file modes recursively", "recursive", 'R');

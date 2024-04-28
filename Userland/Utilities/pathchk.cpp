@@ -5,6 +5,7 @@
  */
 
 #include <AK/ByteString.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -14,10 +15,10 @@
 ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath"));
-    bool fail = false;
-    static bool flag_most_posix = false;
-    static bool flag_portability = false;
-    static bool flag_empty_name_and_leading_dash = false;
+    SetOnce fail;
+    static SetOnce flag_most_posix;
+    static SetOnce flag_portability;
+    static SetOnce flag_empty_name_and_leading_dash;
     Vector<ByteString> paths;
 
     Core::ArgsParser args_parser;
@@ -28,8 +29,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     args_parser.parse(arguments);
 
     if (flag_portability) {
-        flag_most_posix = true;
-        flag_empty_name_and_leading_dash = true;
+        flag_most_posix.set();
+        flag_empty_name_and_leading_dash.set();
     }
 
     for (auto& path : paths) {
@@ -38,7 +39,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
         if (path.length() > path_max) {
             warnln("Limit {} exceeded by length {} of filename '{}'", path_max, path.length(), path);
-            fail = true;
+            fail.set();
             continue;
         }
 
@@ -48,7 +49,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
                 auto c = path[i];
                 if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') && c != '/' && c != '.' && c != '-' && c != '_') {
                     warnln("Non-portable character '{}' in filename '{}'", path[i], path);
-                    fail = true;
+                    fail.set();
                     continue;
                 }
             }
@@ -57,7 +58,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
             if (lstat(path.characters(), &st) < 0) {
                 if (errno != ENOENT) {
                     warnln("Directory is not searchable '{}'", path);
-                    fail = true;
+                    fail.set();
                     continue;
                 }
             }
@@ -66,7 +67,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         if (flag_empty_name_and_leading_dash) {
             if (path.is_empty()) {
                 warnln("Empty filename");
-                fail = true;
+                fail.set();
                 continue;
             }
         }
@@ -75,13 +76,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
             if (flag_empty_name_and_leading_dash) {
                 if (component.starts_with('-')) {
                     warnln("Leading '-' in a component of filename '{}'", path);
-                    fail = true;
+                    fail.set();
                     break;
                 }
             }
             if (component.length() > name_max) {
                 warnln("Limit {} exceeded by length {} of filename component '{}'", name_max, component.length(), component.characters());
-                fail = true;
+                fail.set();
                 break;
             }
         }

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DateTime.h>
 #include <LibCore/System.h>
@@ -14,10 +15,10 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio settime rpath"));
 
-    bool print_unix_date = false;
-    bool print_iso_8601 = false;
-    bool print_rfc_3339 = false;
-    bool print_rfc_5322 = false;
+    SetOnce print_unix_date;
+    SetOnce print_iso_8601;
+    SetOnce print_rfc_3339;
+    SetOnce print_rfc_5322;
     StringView set_date;
     StringView format_string;
 

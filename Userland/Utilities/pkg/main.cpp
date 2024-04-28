@@ -55,9 +55,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::unveil("/usr/lib"sv, "r"sv));
     TRY(Core::System::unveil(nullptr, nullptr));
 
-    bool verbose = false;
-    bool show_all_installed_ports = false;
-    bool update_packages_db = false;
+    SetOnce verbose;
+    SetOnce show_all_installed_ports;
+    SetOnce update_packages_db;
     StringView query_package {};
 
     Core::ArgsParser args_parser;

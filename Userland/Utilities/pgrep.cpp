@@ -6,6 +6,7 @@
  */
 
 #include <AK/QuickSort.h>
+#include <AK/SetOnce.h>
 #include <AK/Vector.h>
 #include <LibCore/Account.h>
 #include <LibCore/ArgsParser.h>
@@ -22,14 +23,14 @@ ErrorOr<int> serenity_main(Main::Arguments args)
     TRY(Core::System::unveil("/etc/passwd", "r"));
     TRY(Core::System::unveil(nullptr, nullptr));
 
-    bool display_number_of_matches = false;
+    SetOnce display_number_of_matches;
     auto pid_delimiter = "\n"sv;
-    bool case_insensitive = false;
-    bool list_process_name = false;
-    bool invert_match = false;
-    bool exact_match = false;
-    bool newest_only = false;
-    bool oldest_only = false;
+    SetOnce case_insensitive;
+    SetOnce list_process_name;
+    SetOnce invert_match;
+    SetOnce exact_match;
+    SetOnce newest_only;
+    SetOnce oldest_only;
     Optional<UnixDateTime> display_if_older_than;
     HashTable<uid_t> uids_to_filter_by;
     StringView pattern;

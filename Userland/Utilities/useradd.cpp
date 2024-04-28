@@ -11,6 +11,7 @@
 #include <AK/ByteString.h>
 #include <AK/CharacterTypes.h>
 #include <AK/Random.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibMain/Main.h>
@@ -57,7 +58,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     StringView home_path;
     uid_t uid = 0;
     gid_t gid = USERS_GID;
-    bool create_home_dir = false;
+    SetOnce create_home_dir;
     ByteString password = "";
     ByteString shell = DEFAULT_SHELL;
     ByteString gecos = "";

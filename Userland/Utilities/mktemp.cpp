@@ -7,6 +7,7 @@
 
 #include <AK/LexicalPath.h>
 #include <AK/Random.h>
+#include <AK/SetOnce.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/System.h>
 #include <LibFileSystem/FileSystem.h>
@@ -57,9 +58,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     TRY(Core::System::pledge("stdio rpath wpath cpath"));
 
     ByteString file_template;
-    bool create_directory = false;
-    bool dry_run = false;
-    bool quiet = false;
+    SetOnce create_directory;
+    SetOnce dry_run;
+    SetOnce quiet;
     ByteString target_directory;
 
     Core::ArgsParser args_parser;

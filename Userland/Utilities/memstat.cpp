@@ -8,6 +8,7 @@
 #include <AK/JsonObject.h>
 #include <AK/JsonValue.h>
 #include <AK/NumberFormat.h>
+#include <AK/SetOnce.h>
 #include <AK/String.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/File.h>
@@ -27,7 +28,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     TRY(Core::System::pledge("stdio rpath"));
 
-    bool flag_human_readable = false;
+    SetOnce flag_human_readable;
     Core::ArgsParser args_parser;
     args_parser.add_option(flag_human_readable, "Print human-readable sizes", "human-readable", 'h');
     args_parser.parse(arguments);

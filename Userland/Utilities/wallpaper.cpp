@@ -7,6 +7,7 @@
 
 #include <AK/ByteString.h>
 #include <AK/Random.h>
+#include <AK/SetOnce.h>
 #include <AK/StringBuilder.h>
 #include <LibCore/ArgsParser.h>
 #include <LibCore/DirIterator.h>
@@ -19,9 +20,9 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 {
     TRY(Core::System::pledge("stdio rpath unix sendfd recvfd"));
 
-    bool show_all = false;
-    bool show_current = false;
-    bool set_random = false;
+    SetOnce show_all;
+    SetOnce show_current;
+    SetOnce set_random;
     StringView path;
 
     Core::ArgsParser args_parser;
