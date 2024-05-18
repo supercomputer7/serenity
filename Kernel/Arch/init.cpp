@@ -95,6 +95,9 @@ extern "C" u8 end_of_safemem_atomic_text[];
 extern "C" USB::DriverInitFunction driver_init_table_start[];
 extern "C" USB::DriverInitFunction driver_init_table_end[];
 
+extern "C" BusDriverInitFunction bus_driver_init_table_start[];
+extern "C" BusDriverInitFunction bus_driver_init_table_end[];
+
 extern "C" u8 end_of_kernel_image[];
 
 READONLY_AFTER_INIT SetOnce g_not_in_early_boot;
@@ -303,6 +306,12 @@ extern "C" [[noreturn]] UNMAP_AFTER_INIT NO_SANITIZE_COVERAGE void init([[maybe_
 
     DeviceManagement::initialize();
     SysFSComponentRegistry::initialize();
+    // NOTE: Initialize all bus drivers when sysfs internal structure is ready to be used,
+    // so we have proper sysfs directories being registered before we actually enumerate the
+    // devices in such busses.
+    for (auto* init_function = bus_driver_init_table_start; init_function != bus_driver_init_table_end; init_function++)
+        (*init_function)();
+
     DeviceManagement::the().attach_null_device(*NullDevice::must_initialize());
     DeviceManagement::the().attach_console_device(*ConsoleDevice::must_create());
     DeviceManagement::the().attach_device_control_device(*DeviceControlDevice::must_create());

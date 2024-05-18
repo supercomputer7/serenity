@@ -38,6 +38,13 @@ SECTIONS
         *(.text*)
     } :text
 
+    .bus_driver_init ALIGN(4K) : AT (ADDR(.bus_driver_init))
+    {
+        bus_driver_init_table_start = .;
+        *(.bus_driver_init)
+        bus_driver_init_table_end = .;
+    } :text
+
     .driver_init ALIGN(4K) : AT (ADDR(.driver_init))
     {
         driver_init_table_start = .;
