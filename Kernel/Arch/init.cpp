@@ -15,7 +15,6 @@
 #include <Kernel/Boot/Multiboot.h>
 #include <Kernel/Bus/PCI/Access.h>
 #include <Kernel/Bus/USB/Drivers/USBDriver.h>
-#include <Kernel/Bus/USB/USBManagement.h>
 #include <Kernel/Bus/VirtIO/Device.h>
 #include <Kernel/Bus/VirtIO/Transport/PCIe/Detect.h>
 #include <Kernel/Devices/DeviceManagement.h>
@@ -390,7 +389,6 @@ void init_stage2(void*)
     }
 #endif
 
-    USB::USBManagement::initialize();
     // Initialize all PCI & USB Drivers
     for (auto* init_function = driver_init_table_start; init_function != driver_init_table_end; init_function++)
         (*init_function)();

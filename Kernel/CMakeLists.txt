@@ -40,9 +40,9 @@ set(KERNEL_SOURCES
     Bus/USB/Drivers/MassStorage/MassStorageDriver.cpp
     Bus/USB/USBConfiguration.cpp
     Bus/USB/USBController.cpp
+    Bus/USB/USBCore.cpp
     Bus/USB/USBDevice.cpp
     Bus/USB/USBHub.cpp
-    Bus/USB/USBManagement.cpp
     Bus/USB/USBPipe.cpp
     Bus/USB/USBTransfer.cpp
     Bus/VirtIO/Transport/Entity.cpp
