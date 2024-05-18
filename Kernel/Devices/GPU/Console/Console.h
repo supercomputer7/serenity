@@ -35,6 +35,8 @@ public:
     };
 
 public:
+    static bool emergency_emit_char(char ch);
+
     size_t width() const { return m_width; }
     size_t height() const { return m_height; }
     size_t pitch() const { return bytes_per_base_glyph() * width(); }
