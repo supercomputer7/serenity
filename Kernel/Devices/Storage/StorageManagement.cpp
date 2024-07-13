@@ -105,8 +105,6 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool nvme_pol
             }
         }));
 
-        RefPtr<VirtIOBlockController> virtio_controller;
-
         auto const& handle_mass_storage_device = [&](PCI::DeviceIdentifier const& device_identifier) {
             using SubclassID = PCI::MassStorage::SubclassID;
 
@@ -127,13 +125,11 @@ UNMAP_AFTER_INIT void StorageManagement::enumerate_pci_controllers(bool nvme_pol
                 }
             }
             if (VirtIOBlockController::is_handled(device_identifier)) {
-                if (virtio_controller.is_null()) {
-                    auto controller = make_ref_counted<VirtIOBlockController>();
-                    m_controllers.append(controller);
-                    virtio_controller = controller;
-                }
-                if (auto res = virtio_controller->add_device(device_identifier); res.is_error()) {
-                    dmesgln("Unable to initialize VirtIO block device: {}", res.error());
+                auto controller = VirtIOBlockController::try_create(device_identifier);
+                if (controller.is_error()) {
+                    dmesgln("Unable to initialize VirtIO Block controller: {}", controller.error());
+                } else {
+                    m_controllers.append(controller.release_value());
                 }
             }
         };
